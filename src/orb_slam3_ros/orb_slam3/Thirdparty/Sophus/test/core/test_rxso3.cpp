@@ -188,8 +188,8 @@ class Tests {
     SOPHUS_TEST_EQUAL(passed, map1.matrix(), copy.matrix());
 
     // type -> map assignment
-    copy = RxSO3Type::exp(Tangent(Scalar(0.2), Scalar(0.5),
-                                  Scalar(-1.0), Scalar(1.1)));
+    copy = RxSO3Type::exp(
+        Tangent(Scalar(0.2), Scalar(0.5), Scalar(-1.0), Scalar(1.1)));
     map1 = copy;
     SOPHUS_TEST_EQUAL(passed, map1.matrix(), copy.matrix());
 

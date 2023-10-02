@@ -16,7 +16,6 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef SIM3SOLVER_H
 #define SIM3SOLVER_H
 
@@ -25,111 +24,114 @@
 
 #include "KeyFrame.h"
 
+namespace ORB_SLAM3 {
 
+class Sim3Solver {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  Sim3Solver(KeyFrame* pKF1, KeyFrame* pKF2,
+             const std::vector<MapPoint*>& vpMatched12,
+             const bool bFixScale = true,
+             const vector<KeyFrame*> vpKeyFrameMatchedMP = vector<KeyFrame*>());
 
-namespace ORB_SLAM3
-{
+  void SetRansacParameters(double probability = 0.99, int minInliers = 6,
+                           int maxIterations = 300);
 
-class Sim3Solver
-{
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Sim3Solver(KeyFrame* pKF1, KeyFrame* pKF2, const std::vector<MapPoint*> &vpMatched12, const bool bFixScale = true,
-               const vector<KeyFrame*> vpKeyFrameMatchedMP = vector<KeyFrame*>());
+  Eigen::Matrix4f find(std::vector<bool>& vbInliers12, int& nInliers);
 
-    void SetRansacParameters(double probability = 0.99, int minInliers = 6 , int maxIterations = 300);
+  Eigen::Matrix4f iterate(int nIterations, bool& bNoMore,
+                          std::vector<bool>& vbInliers, int& nInliers);
+  Eigen::Matrix4f iterate(int nIterations, bool& bNoMore,
+                          vector<bool>& vbInliers, int& nInliers,
+                          bool& bConverge);
 
-    Eigen::Matrix4f find(std::vector<bool> &vbInliers12, int &nInliers);
+  Eigen::Matrix4f GetEstimatedTransformation();
+  Eigen::Matrix3f GetEstimatedRotation();
+  Eigen::Vector3f GetEstimatedTranslation();
+  float GetEstimatedScale();
 
-    Eigen::Matrix4f iterate(int nIterations, bool &bNoMore, std::vector<bool> &vbInliers, int &nInliers);
-    Eigen::Matrix4f iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers, bool &bConverge);
+ protected:
+  void ComputeCentroid(Eigen::Matrix3f& P, Eigen::Matrix3f& Pr,
+                       Eigen::Vector3f& C);
 
-    Eigen::Matrix4f GetEstimatedTransformation();
-    Eigen::Matrix3f GetEstimatedRotation();
-    Eigen::Vector3f GetEstimatedTranslation();
-    float GetEstimatedScale();
+  void ComputeSim3(Eigen::Matrix3f& P1, Eigen::Matrix3f& P2);
 
-protected:
+  void CheckInliers();
 
-    void ComputeCentroid(Eigen::Matrix3f &P, Eigen::Matrix3f &Pr, Eigen::Vector3f &C);
+  void Project(const std::vector<Eigen::Vector3f>& vP3Dw,
+               std::vector<Eigen::Vector2f>& vP2D, Eigen::Matrix4f Tcw,
+               GeometricCamera* pCamera);
+  void FromCameraToImage(const std::vector<Eigen::Vector3f>& vP3Dc,
+                         std::vector<Eigen::Vector2f>& vP2D,
+                         GeometricCamera* pCamera);
 
-    void ComputeSim3(Eigen::Matrix3f &P1, Eigen::Matrix3f &P2);
+ protected:
+  // KeyFrames and matches
+  KeyFrame* mpKF1;
+  KeyFrame* mpKF2;
 
-    void CheckInliers();
+  std::vector<Eigen::Vector3f> mvX3Dc1;
+  std::vector<Eigen::Vector3f> mvX3Dc2;
+  std::vector<MapPoint*> mvpMapPoints1;
+  std::vector<MapPoint*> mvpMapPoints2;
+  std::vector<MapPoint*> mvpMatches12;
+  std::vector<size_t> mvnIndices1;
+  std::vector<size_t> mvSigmaSquare1;
+  std::vector<size_t> mvSigmaSquare2;
+  std::vector<size_t> mvnMaxError1;
+  std::vector<size_t> mvnMaxError2;
 
-    void Project(const std::vector<Eigen::Vector3f> &vP3Dw, std::vector<Eigen::Vector2f> &vP2D, Eigen::Matrix4f Tcw, GeometricCamera* pCamera);
-    void FromCameraToImage(const std::vector<Eigen::Vector3f> &vP3Dc, std::vector<Eigen::Vector2f> &vP2D, GeometricCamera* pCamera);
+  int N;
+  int mN1;
 
+  // Current Estimation
+  Eigen::Matrix3f mR12i;
+  Eigen::Vector3f mt12i;
+  float ms12i;
+  Eigen::Matrix4f mT12i;
+  Eigen::Matrix4f mT21i;
+  std::vector<bool> mvbInliersi;
+  int mnInliersi;
 
-protected:
+  // Current Ransac State
+  int mnIterations;
+  std::vector<bool> mvbBestInliers;
+  int mnBestInliers;
+  Eigen::Matrix4f mBestT12;
+  Eigen::Matrix3f mBestRotation;
+  Eigen::Vector3f mBestTranslation;
+  float mBestScale;
 
-    // KeyFrames and matches
-    KeyFrame* mpKF1;
-    KeyFrame* mpKF2;
+  // Scale is fixed to 1 in the stereo/RGBD case
+  bool mbFixScale;
 
-    std::vector<Eigen::Vector3f> mvX3Dc1;
-    std::vector<Eigen::Vector3f> mvX3Dc2;
-    std::vector<MapPoint*> mvpMapPoints1;
-    std::vector<MapPoint*> mvpMapPoints2;
-    std::vector<MapPoint*> mvpMatches12;
-    std::vector<size_t> mvnIndices1;
-    std::vector<size_t> mvSigmaSquare1;
-    std::vector<size_t> mvSigmaSquare2;
-    std::vector<size_t> mvnMaxError1;
-    std::vector<size_t> mvnMaxError2;
+  // Indices for random selection
+  std::vector<size_t> mvAllIndices;
 
-    int N;
-    int mN1;
+  // Projections
+  std::vector<Eigen::Vector2f> mvP1im1;
+  std::vector<Eigen::Vector2f> mvP2im2;
 
-    // Current Estimation
-    Eigen::Matrix3f mR12i;
-    Eigen::Vector3f mt12i;
-    float ms12i;
-    Eigen::Matrix4f mT12i;
-    Eigen::Matrix4f mT21i;
-    std::vector<bool> mvbInliersi;
-    int mnInliersi;
+  // RANSAC probability
+  double mRansacProb;
 
-    // Current Ransac State
-    int mnIterations;
-    std::vector<bool> mvbBestInliers;
-    int mnBestInliers;
-    Eigen::Matrix4f mBestT12;
-    Eigen::Matrix3f mBestRotation;
-    Eigen::Vector3f mBestTranslation;
-    float mBestScale;
+  // RANSAC min inliers
+  int mRansacMinInliers;
 
-    // Scale is fixed to 1 in the stereo/RGBD case
-    bool mbFixScale;
+  // RANSAC max iterations
+  int mRansacMaxIts;
 
-    // Indices for random selection
-    std::vector<size_t> mvAllIndices;
+  // Threshold inlier/outlier. e = dist(Pi,T_ij*Pj)^2 < 5.991*mSigma2
+  float mTh;
+  float mSigma2;
 
-    // Projections
-    std::vector<Eigen::Vector2f> mvP1im1;
-    std::vector<Eigen::Vector2f> mvP2im2;
+  // Calibration
+  //cv::Mat mK1;
+  //cv::Mat mK2;
 
-    // RANSAC probability
-    double mRansacProb;
-
-    // RANSAC min inliers
-    int mRansacMinInliers;
-
-    // RANSAC max iterations
-    int mRansacMaxIts;
-
-    // Threshold inlier/outlier. e = dist(Pi,T_ij*Pj)^2 < 5.991*mSigma2
-    float mTh;
-    float mSigma2;
-
-    // Calibration
-    //cv::Mat mK1;
-    //cv::Mat mK2;
-
-    GeometricCamera* pCamera1, *pCamera2;
-
+  GeometricCamera *pCamera1, *pCamera2;
 };
 
-} //namespace ORB_SLAM
+}  // namespace ORB_SLAM3
 
-#endif // SIM3SOLVER_H
+#endif  // SIM3SOLVER_H
