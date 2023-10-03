@@ -89,6 +89,7 @@ int main(int argc, char** argv) {
   // process frames.
   ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, true);
   float imageScale = SLAM.GetImageScale();
+  //SLAM.ActivateLocalizationMode();
 
   double t_resize = 0.f;
   double t_track = 0.f;
@@ -188,7 +189,7 @@ int main(int argc, char** argv) {
 
       if (ttrack < T) {
         // std::cout << "usleep: " << (dT-ttrack) << std::endl;
-        usleep((T - ttrack) * 1e6);  // 1e6
+        //usleep((T - ttrack) * 1e6);  // 1e6
       }
     }
 
