@@ -15,6 +15,7 @@ find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/orb_slam3)
+SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2/lib:${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/g2o/lib")
 
 include_directories(
   ${PROJECT_SOURCE_DIR}
@@ -30,7 +31,7 @@ include_directories(
 
 add_executable(ros_mono src/ros_mono.cpp)
 ament_target_dependencies(ros_mono rclcpp cv_bridge OpenCV)
-target_link_libraries(ros_mono ORB_SLAM3 ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/g2o/lib/libg2o.so)
+target_link_libraries(ros_mono ORB_SLAM3 DBoW2)
 install(TARGETS ros_mono
   DESTINATION lib/${PROJECT_NAME})
 

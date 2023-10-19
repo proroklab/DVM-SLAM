@@ -10,7 +10,7 @@ class ImageGrabber : public rclcpp::Node {
 public:
   ImageGrabber() : Node("image_grabber") {
     image_subscriber_ = this->create_subscription<sensor_msgs::msg::Image>(
-        "/Mavic_2_PRO/camera/image_color", 1,
+        "/Tiago_Lite/Astra_rgb/image_color", 1,
         std::bind(&ImageGrabber::grab_image, this, std::placeholders::_1));
 
     pSLAM = new ORB_SLAM3::System(voc_file, settings_file,
