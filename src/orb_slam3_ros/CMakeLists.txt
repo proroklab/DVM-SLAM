@@ -16,20 +16,21 @@ find_package(cv_bridge REQUIRED)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/orb_slam3)
 
-add_executable(my_node src/my_node.cpp)
-target_include_directories(my_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-target_compile_features(my_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-install(TARGETS my_node
-  DESTINATION lib/${PROJECT_NAME})
+include_directories(
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_SOURCE_DIR}/orb_slam3
+  ${PROJECT_SOURCE_DIR}/orb_slam3/include
+  ${PROJECT_SOURCE_DIR}/orb_slam3/include/CameraModels
+  ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty
+  ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/Sophus
+  ${EIGEN3_INCLUDE_DIR}
+  ${Pangolin_INCLUDE_DIRS}
+)
 
 add_executable(ros_mono src/ros_mono.cpp)
 ament_target_dependencies(ros_mono rclcpp cv_bridge OpenCV)
-target_include_directories(ros_mono PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-target_compile_features(ros_mono PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_link_libraries(ros_mono ORB_SLAM3 ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/g2o/lib/libg2o.so)
 install(TARGETS ros_mono
   DESTINATION lib/${PROJECT_NAME})
 
