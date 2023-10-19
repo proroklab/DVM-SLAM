@@ -59,7 +59,7 @@ include(${PROJECT_SOURCE_DIR}/Thirdparty/g2o/CMakeLists.txt)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME} STATIC
   src/System.cc
   src/Tracking.cc
   src/LocalMapping.cc
