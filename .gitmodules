@@ -1,0 +1,3 @@
+[submodule "src/orb_slam3_ros/orb_slam3"]
+	path = src/orb_slam3_ros/orb_slam3
+	url = https://github.com/jyjblrd/ORB_SLAM3.git
