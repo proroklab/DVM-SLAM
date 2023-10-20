@@ -48,7 +48,6 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/computers/protos/Monitor.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/computers/protos/ComputerMouse.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/apartment_structure/protos/Door.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/apartment_structure/protos/DoorLever.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/CeilingLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/FloorLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/tables/protos/Table.proto"
@@ -91,8 +90,8 @@ WorldInfo {
   basicTimeStep 16
 }
 Viewpoint {
-  orientation 0.28187354463641345 0.7319211199643912 -0.6203537530991289 1.312688438192836
-  position -6.2490885602395165 -4.610733157290974 2.218434720934336
+  orientation 0.40388020432947885 -0.25547341306672494 -0.8784156850642052 4.327369172714287
+  position 3.6125231753891116 -31.676391019578958 26.374441477988196
   exposure 0.5
   ambientOcclusionRadius 1
 }
@@ -1319,64 +1318,8 @@ Wall {
   size 0.3 3.2 2.4
 }
 Door {
-  translation -6.24 -8.43 0
-  rotation 0 0 1 -1.5707953071795862
-  size 0.3 1 2.4
-  jointAtLeft FALSE
-  frameSize 0.001 0.05 0.05
-  frameAppearance BrushedAluminium {
-  }
-  doorHandle DoorLever {
-    jointAtLeft FALSE
-  }
-}
-Door {
-  translation -3.89 -3.95 0
-  name "door(6)"
-  size 0.3 1 2.4
-  frameSize 0.001 0.05 0.05
-  frameAppearance BrushedAluminium {
-  }
-}
-Door {
-  translation -4.94 -8.43 0
-  rotation 0 0 1 -1.5707953071795862
-  name "door(5)"
-  size 0.3 1 2.4
-  frameSize 0.001 0.05 0.05
-  frameAppearance BrushedAluminium {
-  }
-}
-Door {
-  translation -6.97 -7.24 0
-  rotation 0 0 1 3.14159
-  name "door(3)"
-  size 0.3 1 2.4
-  frameSize 0.001 0.05 0.05
-  frameAppearance BrushedAluminium {
-  }
-}
-Door {
-  translation -0.91 -6.6 0
-  rotation 0 0 1 1.5708
-  name "door(4)"
-  size 0.3 1 2.4
-  frameSize 0.001 0.05 0.05
-  frameAppearance BrushedAluminium {
-  }
-}
-Door {
   translation 0 -7.49 0
   name "door(1)"
-  size 0.3 1 2.4
-  frameSize 0.001 0.05 0.05
-  frameAppearance BrushedAluminium {
-  }
-}
-Door {
-  translation -2.14977 -8.43 0
-  rotation 0 0 1 -1.5707953071795862
-  name "door(2)"
   size 0.3 1 2.4
   frameSize 0.001 0.05 0.05
   frameAppearance BrushedAluminium {
@@ -1900,10 +1843,6 @@ PortraitPainting {
   name "portrait painting(1)"
 }
 LandscapePainting {
-  translation -10.3223 -0.178447 1.62868
-  rotation 0 0 1 -1.5707953071795862
-}
-LandscapePainting {
   translation -2.295442 -4.8501449999999995 1.62868
   rotation 0 0 1 1.5708
   name "landscape painting(1)"
@@ -2071,97 +2010,46 @@ DEF TREES Group {
   ]
 }
 Robot {
-  translation -5.47 -5.65 0.24
+  translation -5.47 -5.65 1.5
+  rotation 0 0 1 1.5708
   children [
-    Camera {
-      translation 0 0.1 1.5
-      width 800
-      height 480
-      antiAliasing TRUE
-      fieldOfView 2.0
-    }
-    HingeJoint {
-      jointParameters HingeJointParameters {
-        axis 0 1 0
-        anchor 0 0 0.025
-      }
-      device [
-        RotationalMotor {
-          name "left wheel motor"
-        }
-      ]
-      endPoint Solid {
-        translation 0 0.045 0.025
-        children [
-          DEF WHEEL Pose {
-            rotation 1 0 0 1.5707996938995747
-            children [
-              Shape {
-                appearance PBRAppearance {
-                  baseColor 1 0 0
-                  roughness 1
-                  metalness 0
-                }
-                geometry Cylinder {
-                  height 0.01
-                  radius 0.025
-                }
-              }
-            ]
-          }
-        ]
-        name "left wheel"
-        boundingObject USE WHEEL
-        physics Physics {
-        }
-      }
-    }
-    HingeJoint {
-      jointParameters HingeJointParameters {
-        axis 0 1 0
-        anchor 0 0 0.025
-      }
-      device [
-        RotationalMotor {
-          name "right wheel motor"
-        }
-      ]
-      endPoint Solid {
-        translation 0 -0.045 0.025
-        children [
-          USE WHEEL
-        ]
-        name "right wheel"
-        boundingObject USE WHEEL
-        physics Physics {
-        }
-      }
-    }
     Pose {
-      translation 0 0 0.0415
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0 0 1
-            roughness 1
+            baseColor 1 0 1
             metalness 0
           }
-          geometry DEF BODY Cylinder {
-            height 0.08
-            radius 0.045
+          geometry Box {
+            size 0.1 0.2 0.12
           }
         }
       ]
     }
+    Pose {
+      translation 0.04 0 0
+      rotation 0 1 0 -1.57
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 1
+            metalness 0
+          }
+          geometry Cone {
+            bottomRadius 0.08
+            height 0.1
+          }
+        }
+      ]
+    }
+    Camera {
+      translation 0.09 0 0
+      fieldOfView 2
+      width 400
+      height 240
+      antiAliasing TRUE
+    }
   ]
-  name "robot"
-  boundingObject Pose {
-    translation 0 0 0.0415
-    children [
-      USE BODY
-    ]
-  }
-  physics Physics {
-  }
   controller "<extern>"
+  supervisor TRUE
 }

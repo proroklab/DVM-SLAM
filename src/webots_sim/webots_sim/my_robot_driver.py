@@ -1,4 +1,5 @@
 import rclpy
+import numpy as np
 from geometry_msgs.msg import Twist
 
 HALF_DISTANCE_BETWEEN_WHEELS = 0.045
@@ -6,37 +7,39 @@ WHEEL_RADIUS = 0.025
 
 class MyRobotDriver:
     def init(self, webots_node, properties):
-        self.__robot = webots_node.robot
+        self.robot = webots_node.robot
+        self.robot_node = webots_node.robot.getSelf()
 
-        self.__camera = self.__robot.getDevice("camera")
-        self.__camera.enable(1)
+        self.camera = self.robot.getDevice("camera")
+        self.camera.enable(1) 
 
-        self.__left_motor = self.__robot.getDevice('left wheel motor')
-        self.__right_motor = self.__robot.getDevice('right wheel motor')
-
-        self.__left_motor.setPosition(float('inf'))
-        self.__left_motor.setVelocity(0)
-
-        self.__right_motor.setPosition(float('inf'))
-        self.__right_motor.setVelocity(0)
-
-        self.__target_twist = Twist()
+        self.target_twist = Twist()
 
         rclpy.init(args=None)
-        self.__node = rclpy.create_node('my_robot_driver')
-        self.__node.create_subscription(Twist, 'cmd_vel', self.__cmd_vel_callback, 1)
+        self.node = rclpy.create_node('my_robot_driver')
+        self.node.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 1)
 
-    def __cmd_vel_callback(self, twist):
-        self.__target_twist = twist
+    def cmd_vel_callback(self, twist):
+        self.target_twist = twist
 
     def step(self):
-        rclpy.spin_once(self.__node, timeout_sec=0)
+        rclpy.spin_once(self.node, timeout_sec=0)
 
-        forward_speed = self.__target_twist.linear.x
-        angular_speed = self.__target_twist.angular.z
+        world_to_robot_rotation_matrix = np.array(self.robot_node.getOrientation()).reshape((3,3))
+        robot_to_world_rotation_matrix = np.transpose(world_to_robot_rotation_matrix)
+        
+        robot_velocity = np.array([
+            self.target_twist.linear.x,
+            self.target_twist.linear.y,
+            self.target_twist.linear.z
+        ])
+        robot_rotation = np.array([
+            self.target_twist.angular.x,
+            self.target_twist.angular.y,
+            self.target_twist.angular.z
+        ])
 
-        command_motor_left = (forward_speed - angular_speed * HALF_DISTANCE_BETWEEN_WHEELS) / WHEEL_RADIUS
-        command_motor_right = (forward_speed + angular_speed * HALF_DISTANCE_BETWEEN_WHEELS) / WHEEL_RADIUS
+        world_velocity = np.dot(world_to_robot_rotation_matrix, robot_velocity)
+        world_rotation = np.dot(world_to_robot_rotation_matrix, robot_rotation)
 
-        self.__left_motor.setVelocity(command_motor_left)
-        self.__right_motor.setVelocity(command_motor_right)
+        self.robot_node.setVelocity(world_velocity.tolist() + world_rotation.tolist())
