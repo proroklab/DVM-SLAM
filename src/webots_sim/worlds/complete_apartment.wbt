@@ -2010,7 +2010,53 @@ DEF TREES Group {
   ]
 }
 Robot {
+  name "robot1"
   translation -5.47 -5.65 1.5
+  rotation 0 0 1 1.5708
+  children [
+    Pose {
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.1 0.2 0.12
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.04 0 0
+      rotation 0 1 0 -1.57
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 1
+            metalness 0
+          }
+          geometry Cone {
+            bottomRadius 0.08
+            height 0.1
+          }
+        }
+      ]
+    }
+    Camera {
+      translation 0.09 0 0
+      fieldOfView 2
+      width 400
+      height 240
+      antiAliasing TRUE
+    }
+  ]
+  controller "<extern>"
+  supervisor TRUE
+}
+Robot {
+  name "robot2"
+  translation -4.47 -5.65 1.5
   rotation 0 0 1 1.5708
   children [
     Pose {

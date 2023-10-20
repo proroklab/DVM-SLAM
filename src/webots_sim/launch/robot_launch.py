@@ -8,26 +8,38 @@ from webots_ros2_driver.webots_controller import WebotsController
 
 def generate_launch_description():
     package_dir = get_package_share_directory('webots_sim')
-    robot_description_path = os.path.join(package_dir, 'resource', 'my_robot.urdf')
+    robot1_description_path = os.path.join(
+        package_dir, 'resource', 'robot1.urdf')
+    robot2_description_path = os.path.join(
+        package_dir, 'resource', 'robot2.urdf')
 
     webots = WebotsLauncher(
         world=os.path.join(package_dir, 'worlds', 'complete_apartment.wbt')
     )
 
-    my_robot_driver = WebotsController(
-        robot_name='robot',
+    robot1_driver = WebotsController(
+        robot_name='robot1',
         parameters=[
-            {'robot_description': robot_description_path},
+            {'robot_description': robot1_description_path},
+        ]
+    )
+
+    robot2_driver = WebotsController(
+        robot_name='robot2',
+        parameters=[
+            {'robot_description': robot2_description_path},
         ]
     )
 
     return LaunchDescription([
         webots,
-        my_robot_driver,
+        robot1_driver,
+        robot2_driver,
         launch.actions.RegisterEventHandler(
             event_handler=launch.event_handlers.OnProcessExit(
                 target_action=webots,
-                on_exit=[launch.actions.EmitEvent(event=launch.events.Shutdown())],
+                on_exit=[launch.actions.EmitEvent(
+                    event=launch.events.Shutdown())],
             )
         )
     ])
