@@ -59,8 +59,6 @@ class ImageViewer(QLabel):
     def mouseMoveEvent(self, event):
         offset = event.pos() - self.initial_mouse_pos
 
-        print("Mouse moved by offset:", offset)
-
         self.twist.angular.y = offset.y()/100
         self.twist.angular.z = -offset.x()/100
 

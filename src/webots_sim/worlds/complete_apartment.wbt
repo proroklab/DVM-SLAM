@@ -2045,9 +2045,9 @@ Robot {
     }
     Camera {
       translation 0.09 0 0
-      fieldOfView 2
-      width 400
-      height 240
+      fieldOfView 2.27
+      width 800
+      height 480
       antiAliasing TRUE
     }
   ]
@@ -2090,9 +2090,9 @@ Robot {
     }
     Camera {
       translation 0.09 0 0
-      fieldOfView 2
-      width 400
-      height 240
+      fieldOfView 2.27
+      width 800
+      height 480
       antiAliasing TRUE
     }
   ]
