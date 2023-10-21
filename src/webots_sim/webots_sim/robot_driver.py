@@ -24,10 +24,14 @@ class RobotDriver:
     def step(self):
         rclpy.spin_once(self.node, timeout_sec=0)
 
-        world_to_robot_rotation_matrix = np.array(
+        rotation_matrix = np.array(
             self.robot_node.getOrientation()).reshape((3, 3))
-        robot_to_world_rotation_matrix = np.transpose(
-            world_to_robot_rotation_matrix)
+
+        # create rotation matrix for only z axis
+        theta = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
+        rotation_z_matrix = np.array([[np.cos(theta), -np.sin(theta), 0],
+                                      [np.sin(theta), np.cos(theta), 0],
+                                      [0, 0, 1]])
 
         robot_velocity = np.array([
             self.target_twist.linear.x,
@@ -40,8 +44,9 @@ class RobotDriver:
             self.target_twist.angular.z
         ])
 
-        world_velocity = np.dot(world_to_robot_rotation_matrix, robot_velocity)
-        world_rotation = np.dot(world_to_robot_rotation_matrix, robot_rotation)
+        world_velocity = np.dot(rotation_matrix, robot_velocity)
+        # only rotate around z axis
+        world_rotation = np.dot(rotation_z_matrix, robot_rotation)
 
         self.robot_node.setVelocity(
             world_velocity.tolist() + world_rotation.tolist())
