@@ -1,4 +1,4 @@
-/*	
+/*
  * File: Random.h
  * Project: DUtils library
  * Author: Dorian Galvez-Lopez
@@ -19,69 +19,64 @@ namespace DUtils {
 
 /// Functions to generate pseudo-random numbers
 class Random {
- public:
+public:
   class UnrepeatedRandomizer;
 
- public:
+public:
   /**
-	 * Sets the random number seed to the current time
-	 */
+   * Sets the random number seed to the current time
+   */
   static void SeedRand();
 
   /**
-	 * Sets the random number seed to the current time only the first
-	 * time this function is called
-	 */
+   * Sets the random number seed to the current time only the first
+   * time this function is called
+   */
   static void SeedRandOnce();
 
-  /** 
-	 * Sets the given random number seed
-	 * @param seed
-	 */
+  /**
+   * Sets the given random number seed
+   * @param seed
+   */
   static void SeedRand(int seed);
 
-  /** 
-	 * Sets the given random number seed only the first time this function 
-	 * is called
-	 * @param seed
-	 */
+  /**
+   * Sets the given random number seed only the first time this function
+   * is called
+   * @param seed
+   */
   static void SeedRandOnce(int seed);
 
   /**
-	 * Returns a random number in the range [0..1]
-	 * @return random T number in [0..1]
-	 */
-  template <class T>
-  static T RandomValue() {
-    return (T)rand() / (T)RAND_MAX;
-  }
+   * Returns a random number in the range [0..1]
+   * @return random T number in [0..1]
+   */
+  template <class T> static T RandomValue() { return (T)rand() / (T)RAND_MAX; }
 
   /**
-	 * Returns a random number in the range [min..max]
-	 * @param min
-	 * @param max
-	 * @return random T number in [min..max]
-	 */
-  template <class T>
-  static T RandomValue(T min, T max) {
+   * Returns a random number in the range [min..max]
+   * @param min
+   * @param max
+   * @return random T number in [min..max]
+   */
+  template <class T> static T RandomValue(T min, T max) {
     return Random::RandomValue<T>() * (max - min) + min;
   }
 
   /**
-	 * Returns a random int in the range [min..max]
-	 * @param min
-	 * @param max
-	 * @return random int in [min..max]
-	 */
+   * Returns a random int in the range [min..max]
+   * @param min
+   * @param max
+   * @return random int in [min..max]
+   */
   static int RandomInt(int min, int max);
 
-  /** 
-	 * Returns a random number from a gaussian distribution
-	 * @param mean
-	 * @param sigma standard deviation
-	 */
-  template <class T>
-  static T RandomGaussianValue(T mean, T sigma) {
+  /**
+   * Returns a random number from a gaussian distribution
+   * @param mean
+   * @param sigma standard deviation
+   */
+  template <class T> static T RandomGaussianValue(T mean, T sigma) {
     // Box-Muller transformation
     T x1, x2, w, y1;
 
@@ -97,7 +92,7 @@ class Random {
     return (mean + y1 * sigma);
   }
 
- private:
+private:
   /// If SeedRandOnce() or SeedRandOnce(int) have already been called
   static bool m_already_seeded;
 };
@@ -106,8 +101,8 @@ class Random {
 
 /// Provides pseudo-random numbers with no repetitions
 class Random::UnrepeatedRandomizer {
- public:
-  /** 
+public:
+  /**
    * Creates a randomizer that returns numbers in the range [min, max]
    * @param min
    * @param max
@@ -119,15 +114,15 @@ class Random::UnrepeatedRandomizer {
    * Copies a randomizer
    * @param rnd
    */
-  UnrepeatedRandomizer(const UnrepeatedRandomizer& rnd);
+  UnrepeatedRandomizer(const UnrepeatedRandomizer &rnd);
 
   /**
    * Copies a randomizer
    * @param rnd
    */
-  UnrepeatedRandomizer& operator=(const UnrepeatedRandomizer& rnd);
+  UnrepeatedRandomizer &operator=(const UnrepeatedRandomizer &rnd);
 
-  /** 
+  /**
    * Returns a random number not given before. If all the possible values
    * were already given, the process starts again
    * @return unrepeated random number
@@ -153,13 +148,13 @@ class Random::UnrepeatedRandomizer {
    */
   void reset();
 
- protected:
-  /** 
+protected:
+  /**
    * Creates the vector with available values
    */
   void createValues();
 
- protected:
+protected:
   /// Min of range of values
   int m_min;
   /// Max of range of values
@@ -169,6 +164,6 @@ class Random::UnrepeatedRandomizer {
   std::vector<int> m_values;
 };
 
-}  // namespace DUtils
+} // namespace DUtils
 
 #endif

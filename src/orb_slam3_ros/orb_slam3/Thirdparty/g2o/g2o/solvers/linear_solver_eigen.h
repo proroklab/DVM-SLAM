@@ -49,24 +49,25 @@ namespace g2o {
  */
 template <typename MatrixType>
 class LinearSolverEigen : public LinearSolver<MatrixType> {
- public:
+public:
   typedef Eigen::SparseMatrix<double, Eigen::ColMajor> SparseMatrix;
   typedef Eigen::Triplet<double> Triplet;
   typedef Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic, int>
       PermutationMatrix;
   /**
-     * \brief Sub-classing Eigen's SimplicialLDLT to perform ordering with a given ordering
-     */
+   * \brief Sub-classing Eigen's SimplicialLDLT to perform ordering with a given
+   * ordering
+   */
   class CholeskyDecomposition
       : public Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper> {
-   public:
+  public:
     CholeskyDecomposition()
         : Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper>() {}
     using Eigen::SimplicialLDLT<SparseMatrix,
                                 Eigen::Upper>::analyzePattern_preordered;
 
-    void analyzePatternWithPermutation(SparseMatrix& a,
-                                       const PermutationMatrix& permutation) {
+    void analyzePatternWithPermutation(SparseMatrix &a,
+                                       const PermutationMatrix &permutation) {
       m_Pinv = permutation;
       m_P = permutation.inverse();
       int size = a.cols();
@@ -77,11 +78,9 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
     }
   };
 
- public:
+public:
   LinearSolverEigen()
-      : LinearSolver<MatrixType>(),
-        _init(true),
-        _blockOrdering(false),
+      : LinearSolver<MatrixType>(), _init(true), _blockOrdering(false),
         _writeDebug(false) {}
 
   virtual ~LinearSolverEigen() {}
@@ -91,18 +90,18 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
     return true;
   }
 
-  bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b) {
+  bool solve(const SparseBlockMatrix<MatrixType> &A, double *x, double *b) {
     if (_init)
       _sparseMatrix.resize(A.rows(), A.cols());
     fillSparseMatrix(A, !_init);
-    if (_init)  // compute the symbolic composition once
+    if (_init) // compute the symbolic composition once
       computeSymbolicDecomposition(A);
     _init = false;
 
     double t = get_monotonic_time();
     _cholesky.factorize(_sparseMatrix);
     if (_cholesky.info() !=
-        Eigen::Success) {  // the matrix is not positive definite
+        Eigen::Success) { // the matrix is not positive definite
       if (_writeDebug) {
         std::cerr << "Cholesky failure, writing debug.txt (Hessian loadable by "
                      "Octave)"
@@ -116,12 +115,12 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
     VectorXD::MapType xx(x, _sparseMatrix.cols());
     VectorXD::ConstMapType bb(b, _sparseMatrix.cols());
     xx = _cholesky.solve(bb);
-    G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+    G2OBatchStatistics *globalStats = G2OBatchStatistics::globalStats();
     if (globalStats) {
       globalStats->timeNumericDecomposition = get_monotonic_time() - t;
       globalStats->choleskyNNZ =
           _cholesky.matrixL().nestedExpression().nonZeros() +
-          _sparseMatrix.cols();  // the elements of D
+          _sparseMatrix.cols(); // the elements of D
     }
 
     return true;
@@ -135,7 +134,7 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
   virtual bool writeDebug() const { return _writeDebug; }
   virtual void setWriteDebug(bool b) { _writeDebug = b; }
 
- protected:
+protected:
   bool _init;
   bool _blockOrdering;
   bool _writeDebug;
@@ -143,31 +142,31 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
   CholeskyDecomposition _cholesky;
 
   /**
-     * compute the symbolic decompostion of the matrix only once.
-     * Since A has the same pattern in all the iterations, we only
-     * compute the fill-in reducing ordering once and re-use for all
-     * the following iterations.
-     */
-  void computeSymbolicDecomposition(const SparseBlockMatrix<MatrixType>& A) {
+   * compute the symbolic decompostion of the matrix only once.
+   * Since A has the same pattern in all the iterations, we only
+   * compute the fill-in reducing ordering once and re-use for all
+   * the following iterations.
+   */
+  void computeSymbolicDecomposition(const SparseBlockMatrix<MatrixType> &A) {
     double t = get_monotonic_time();
     if (!_blockOrdering) {
       _cholesky.analyzePattern(_sparseMatrix);
     } else {
       // block ordering with the Eigen Interface
-      // This is really ugly currently, as it calls internal functions from Eigen
-      // and modifies the SparseMatrix class
+      // This is really ugly currently, as it calls internal functions from
+      // Eigen and modifies the SparseMatrix class
       Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> blockP;
       {
         // prepare a block structure matrix for calling AMD
         std::vector<Triplet> triplets;
         for (size_t c = 0; c < A.blockCols().size(); ++c) {
-          const typename SparseBlockMatrix<MatrixType>::IntBlockMap& column =
+          const typename SparseBlockMatrix<MatrixType>::IntBlockMap &column =
               A.blockCols()[c];
           for (typename SparseBlockMatrix<
                    MatrixType>::IntBlockMap::const_iterator it = column.begin();
                it != column.end(); ++it) {
-            const int& r = it->first;
-            if (r > static_cast<int>(c))  // only upper triangle
+            const int &r = it->first;
+            if (r > static_cast<int>(c)) // only upper triangle
               break;
             triplets.push_back(Triplet(r, c, 0.));
           }
@@ -190,7 +189,7 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
       scalarP.resize(rows);
       int scalarIdx = 0;
       for (int i = 0; i < blockP.size(); ++i) {
-        const int& p = blockP.indices()(i);
+        const int &p = blockP.indices()(i);
         int base = A.colBaseOfBlock(p);
         int nCols = A.colsOfBlock(p);
         for (int j = 0; j < nCols; ++j)
@@ -201,12 +200,12 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
       // analyze with the scalar permutation
       _cholesky.analyzePatternWithPermutation(_sparseMatrix, scalarP);
     }
-    G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+    G2OBatchStatistics *globalStats = G2OBatchStatistics::globalStats();
     if (globalStats)
       globalStats->timeSymbolicDecomposition = get_monotonic_time() - t;
   }
 
-  void fillSparseMatrix(const SparseBlockMatrix<MatrixType>& A,
+  void fillSparseMatrix(const SparseBlockMatrix<MatrixType> &A,
                         bool onlyValues) {
     if (onlyValues) {
       A.fillCCS(_sparseMatrix.valuePtr(), true);
@@ -217,13 +216,13 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
       triplets.reserve(A.nonZeros());
       for (size_t c = 0; c < A.blockCols().size(); ++c) {
         int colBaseOfBlock = A.colBaseOfBlock(c);
-        const typename SparseBlockMatrix<MatrixType>::IntBlockMap& column =
+        const typename SparseBlockMatrix<MatrixType>::IntBlockMap &column =
             A.blockCols()[c];
         for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator
                  it = column.begin();
              it != column.end(); ++it) {
           int rowBaseOfBlock = A.rowBaseOfBlock(it->first);
-          const MatrixType& m = *(it->second);
+          const MatrixType &m = *(it->second);
           for (int cc = 0; cc < m.cols(); ++cc) {
             int aux_c = colBaseOfBlock + cc;
             for (int rr = 0; rr < m.rows(); ++rr) {
@@ -240,6 +239,6 @@ class LinearSolverEigen : public LinearSolver<MatrixType> {
   }
 };
 
-}  // namespace g2o
+} // namespace g2o
 
 #endif

@@ -10,10 +10,10 @@
 #ifndef __D_T_FEATURE_VECTOR__
 #define __D_T_FEATURE_VECTOR__
 
+#include "BowVector.h"
 #include <iostream>
 #include <map>
 #include <vector>
-#include "BowVector.h"
 
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -23,13 +23,12 @@ namespace DBoW2 {
 /// Vector of nodes with indexes of local features
 class FeatureVector : public std::map<NodeId, std::vector<unsigned int>> {
   friend class boost::serialization::access;
-  template <class Archive>
-  void serialize(Archive& ar, const int version) {
-    ar& boost::serialization::base_object<
+  template <class Archive> void serialize(Archive &ar, const int version) {
+    ar &boost::serialization::base_object<
         std::map<NodeId, std::vector<unsigned int>>>(*this);
   }
 
- public:
+public:
   /**
    * Constructor
    */
@@ -53,9 +52,9 @@ class FeatureVector : public std::map<NodeId, std::vector<unsigned int>> {
    * @param out stream
    * @param v feature vector
    */
-  friend std::ostream& operator<<(std::ostream& out, const FeatureVector& v);
+  friend std::ostream &operator<<(std::ostream &out, const FeatureVector &v);
 };
 
-}  // namespace DBoW2
+} // namespace DBoW2
 
 #endif

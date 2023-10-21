@@ -70,7 +70,7 @@ void BowVector::normalize(LNorm norm_type) {
 
 // --------------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream& out, const BowVector& v) {
+std::ostream &operator<<(std::ostream &out, const BowVector &v) {
   BowVector::const_iterator vit;
   std::vector<unsigned int>::const_iterator iit;
   unsigned int i = 0;
@@ -86,7 +86,7 @@ std::ostream& operator<<(std::ostream& out, const BowVector& v) {
 
 // --------------------------------------------------------------------------
 
-void BowVector::saveM(const std::string& filename, size_t W) const {
+void BowVector::saveM(const std::string &filename, size_t W) const {
   std::fstream f(filename.c_str(), std::ios::out);
 
   WordId last = 0;
@@ -107,4 +107,4 @@ void BowVector::saveM(const std::string& filename, size_t W) const {
 
 // --------------------------------------------------------------------------
 
-}  // namespace DBoW2
+} // namespace DBoW2

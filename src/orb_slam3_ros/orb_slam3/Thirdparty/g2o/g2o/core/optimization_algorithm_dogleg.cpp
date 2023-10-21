@@ -39,7 +39,7 @@ using namespace std;
 namespace g2o {
 
 OptimizationAlgorithmDogleg::OptimizationAlgorithmDogleg(
-    BlockSolverBase* solver)
+    BlockSolverBase *solver)
     : OptimizationAlgorithmWithHessian(solver) {
   _userDeltaInit =
       _properties.makeProperty<Property<double>>("initialDelta", 1e4);
@@ -56,18 +56,18 @@ OptimizationAlgorithmDogleg::OptimizationAlgorithmDogleg(
 
 OptimizationAlgorithmDogleg::~OptimizationAlgorithmDogleg() {}
 
-OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(
-    int iteration, bool online) {
+OptimizationAlgorithm::SolverResult
+OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
   assert(_optimizer && "_optimizer not set");
   assert(_solver->optimizer() == _optimizer &&
          "underlying linear solver operates on different graph");
-  assert(dynamic_cast<BlockSolverBase*>(_solver) &&
+  assert(dynamic_cast<BlockSolverBase *>(_solver) &&
          "underlying linear solver is not a block solver");
 
-  BlockSolverBase* blockSolver = static_cast<BlockSolverBase*>(_solver);
+  BlockSolverBase *blockSolver = static_cast<BlockSolverBase *>(_solver);
 
   if (iteration == 0 &&
-      !online) {  // built up the CCS structure, here due to easy time measure
+      !online) { // built up the CCS structure, here due to easy time measure
     bool ok = _solver->buildStructure();
     if (!ok) {
       cerr << __PRETTY_FUNCTION__ << ": Failure while building CCS structure"
@@ -86,7 +86,7 @@ OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(
 
   double t = get_monotonic_time();
   _optimizer->computeActiveErrors();
-  G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+  G2OBatchStatistics *globalStats = G2OBatchStatistics::globalStats();
   if (globalStats) {
     globalStats->timeResiduals = get_monotonic_time() - t;
     t = get_monotonic_time();
@@ -113,7 +113,7 @@ OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(
 
   bool solvedGaussNewton = false;
   bool goodStep = false;
-  int& numTries = _lastNumTries;
+  int &numTries = _lastNumTries;
   numTries = 0;
   do {
     ++numTries;
@@ -122,14 +122,14 @@ OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(
       const double minLambda = 1e-12;
       const double maxLambda = 1e3;
       solvedGaussNewton = true;
-      // apply a damping factor to enforce positive definite Hessian, if the matrix appeared
-      // to be not positive definite in at least one iteration before.
-      // We apply a damping factor to obtain a PD matrix.
+      // apply a damping factor to enforce positive definite Hessian, if the
+      // matrix appeared to be not positive definite in at least one iteration
+      // before. We apply a damping factor to obtain a PD matrix.
       bool solverOk = false;
       while (!solverOk) {
         if (!_wasPDInAllIterations)
           _solver->setLambda(_currentLambda,
-                             true);  // add _currentLambda to the diagonal
+                             true); // add _currentLambda to the diagonal
         solverOk = _solver->solve();
         if (!_wasPDInAllIterations)
           _solver->restoreDiagonal();
@@ -166,7 +166,7 @@ OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(
       _hdl = _delta / hsdNorm * _hsd;
       _lastStep = STEP_SD;
     } else {
-      _auxVector = hgn - _hsd;  // b - a
+      _auxVector = hgn - _hsd; // b - a
       double c = _hsd.dot(_auxVector);
       double bmaSquaredNorm = _auxVector.squaredNorm();
       double beta;
@@ -201,11 +201,12 @@ OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(
     if (fabs(linearGain) < 1e-12)
       linearGain = 1e-12;
     double rho = nonLinearGain / linearGain;
-    //cerr << PVAR(nonLinearGain) << " " << PVAR(linearGain) << " " << PVAR(rho) << endl;
-    if (rho > 0) {  // step is good and will be accepted
+    // cerr << PVAR(nonLinearGain) << " " << PVAR(linearGain) << " " <<
+    // PVAR(rho) << endl;
+    if (rho > 0) { // step is good and will be accepted
       _optimizer->discardTop();
       goodStep = true;
-    } else {  // recover previous state
+    } else { // recover previous state
       _optimizer->pop();
     }
 
@@ -220,24 +221,24 @@ OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(
   return OK;
 }
 
-void OptimizationAlgorithmDogleg::printVerbose(std::ostream& os) const {
+void OptimizationAlgorithmDogleg::printVerbose(std::ostream &os) const {
   os << "\t Delta= " << _delta << "\t step= " << stepType2Str(_lastStep)
      << "\t tries= " << _lastNumTries;
   if (!_wasPDInAllIterations)
     os << "\t lambda= " << _currentLambda;
 }
 
-const char* OptimizationAlgorithmDogleg::stepType2Str(int stepType) {
+const char *OptimizationAlgorithmDogleg::stepType2Str(int stepType) {
   switch (stepType) {
-    case STEP_SD:
-      return "Descent";
-    case STEP_GN:
-      return "GN";
-    case STEP_DL:
-      return "Dogleg";
-    default:
-      return "Undefined";
+  case STEP_SD:
+    return "Descent";
+  case STEP_GN:
+    return "GN";
+  case STEP_DL:
+    return "Dogleg";
+  default:
+    return "Undefined";
   }
 }
 
-}  // namespace g2o
+} // namespace g2o

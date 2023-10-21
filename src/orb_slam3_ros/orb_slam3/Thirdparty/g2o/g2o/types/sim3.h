@@ -27,8 +27,8 @@
 #ifndef G2O_SIM_3
 #define G2O_SIM_3
 
-#include <Eigen/Geometry>
 #include "se3_ops.h"
+#include <Eigen/Geometry>
 
 namespace g2o {
 using namespace Eigen;
@@ -39,24 +39,24 @@ typedef Matrix<double, 7, 7> Matrix7d;
 struct Sim3 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
- protected:
+protected:
   Quaterniond r;
   Vector3d t;
   double s;
 
- public:
+public:
   Sim3() {
     r.setIdentity();
     t.fill(0.);
     s = 1.;
   }
 
-  Sim3(const Quaterniond& r, const Vector3d& t, double s) : r(r), t(t), s(s) {}
+  Sim3(const Quaterniond &r, const Vector3d &t, double s) : r(r), t(t), s(s) {}
 
-  Sim3(const Matrix3d& R, const Vector3d& t, double s)
+  Sim3(const Matrix3d &R, const Vector3d &t, double s)
       : r(Quaterniond(R)), t(t), s(s) {}
 
-  Sim3(const Vector7d& update) {
+  Sim3(const Vector7d &update) {
 
     Vector3d omega;
     for (int i = 0; i < 3; i++)
@@ -117,7 +117,7 @@ struct Sim3 {
     t = W * upsilon;
   }
 
-  Vector3d map(const Vector3d& xyz) const { return s * (r * xyz) + t; }
+  Vector3d map(const Vector3d &xyz) const { return s * (r * xyz) + t; }
 
   Vector7d log() const {
     Vector7d res;
@@ -203,7 +203,7 @@ struct Sim3 {
     return s;
   }
 
-  double& operator[](int i) {
+  double &operator[](int i) {
     assert(i < 8);
     if (i < 4) {
 
@@ -215,7 +215,7 @@ struct Sim3 {
     return s;
   }
 
-  Sim3 operator*(const Sim3& other) const {
+  Sim3 operator*(const Sim3 &other) const {
     Sim3 ret;
     ret.r = r * other.r;
     ret.t = s * (r * other.t) + t;
@@ -223,26 +223,26 @@ struct Sim3 {
     return ret;
   }
 
-  Sim3& operator*=(const Sim3& other) {
+  Sim3 &operator*=(const Sim3 &other) {
     Sim3 ret = (*this) * other;
     *this = ret;
     return *this;
   }
 
-  inline const Vector3d& translation() const { return t; }
+  inline const Vector3d &translation() const { return t; }
 
-  inline Vector3d& translation() { return t; }
+  inline Vector3d &translation() { return t; }
 
-  inline const Quaterniond& rotation() const { return r; }
+  inline const Quaterniond &rotation() const { return r; }
 
-  inline Quaterniond& rotation() { return r; }
+  inline Quaterniond &rotation() { return r; }
 
-  inline const double& scale() const { return s; }
+  inline const double &scale() const { return s; }
 
-  inline double& scale() { return s; }
+  inline double &scale() { return s; }
 };
 
-inline std::ostream& operator<<(std::ostream& out_str, const Sim3& sim3) {
+inline std::ostream &operator<<(std::ostream &out_str, const Sim3 &sim3) {
   out_str << sim3.rotation().coeffs() << std::endl;
   out_str << sim3.translation() << std::endl;
   out_str << sim3.scale() << std::endl;
@@ -250,6 +250,6 @@ inline std::ostream& operator<<(std::ostream& out_str, const Sim3& sim3) {
   return out_str;
 }
 
-}  // namespace g2o
+} // namespace g2o
 
 #endif

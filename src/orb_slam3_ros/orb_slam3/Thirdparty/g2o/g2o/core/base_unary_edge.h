@@ -41,7 +41,7 @@ using namespace Eigen;
 
 template <int D, typename E, typename VertexXi>
 class BaseUnaryEdge : public BaseEdge<D, E> {
- public:
+public:
   static const int Dimension = BaseEdge<D, E>::Dimension;
   typedef typename BaseEdge<D, E>::Measurement Measurement;
   typedef VertexXi VertexXiType;
@@ -59,32 +59,33 @@ class BaseUnaryEdge : public BaseEdge<D, E> {
 
   virtual bool allVerticesFixed() const;
 
-  virtual void linearizeOplus(JacobianWorkspace& jacobianWorkspace);
+  virtual void linearizeOplus(JacobianWorkspace &jacobianWorkspace);
 
   /**
-       * Linearizes the oplus operator in the vertex, and stores
-       * the result in temporary variables _jacobianOplusXi and _jacobianOplusXj
-       */
+   * Linearizes the oplus operator in the vertex, and stores
+   * the result in temporary variables _jacobianOplusXi and _jacobianOplusXj
+   */
   virtual void linearizeOplus();
 
-  //! returns the result of the linearization in the manifold space for the node xi
-  const JacobianXiOplusType& jacobianOplusXi() const {
+  //! returns the result of the linearization in the manifold space for the node
+  //! xi
+  const JacobianXiOplusType &jacobianOplusXi() const {
     return _jacobianOplusXi;
   }
 
   virtual void constructQuadraticForm();
 
-  virtual void initialEstimate(const OptimizableGraph::VertexSet& from,
-                               OptimizableGraph::Vertex* to);
+  virtual void initialEstimate(const OptimizableGraph::VertexSet &from,
+                               OptimizableGraph::Vertex *to);
 
-  virtual void mapHessianMemory(double*, int, int, bool) {
+  virtual void mapHessianMemory(double *, int, int, bool) {
     assert(0 && "BaseUnaryEdge does not map memory of the Hessian");
   }
 
   using BaseEdge<D, E>::resize;
   using BaseEdge<D, E>::computeError;
 
- protected:
+protected:
   using BaseEdge<D, E>::_measurement;
   using BaseEdge<D, E>::_information;
   using BaseEdge<D, E>::_error;
@@ -93,12 +94,12 @@ class BaseUnaryEdge : public BaseEdge<D, E> {
 
   JacobianXiOplusType _jacobianOplusXi;
 
- public:
+public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #include "base_unary_edge.hpp"
 
-}  // end namespace g2o
+} // end namespace g2o
 
 #endif

@@ -1,20 +1,23 @@
 /**
-* This file is part of ORB-SLAM3
-*
-* Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-* Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-*
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-* License as published by the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-* the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of ORB-SLAM3
+ *
+ * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez
+ * Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+ * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós,
+ * University of Zaragoza.
+ *
+ * ORB-SLAM3 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "Viewer.h"
 #include <pangolin/pangolin.h>
@@ -23,18 +26,12 @@
 
 namespace ORB_SLAM3 {
 
-Viewer::Viewer(System* pSystem, FrameDrawer* pFrameDrawer,
-               MapDrawer* pMapDrawer, Tracking* pTracking,
-               const string& strSettingPath, Settings* settings)
-    : both(false),
-      mpSystem(pSystem),
-      mpFrameDrawer(pFrameDrawer),
-      mpMapDrawer(pMapDrawer),
-      mpTracker(pTracking),
-      mbFinishRequested(false),
-      mbFinished(true),
-      mbStopped(true),
-      mbStopRequested(false) {
+Viewer::Viewer(System *pSystem, FrameDrawer *pFrameDrawer,
+               MapDrawer *pMapDrawer, Tracking *pTracking,
+               const string &strSettingPath, Settings *settings)
+    : both(false), mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),
+      mpMapDrawer(pMapDrawer), mpTracker(pTracking), mbFinishRequested(false),
+      mbFinished(true), mbStopped(true), mbStopRequested(false) {
   if (settings) {
     newParameterLoader(settings);
   } else {
@@ -48,14 +45,15 @@ Viewer::Viewer(System* pSystem, FrameDrawer* pFrameDrawer,
                 << std::endl;
       try {
         throw -1;
-      } catch (exception& e) {}
+      } catch (exception &e) {
+      }
     }
   }
 
   mbStopTrack = false;
 }
 
-void Viewer::newParameterLoader(Settings* settings) {
+void Viewer::newParameterLoader(Settings *settings) {
   mImageViewerScale = 1.f;
 
   float fps = settings->fps();
@@ -74,7 +72,7 @@ void Viewer::newParameterLoader(Settings* settings) {
   mViewpointF = settings->viewPointF();
 }
 
-bool Viewer::ParseViewerParamFile(cv::FileStorage& fSettings) {
+bool Viewer::ParseViewerParamFile(cv::FileStorage &fSettings) {
   bool b_miss_params = false;
   mImageViewerScale = 1.f;
 
@@ -180,7 +178,7 @@ void Viewer::Run() {
   pangolin::Var<bool> menuReset("menu.Reset", false, false);
   pangolin::Var<bool> menuStop("menu.Stop", false, false);
   pangolin::Var<bool> menuStepByStep("menu.Step By Step", false,
-                                     true);  // false, true
+                                     true); // false, true
   pangolin::Var<bool> menuStep("menu.Step", false, false);
 
   pangolin::Var<bool> menuShowOptLba("menu.Show LBA opt", false, true);
@@ -192,14 +190,14 @@ void Viewer::Run() {
                                 0.0, -1.0, 0.0));
 
   // Add named OpenGL viewport to window and provide 3D Handler
-  pangolin::View& d_cam = pangolin::CreateDisplay()
+  pangolin::View &d_cam = pangolin::CreateDisplay()
                               .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175),
                                          1.0, -1024.0f / 768.0f)
                               .SetHandler(new pangolin::Handler3D(s_cam));
 
   pangolin::OpenGlMatrix Twc, Twr;
   Twc.SetIdentity();
-  pangolin::OpenGlMatrix Ow;  // Oriented with g in the z axis
+  pangolin::OpenGlMatrix Ow; // Oriented with g in the z axis
   Ow.SetIdentity();
   cv::namedWindow("ORB-SLAM3: Current Frame");
 
@@ -280,7 +278,7 @@ void Viewer::Run() {
     }
 
     if (menuStepByStep && !bStepByStep) {
-      //cout << "Viewer: step by step" << endl;
+      // cout << "Viewer: step by step" << endl;
       mpTracker->SetStepByStep(true);
       bStepByStep = true;
     } else if (!menuStepByStep && bStepByStep) {
@@ -421,4 +419,4 @@ void Viewer::Release() {
     mbStopTrack = true;
 }*/
 
-}  // namespace ORB_SLAM3
+} // namespace ORB_SLAM3

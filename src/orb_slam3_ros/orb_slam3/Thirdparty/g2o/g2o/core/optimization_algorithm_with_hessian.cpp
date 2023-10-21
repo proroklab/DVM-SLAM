@@ -36,7 +36,7 @@ using namespace std;
 namespace g2o {
 
 OptimizationAlgorithmWithHessian::OptimizationAlgorithmWithHessian(
-    Solver* solver)
+    Solver *solver)
     : OptimizationAlgorithm(), _solver(solver) {
   _writeDebug = _properties.makeProperty<Property<bool>>("writeDebug", true);
 }
@@ -53,7 +53,7 @@ bool OptimizationAlgorithmWithHessian::init(bool online) {
   for (OptimizableGraph::VertexContainer::const_iterator it =
            _optimizer->activeVertices().begin();
        it != _optimizer->activeVertices().end(); ++it) {
-    OptimizableGraph::Vertex* v = *it;
+    OptimizableGraph::Vertex *v = *it;
     if (v->marginalized()) {
       useSchur = true;
       break;
@@ -72,8 +72,8 @@ bool OptimizationAlgorithmWithHessian::init(bool online) {
 }
 
 bool OptimizationAlgorithmWithHessian::computeMarginals(
-    SparseBlockMatrix<MatrixXd>& spinv,
-    const std::vector<std::pair<int, int>>& blockIndices) {
+    SparseBlockMatrix<MatrixXd> &spinv,
+    const std::vector<std::pair<int, int>> &blockIndices) {
   return _solver ? _solver->computeMarginals(spinv, blockIndices) : false;
 }
 
@@ -87,8 +87,8 @@ void OptimizationAlgorithmWithHessian::updateLinearSystem() {
 }
 
 bool OptimizationAlgorithmWithHessian::updateStructure(
-    const std::vector<HyperGraph::Vertex*>& vset,
-    const HyperGraph::EdgeSet& edges) {
+    const std::vector<HyperGraph::Vertex *> &vset,
+    const HyperGraph::EdgeSet &edges) {
   return _solver ? _solver->updateStructure(vset, edges) : false;
 }
 
@@ -96,4 +96,4 @@ void OptimizationAlgorithmWithHessian::setWriteDebug(bool writeDebug) {
   _writeDebug->setValue(writeDebug);
 }
 
-}  // namespace g2o
+} // namespace g2o

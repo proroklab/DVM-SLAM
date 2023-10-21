@@ -1,62 +1,62 @@
 /**
-* This file is part of ORB-SLAM3
-*
-* Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-* Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-*
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-* License as published by the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-* the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of ORB-SLAM3
+ *
+ * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez
+ * Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+ * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós,
+ * University of Zaragoza.
+ *
+ * ORB-SLAM3 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /******************************************************************************
-* Author:   Steffen Urban                                              *
-* Contact:  urbste@gmail.com                                          *
-* License:  Copyright (c) 2016 Steffen Urban, ANU. All rights reserved.      *
-*                                                                            *
-* Redistribution and use in source and binary forms, with or without         *
-* modification, are permitted provided that the following conditions         *
-* are met:                                                                   *
-* * Redistributions of source code must retain the above copyright           *
-*   notice, this list of conditions and the following disclaimer.            *
-* * Redistributions in binary form must reproduce the above copyright        *
-*   notice, this list of conditions and the following disclaimer in the      *
-*   documentation and/or other materials provided with the distribution.     *
-* * Neither the name of ANU nor the names of its contributors may be         *
-*   used to endorse or promote products derived from this software without   *
-*   specific prior written permission.                                       *
-*                                                                            *
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"*
-* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE  *
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE *
-* ARE DISCLAIMED. IN NO EVENT SHALL ANU OR THE CONTRIBUTORS BE LIABLE        *
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL *
-* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR *
-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER *
-* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT         *
-* LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY  *
-* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF     *
-* SUCH DAMAGE.                                                               *
-******************************************************************************/
+ * Author:   Steffen Urban                                              *
+ * Contact:  urbste@gmail.com                                          *
+ * License:  Copyright (c) 2016 Steffen Urban, ANU. All rights reserved.      *
+ *                                                                            *
+ * Redistribution and use in source and binary forms, with or without         *
+ * modification, are permitted provided that the following conditions         *
+ * are met:                                                                   *
+ * * Redistributions of source code must retain the above copyright           *
+ *   notice, this list of conditions and the following disclaimer.            *
+ * * Redistributions in binary form must reproduce the above copyright        *
+ *   notice, this list of conditions and the following disclaimer in the      *
+ *   documentation and/or other materials provided with the distribution.     *
+ * * Neither the name of ANU nor the names of its contributors may be         *
+ *   used to endorse or promote products derived from this software without   *
+ *   specific prior written permission.                                       *
+ *                                                                            *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"*
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE  *
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE *
+ * ARE DISCLAIMED. IN NO EVENT SHALL ANU OR THE CONTRIBUTORS BE LIABLE        *
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL *
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR *
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER *
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT         *
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY  *
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF     *
+ * SUCH DAMAGE.                                                               *
+ ******************************************************************************/
 
 #include "MLPnPsolver.h"
 
 #include <Eigen/Sparse>
 
 namespace ORB_SLAM3 {
-MLPnPsolver::MLPnPsolver(const Frame& F,
-                         const vector<MapPoint*>& vpMapPointMatches)
-    : mnInliersi(0),
-      mnIterations(0),
-      mnBestInliers(0),
-      N(0),
+MLPnPsolver::MLPnPsolver(const Frame &F,
+                         const vector<MapPoint *> &vpMapPointMatches)
+    : mnInliersi(0), mnIterations(0), mnBestInliers(0), N(0),
       mpCamera(F.mpCamera) {
   mvpMapPointMatches = vpMapPointMatches;
   mvBearingVecs.reserve(F.mvpMapPoints.size());
@@ -68,24 +68,24 @@ MLPnPsolver::MLPnPsolver(const Frame& F,
 
   int idx = 0;
   for (size_t i = 0, iend = mvpMapPointMatches.size(); i < iend; i++) {
-    MapPoint* pMP = vpMapPointMatches[i];
+    MapPoint *pMP = vpMapPointMatches[i];
 
     if (pMP) {
       if (!pMP->isBad()) {
         if (i >= F.mvKeysUn.size())
           continue;
-        const cv::KeyPoint& kp = F.mvKeysUn[i];
+        const cv::KeyPoint &kp = F.mvKeysUn[i];
 
         mvP2D.push_back(kp.pt);
         mvSigma2.push_back(F.mvLevelSigma2[kp.octave]);
 
-        //Bearing vector should be normalized
+        // Bearing vector should be normalized
         cv::Point3f cv_br = mpCamera->unproject(kp.pt);
         cv_br /= cv_br.z;
         bearingVector_t br(cv_br.x, cv_br.y, cv_br.z);
         mvBearingVecs.push_back(br);
 
-        //3D coordinates
+        // 3D coordinates
         Eigen::Matrix<float, 3, 1> posEig = pMP->GetWorldPos();
         point_t pos(posEig(0), posEig(1), posEig(2));
         mvP3Dw.push_back(pos);
@@ -101,10 +101,10 @@ MLPnPsolver::MLPnPsolver(const Frame& F,
   SetRansacParameters();
 }
 
-//RANSAC methods
-bool MLPnPsolver::iterate(int nIterations, bool& bNoMore,
-                          vector<bool>& vbInliers, int& nInliers,
-                          Eigen::Matrix4f& Tout) {
+// RANSAC methods
+bool MLPnPsolver::iterate(int nIterations, bool &bNoMore,
+                          vector<bool> &vbInliers, int &nInliers,
+                          Eigen::Matrix4f &Tout) {
   Tout.setIdentity();
   bNoMore = false;
   vbInliers.clear();
@@ -124,7 +124,7 @@ bool MLPnPsolver::iterate(int nIterations, bool& bNoMore,
 
     vAvailableIndices = mvAllIndices;
 
-    //Bearing vectors and 3D points used for this ransac iteration
+    // Bearing vectors and 3D points used for this ransac iteration
     bearingVectors_t bearingVecs(mRansacMinSet);
     points_t p3DS(mRansacMinSet);
     vector<int> indexes(mRansacMinSet);
@@ -143,16 +143,16 @@ bool MLPnPsolver::iterate(int nIterations, bool& bNoMore,
       vAvailableIndices.pop_back();
     }
 
-    //By the moment, we are using MLPnP without covariance info
+    // By the moment, we are using MLPnP without covariance info
     cov3_mats_t covs(1);
 
-    //Result
+    // Result
     transformation_t result;
 
     // Compute camera pose
     computePose(bearingVecs, p3DS, covs, indexes, result);
 
-    //Save result
+    // Save result
     mRi[0][0] = result(0, 0);
     mRi[0][1] = result(0, 1);
     mRi[0][2] = result(0, 2);
@@ -229,7 +229,7 @@ void MLPnPsolver::SetRansacParameters(double probability, int minInliers,
   mRansacEpsilon = epsilon;
   mRansacMinSet = minSet;
 
-  N = mvP2D.size();  // number of correspondences
+  N = mvP2D.size(); // number of correspondences
 
   mvbInliersi.resize(N);
 
@@ -301,7 +301,7 @@ bool MLPnPsolver::Refine() {
     }
   }
 
-  //Bearing vectors and 3D points used for this ransac iteration
+  // Bearing vectors and 3D points used for this ransac iteration
   bearingVectors_t bearingVecs;
   points_t p3DS;
   vector<int> indexes;
@@ -314,10 +314,10 @@ bool MLPnPsolver::Refine() {
     indexes.push_back(i);
   }
 
-  //By the moment, we are using MLPnP without covariance info
+  // By the moment, we are using MLPnP without covariance info
   cov3_mats_t covs(1);
 
-  //Result
+  // Result
   transformation_t result;
 
   // Compute camera pose
@@ -347,11 +347,11 @@ bool MLPnPsolver::Refine() {
   return false;
 }
 
-//MLPnP methods
-void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
-                              const cov3_mats_t& covMats,
-                              const std::vector<int>& indices,
-                              transformation_t& result) {
+// MLPnP methods
+void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
+                              const cov3_mats_t &covMats,
+                              const std::vector<int> &indices,
+                              transformation_t &result) {
   size_t numberCorrespondences = indices.size();
   assert(numberCorrespondences > 5);
 
@@ -381,8 +381,8 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
   eigenRot.setIdentity();
 
   // if yes -> transform points to new eigen frame
-  //if (minEigenVal < 1e-3 || minEigenVal == 0.0)
-  //rankTest.setThreshold(1e-10);
+  // if (minEigenVal < 1e-3 || minEigenVal == 0.0)
+  // rankTest.setThreshold(1e-10);
   if (rankTest.rank() == 2) {
     planar = true;
     // self adjoint is faster and more accurate than general eigen solvers
@@ -400,7 +400,7 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
   Eigen::SparseMatrix<double> P(2 * numberCorrespondences,
                                 2 * numberCorrespondences);
   bool use_cov = false;
-  P.setIdentity();  // standard
+  P.setIdentity(); // standard
 
   // if we do have covariance information
   // -> fill covariance matrix
@@ -514,7 +514,7 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
   Eigen::MatrixXd AtPA;
   if (use_cov)
     AtPA = A.transpose() * P *
-           A;  // setting up the full normal equations seems to be unstable
+           A; // setting up the full normal equations seems to be unstable
   else
     AtPA = A.transpose() * A;
 
@@ -527,7 +527,7 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
   ////////////////////////////////
   rotation_t Rout;
   translation_t tout;
-  if (planar)  // planar case
+  if (planar) // planar case
   {
     rotation_t tmp;
     // until now, we only estimated
@@ -541,8 +541,8 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
     double scale =
         1.0 / std::sqrt(std::abs(tmp.col(1).norm() * tmp.col(2).norm()));
     // find best rotation matrix in frobenius sense
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(
-        tmp, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(tmp, Eigen::ComputeFullU |
+                                                          Eigen::ComputeFullV);
     rotation_t Rout1 = svd_R_frob.matrixU() * svd_R_frob.matrixV().transpose();
     // test if we found a good rotation matrix
     if (Rout1.determinant() < 0)
@@ -592,7 +592,7 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
     int idx = std::distance(std::begin(normVal), findMinRepro);
     Rout = Ts[idx].block<3, 3>(0, 0);
     tout = Ts[idx].block<3, 1>(0, 3);
-  } else  // non-planar
+  } else // non-planar
   {
     rotation_t tmp;
     tmp << result1(0, 0), result1(3, 0), result1(6, 0), result1(1, 0),
@@ -603,10 +603,11 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
         1.0 / std::pow(std::abs(tmp.col(0).norm() * tmp.col(1).norm() *
                                 tmp.col(2).norm()),
                        1.0 / 3.0);
-    //double scale = 1.0 / std::sqrt(std::abs(tmp.col(0).norm() * tmp.col(1).norm()));
-    // find best rotation matrix in frobenius sense
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(
-        tmp, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    // double scale = 1.0 / std::sqrt(std::abs(tmp.col(0).norm() *
+    // tmp.col(1).norm()));
+    //  find best rotation matrix in frobenius sense
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(tmp, Eigen::ComputeFullU |
+                                                          Eigen::ComputeFullV);
     Rout = svd_R_frob.matrixU() * svd_R_frob.matrixV().transpose();
     // test if we found a good rotation matrix
     if (Rout.determinant() < 0)
@@ -615,7 +616,8 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
     tout = Rout * (scale * translation_t(result1(9, 0), result1(10, 0),
                                          result1(11, 0)));
 
-    // find correct direction in terms of reprojection error, just take the first 6 correspondences
+    // find correct direction in terms of reprojection error, just take the
+    // first 6 correspondences
     vector<double> error(2);
     vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>> Ts(2);
     for (int s = 0; s < 2; ++s) {
@@ -662,7 +664,7 @@ void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p,
   result.block<3, 1>(0, 3) = tout;
 }
 
-Eigen::Matrix3d MLPnPsolver::rodrigues2rot(const Eigen::Vector3d& omega) {
+Eigen::Matrix3d MLPnPsolver::rodrigues2rot(const Eigen::Vector3d &omega) {
   rotation_t R = Eigen::Matrix3d::Identity();
 
   Eigen::Matrix3d skewW;
@@ -678,7 +680,7 @@ Eigen::Matrix3d MLPnPsolver::rodrigues2rot(const Eigen::Vector3d& omega) {
   return R;
 }
 
-Eigen::Vector3d MLPnPsolver::rot2rodrigues(const Eigen::Matrix3d& R) {
+Eigen::Vector3d MLPnPsolver::rot2rodrigues(const Eigen::Matrix3d &R) {
   rodrigues_t omega;
   omega << 0.0, 0.0, 0.0;
 
@@ -694,8 +696,8 @@ Eigen::Vector3d MLPnPsolver::rot2rodrigues(const Eigen::Matrix3d& R) {
   return omega;
 }
 
-void MLPnPsolver::mlpnp_gn(Eigen::VectorXd& x, const points_t& pts,
-                           const std::vector<Eigen::MatrixXd>& nullspaces,
+void MLPnPsolver::mlpnp_gn(Eigen::VectorXd &x, const points_t &pts,
+                           const std::vector<Eigen::MatrixXd> &nullspaces,
                            const Eigen::SparseMatrix<double> Kll,
                            bool use_cov) {
   const int numObservations = pts.size();
@@ -711,7 +713,7 @@ void MLPnPsolver::mlpnp_gn(Eigen::VectorXd& x, const points_t& pts,
   Eigen::VectorXd rd(2 * numObservations);
   Eigen::MatrixXd Jac(2 * numObservations, numUnknowns);
   Eigen::VectorXd g(numUnknowns, 1);
-  Eigen::VectorXd dx(numUnknowns, 1);  // result vector
+  Eigen::VectorXd dx(numUnknowns, 1); // result vector
 
   Jac.setZero();
   r.setZero();
@@ -756,14 +758,14 @@ void MLPnPsolver::mlpnp_gn(Eigen::VectorXd& x, const points_t& pts,
       x = x - dx;
 
     ++it_cnt;
-  }  //while
-     // result
+  } // while
+    //  result
 }
 
 void MLPnPsolver::mlpnp_residuals_and_jacs(
-    const Eigen::VectorXd& x, const points_t& pts,
-    const std::vector<Eigen::MatrixXd>& nullspaces, Eigen::VectorXd& r,
-    Eigen::MatrixXd& fjac, bool getJacs) {
+    const Eigen::VectorXd &x, const points_t &pts,
+    const std::vector<Eigen::MatrixXd> &nullspaces, Eigen::VectorXd &r,
+    Eigen::MatrixXd &fjac, bool getJacs) {
   rodrigues_t w(x[0], x[1], x[2]);
   translation_t T(x[3], x[4], x[5]);
 
@@ -803,11 +805,11 @@ void MLPnPsolver::mlpnp_residuals_and_jacs(
   }
 }
 
-void MLPnPsolver::mlpnpJacs(const point_t& pt,
-                            const Eigen::Vector3d& nullspace_r,
-                            const Eigen::Vector3d& nullspace_s,
-                            const rodrigues_t& w, const translation_t& t,
-                            Eigen::MatrixXd& jacs) {
+void MLPnPsolver::mlpnpJacs(const point_t &pt,
+                            const Eigen::Vector3d &nullspace_r,
+                            const Eigen::Vector3d &nullspace_s,
+                            const rodrigues_t &w, const translation_t &t,
+                            Eigen::MatrixXd &jacs) {
   double r1 = nullspace_r[0];
   double r2 = nullspace_r[1];
   double r3 = nullspace_r[2];
@@ -1244,4 +1246,4 @@ void MLPnPsolver::mlpnpJacs(const point_t& pt,
   jacs(1, 4) = s2 * t65 - t14 * t101 * t167 * t212 * (1.0 / 2.0);
   jacs(1, 5) = s3 * t65 - t14 * t101 * t167 * t216 * (1.0 / 2.0);
 }
-}  // namespace ORB_SLAM3
+} // namespace ORB_SLAM3

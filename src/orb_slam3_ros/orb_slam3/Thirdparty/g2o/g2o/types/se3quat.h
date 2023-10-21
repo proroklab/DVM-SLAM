@@ -39,32 +39,32 @@ typedef Matrix<double, 6, 1> Vector6d;
 typedef Matrix<double, 7, 1> Vector7d;
 
 class SE3Quat {
- public:
+public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
- protected:
+protected:
   Quaterniond _r;
   Vector3d _t;
 
- public:
+public:
   SE3Quat() {
     _r.setIdentity();
     _t.setZero();
   }
 
-  SE3Quat(const Matrix3d& R, const Vector3d& t) : _r(Quaterniond(R)), _t(t) {
+  SE3Quat(const Matrix3d &R, const Vector3d &t) : _r(Quaterniond(R)), _t(t) {
     normalizeRotation();
   }
 
-  SE3Quat(const Quaterniond& q, const Vector3d& t) : _r(q), _t(t) {
+  SE3Quat(const Quaterniond &q, const Vector3d &t) : _r(q), _t(t) {
     normalizeRotation();
   }
 
   /**
-       * templaized constructor which allows v to be an arbitrary Eigen Vector type, e.g., Vector6d or Map<Vector6d>
-       */
-  template <typename Derived>
-  explicit SE3Quat(const MatrixBase<Derived>& v) {
+   * templaized constructor which allows v to be an arbitrary Eigen Vector type,
+   * e.g., Vector6d or Map<Vector6d>
+   */
+  template <typename Derived> explicit SE3Quat(const MatrixBase<Derived> &v) {
     assert((v.size() == 6 || v.size() == 7) &&
            "Vector dimension does not match");
     if (v.size() == 6) {
@@ -72,7 +72,7 @@ class SE3Quat {
         _t[i] = v[i];
         _r.coeffs()(i) = v[i + 3];
       }
-      _r.w() = 0.;  // recover the positive w
+      _r.w() = 0.; // recover the positive w
       if (_r.norm() > 1.) {
         _r.normalize();
       } else {
@@ -89,15 +89,15 @@ class SE3Quat {
     }
   }
 
-  inline const Vector3d& translation() const { return _t; }
+  inline const Vector3d &translation() const { return _t; }
 
-  inline void setTranslation(const Vector3d& t_) { _t = t_; }
+  inline void setTranslation(const Vector3d &t_) { _t = t_; }
 
-  inline const Quaterniond& rotation() const { return _r; }
+  inline const Quaterniond &rotation() const { return _r; }
 
-  void setRotation(const Quaterniond& r_) { _r = r_; }
+  void setRotation(const Quaterniond &r_) { _r = r_; }
 
-  inline SE3Quat operator*(const SE3Quat& tr2) const {
+  inline SE3Quat operator*(const SE3Quat &tr2) const {
     SE3Quat result(*this);
     result._t += _r * tr2._t;
     result._r *= tr2._r;
@@ -105,14 +105,14 @@ class SE3Quat {
     return result;
   }
 
-  inline SE3Quat& operator*=(const SE3Quat& tr2) {
+  inline SE3Quat &operator*=(const SE3Quat &tr2) {
     _t += _r * tr2._t;
     _r *= tr2._r;
     normalizeRotation();
     return *this;
   }
 
-  inline Vector3d operator*(const Vector3d& v) const { return _t + _r * v; }
+  inline Vector3d operator*(const Vector3d &v) const { return _t + _r * v; }
 
   inline SE3Quat inverse() const {
     SE3Quat ret;
@@ -140,7 +140,7 @@ class SE3Quat {
     return v;
   }
 
-  inline void fromVector(const Vector7d& v) {
+  inline void fromVector(const Vector7d &v) {
     _r = Quaterniond(v[6], v[3], v[4], v[5]);
     _t = Vector3d(v[0], v[1], v[2]);
   }
@@ -156,7 +156,7 @@ class SE3Quat {
     return v;
   }
 
-  inline void fromMinimalVector(const Vector6d& v) {
+  inline void fromMinimalVector(const Vector6d &v) {
     double w = 1. - v[3] * v[3] - v[4] * v[4] - v[5] * v[5];
     if (w > 0) {
       _r = Quaterniond(sqrt(w), v[3], v[4], v[5]);
@@ -201,9 +201,9 @@ class SE3Quat {
     return res;
   }
 
-  Vector3d map(const Vector3d& xyz) const { return _r * xyz + _t; }
+  Vector3d map(const Vector3d &xyz) const { return _r * xyz + _t; }
 
-  static SE3Quat exp(const Vector6d& update) {
+  static SE3Quat exp(const Vector6d &update) {
     Vector3d omega;
     for (int i = 0; i < 3; i++)
       omega[i] = update[i];
@@ -217,7 +217,7 @@ class SE3Quat {
     Matrix3d R;
     Matrix3d V;
     if (theta < 0.00001) {
-      //TODO: CHECK WHETHER THIS IS CORRECT!!!
+      // TODO: CHECK WHETHER THIS IS CORRECT!!!
       R = (Matrix3d::Identity() + Omega + Omega * Omega);
 
       V = R;
@@ -260,8 +260,8 @@ class SE3Quat {
   }
 
   /**
-       * cast SE3Quat into an Eigen::Isometry3d
-       */
+   * cast SE3Quat into an Eigen::Isometry3d
+   */
   operator Eigen::Isometry3d() const {
     Eigen::Isometry3d result = (Eigen::Isometry3d)rotation();
     result.translation() = translation();
@@ -269,11 +269,11 @@ class SE3Quat {
   }
 };
 
-inline std::ostream& operator<<(std::ostream& out_str, const SE3Quat& se3) {
+inline std::ostream &operator<<(std::ostream &out_str, const SE3Quat &se3) {
   out_str << se3.to_homogeneous_matrix() << std::endl;
   return out_str;
 }
 
-}  // namespace g2o
+} // namespace g2o
 
 #endif

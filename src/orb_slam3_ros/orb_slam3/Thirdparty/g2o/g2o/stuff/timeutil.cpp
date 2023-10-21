@@ -50,7 +50,7 @@ struct timezone {
   int tz_dsttime;     /* type of dst correction */
 };
 
-int gettimeofday(struct timeval* tv, struct timezone* tz) {
+int gettimeofday(struct timeval *tv, struct timezone *tz) {
   // Define a structure to receive the current Windows filetime
   FILETIME ft;
 
@@ -101,7 +101,7 @@ int gettimeofday(struct timeval* tv, struct timezone* tz) {
 }
 #endif
 
-ScopeTime::ScopeTime(const char* title)
+ScopeTime::ScopeTime(const char *title)
     : _title(title), _startTime(get_monotonic_time()) {}
 
 ScopeTime::~ScopeTime() {
@@ -110,7 +110,7 @@ ScopeTime::~ScopeTime() {
 }
 
 double get_monotonic_time() {
-#if (defined(_POSIX_TIMERS) && (_POSIX_TIMERS + 0 >= 0) && \
+#if (defined(_POSIX_TIMERS) && (_POSIX_TIMERS + 0 >= 0) &&                     \
      defined(_POSIX_MONOTONIC_CLOCK))
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -120,4 +120,4 @@ double get_monotonic_time() {
 #endif
 }
 
-}  // namespace g2o
+} // namespace g2o

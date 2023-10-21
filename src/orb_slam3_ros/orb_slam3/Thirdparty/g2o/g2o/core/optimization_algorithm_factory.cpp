@@ -35,10 +35,10 @@ using namespace std;
 namespace g2o {
 
 AbstractOptimizationAlgorithmCreator::AbstractOptimizationAlgorithmCreator(
-    const OptimizationAlgorithmProperty& p)
+    const OptimizationAlgorithmProperty &p)
     : _property(p) {}
 
-OptimizationAlgorithmFactory* OptimizationAlgorithmFactory::factoryInstance = 0;
+OptimizationAlgorithmFactory *OptimizationAlgorithmFactory::factoryInstance = 0;
 
 OptimizationAlgorithmFactory::OptimizationAlgorithmFactory() {}
 
@@ -47,7 +47,7 @@ OptimizationAlgorithmFactory::~OptimizationAlgorithmFactory() {
     delete *it;
 }
 
-OptimizationAlgorithmFactory* OptimizationAlgorithmFactory::instance() {
+OptimizationAlgorithmFactory *OptimizationAlgorithmFactory::instance() {
   if (factoryInstance == 0) {
     factoryInstance = new OptimizationAlgorithmFactory;
   }
@@ -55,8 +55,8 @@ OptimizationAlgorithmFactory* OptimizationAlgorithmFactory::instance() {
 }
 
 void OptimizationAlgorithmFactory::registerSolver(
-    AbstractOptimizationAlgorithmCreator* c) {
-  const string& name = c->property().name;
+    AbstractOptimizationAlgorithmCreator *c) {
+  const string &name = c->property().name;
   CreatorList::iterator foundIt = findSolver(name);
   if (foundIt != _creator.end()) {
     _creator.erase(foundIt);
@@ -68,8 +68,8 @@ void OptimizationAlgorithmFactory::registerSolver(
 }
 
 void OptimizationAlgorithmFactory::unregisterSolver(
-    AbstractOptimizationAlgorithmCreator* c) {
-  const string& name = c->property().name;
+    AbstractOptimizationAlgorithmCreator *c) {
+  const string &name = c->property().name;
   CreatorList::iterator foundIt = findSolver(name);
   if (foundIt != _creator.end()) {
     delete *foundIt;
@@ -77,9 +77,9 @@ void OptimizationAlgorithmFactory::unregisterSolver(
   }
 }
 
-OptimizationAlgorithm* OptimizationAlgorithmFactory::construct(
-    const std::string& name,
-    OptimizationAlgorithmProperty& solverProperty) const {
+OptimizationAlgorithm *OptimizationAlgorithmFactory::construct(
+    const std::string &name,
+    OptimizationAlgorithmProperty &solverProperty) const {
   CreatorList::const_iterator foundIt = findSolver(name);
   if (foundIt != _creator.end()) {
     solverProperty = (*foundIt)->property();
@@ -94,7 +94,7 @@ void OptimizationAlgorithmFactory::destroy() {
   factoryInstance = 0;
 }
 
-void OptimizationAlgorithmFactory::listSolvers(std::ostream& os) const {
+void OptimizationAlgorithmFactory::listSolvers(std::ostream &os) const {
   size_t solverNameColumnLength = 0;
   for (CreatorList::const_iterator it = _creator.begin(); it != _creator.end();
        ++it)
@@ -104,7 +104,7 @@ void OptimizationAlgorithmFactory::listSolvers(std::ostream& os) const {
 
   for (CreatorList::const_iterator it = _creator.begin(); it != _creator.end();
        ++it) {
-    const OptimizationAlgorithmProperty& sp = (*it)->property();
+    const OptimizationAlgorithmProperty &sp = (*it)->property();
     os << sp.name;
     for (size_t i = sp.name.size(); i < solverNameColumnLength; ++i)
       os << ' ';
@@ -113,10 +113,10 @@ void OptimizationAlgorithmFactory::listSolvers(std::ostream& os) const {
 }
 
 OptimizationAlgorithmFactory::CreatorList::const_iterator
-OptimizationAlgorithmFactory::findSolver(const std::string& name) const {
+OptimizationAlgorithmFactory::findSolver(const std::string &name) const {
   for (CreatorList::const_iterator it = _creator.begin(); it != _creator.end();
        ++it) {
-    const OptimizationAlgorithmProperty& sp = (*it)->property();
+    const OptimizationAlgorithmProperty &sp = (*it)->property();
     if (sp.name == name)
       return it;
   }
@@ -124,14 +124,14 @@ OptimizationAlgorithmFactory::findSolver(const std::string& name) const {
 }
 
 OptimizationAlgorithmFactory::CreatorList::iterator
-OptimizationAlgorithmFactory::findSolver(const std::string& name) {
+OptimizationAlgorithmFactory::findSolver(const std::string &name) {
   for (CreatorList::iterator it = _creator.begin(); it != _creator.end();
        ++it) {
-    const OptimizationAlgorithmProperty& sp = (*it)->property();
+    const OptimizationAlgorithmProperty &sp = (*it)->property();
     if (sp.name == name)
       return it;
   }
   return _creator.end();
 }
 
-}  // namespace g2o
+} // namespace g2o

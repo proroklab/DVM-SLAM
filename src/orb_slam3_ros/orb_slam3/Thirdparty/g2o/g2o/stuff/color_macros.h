@@ -31,7 +31,7 @@
 #define FT_BOLD "\033[1m"
 #define FT_UNDERLINE "\033[4m"
 
-//background color
+// background color
 #define BG_BLACK "\033[40m"
 #define BG_RED "\033[41m"
 #define BG_GREEN "\033[42m"

@@ -1,68 +1,72 @@
 /**
-* This file is part of ORB-SLAM3
-*
-* Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-* Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-*
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-* License as published by the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-* the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of ORB-SLAM3
+ *
+ * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez
+ * Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+ * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós,
+ * University of Zaragoza.
+ *
+ * ORB-SLAM3 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef ORB_SLAM3_SETTINGS_H
 #define ORB_SLAM3_SETTINGS_H
 
-// Flag to activate the measurement of time in each process (track,localmap, place recognition).
+// Flag to activate the measurement of time in each process (track,localmap,
+// place recognition).
 //#define REGISTER_TIMES
 
 #include "CameraModels/GeometricCamera.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string>
+#include <unistd.h>
 
 namespace ORB_SLAM3 {
 
 class System;
 
-//TODO: change to double instead of float
+// TODO: change to double instead of float
 
 class Settings {
- public:
+public:
   /*
-         * Enum for the different camera types implemented
-         */
+   * Enum for the different camera types implemented
+   */
   enum CameraType { PinHole = 0, Rectified = 1, KannalaBrandt = 2 };
 
   /*
-         * Delete default constructor
-         */
+   * Delete default constructor
+   */
   Settings() = delete;
 
   /*
-         * Constructor from file
-         */
-  Settings(const std::string& configFile, const int& sensor);
+   * Constructor from file
+   */
+  Settings(const std::string &configFile, const int &sensor);
 
   /*
-         * Ostream operator overloading to dump settings to the terminal
-         */
-  friend std::ostream& operator<<(std::ostream& output, const Settings& s);
+   * Ostream operator overloading to dump settings to the terminal
+   */
+  friend std::ostream &operator<<(std::ostream &output, const Settings &s);
 
   /*
-         * Getter methods
-         */
+   * Getter methods
+   */
   CameraType cameraType() { return cameraType_; }
-  GeometricCamera* camera1() { return calibration1_; }
-  GeometricCamera* camera2() { return calibration2_; }
+  GeometricCamera *camera1() { return calibration1_; }
+  GeometricCamera *camera2() { return calibration2_; }
   cv::Mat camera1DistortionCoef() {
     return cv::Mat(vPinHoleDistorsion1_.size(), 1, CV_32F,
                    vPinHoleDistorsion1_.data());
@@ -123,10 +127,10 @@ class Settings {
   cv::Mat M1r() { return M1r_; }
   cv::Mat M2r() { return M2r_; }
 
- private:
+private:
   template <typename T>
-  T readParameter(cv::FileStorage& fSettings, const std::string& name,
-                  bool& found, const bool required = true) {
+  T readParameter(cv::FileStorage &fSettings, const std::string &name,
+                  bool &found, const bool required = true) {
     cv::FileNode node = fSettings[name];
     if (node.empty()) {
       if (required) {
@@ -146,25 +150,25 @@ class Settings {
     }
   }
 
-  void readCamera1(cv::FileStorage& fSettings);
-  void readCamera2(cv::FileStorage& fSettings);
-  void readImageInfo(cv::FileStorage& fSettings);
-  void readIMU(cv::FileStorage& fSettings);
-  void readRGBD(cv::FileStorage& fSettings);
-  void readORB(cv::FileStorage& fSettings);
-  void readViewer(cv::FileStorage& fSettings);
-  void readLoadAndSave(cv::FileStorage& fSettings);
-  void readOtherParameters(cv::FileStorage& fSettings);
+  void readCamera1(cv::FileStorage &fSettings);
+  void readCamera2(cv::FileStorage &fSettings);
+  void readImageInfo(cv::FileStorage &fSettings);
+  void readIMU(cv::FileStorage &fSettings);
+  void readRGBD(cv::FileStorage &fSettings);
+  void readORB(cv::FileStorage &fSettings);
+  void readViewer(cv::FileStorage &fSettings);
+  void readLoadAndSave(cv::FileStorage &fSettings);
+  void readOtherParameters(cv::FileStorage &fSettings);
 
   void precomputeRectificationMaps();
 
   int sensor_;
-  CameraType cameraType_;  //Camera type
+  CameraType cameraType_; // Camera type
 
   /*
-         * Visual stuff
-         */
-  GeometricCamera *calibration1_, *calibration2_;  //Camera calibration
+   * Visual stuff
+   */
+  GeometricCamera *calibration1_, *calibration2_; // Camera calibration
   GeometricCamera *originalCalib1_, *originalCalib2_;
   std::vector<float> vPinHoleDistorsion1_, vPinHoleDistorsion2_;
 
@@ -181,14 +185,14 @@ class Settings {
   float bf_, b_;
 
   /*
-         * Rectification stuff
-         */
+   * Rectification stuff
+   */
   cv::Mat M1l_, M2l_;
   cv::Mat M1r_, M2r_;
 
   /*
-         * Inertial stuff
-         */
+   * Inertial stuff
+   */
   float noiseGyro_, noiseAcc_;
   float gyroWalk_, accWalk_;
   float imuFrequency_;
@@ -196,21 +200,21 @@ class Settings {
   bool insertKFsWhenLost_;
 
   /*
-         * RGBD stuff
-         */
+   * RGBD stuff
+   */
   float depthMapFactor_;
 
   /*
-         * ORB stuff
-         */
+   * ORB stuff
+   */
   int nFeatures_;
   float scaleFactor_;
   int nLevels_;
   int initThFAST_, minThFAST_;
 
   /*
-         * Viewer stuff
-         */
+   * Viewer stuff
+   */
   float keyFrameSize_;
   float keyFrameLineWidth_;
   float graphLineWidth_;
@@ -221,15 +225,15 @@ class Settings {
   float imageViewerScale_;
 
   /*
-         * Save & load maps
-         */
+   * Save & load maps
+   */
   std::string sLoadFrom_, sSaveto_;
 
   /*
-         * Other stuff
-         */
+   * Other stuff
+   */
   float thFarPoints_;
 };
-};  // namespace ORB_SLAM3
+}; // namespace ORB_SLAM3
 
-#endif  //ORB_SLAM3_SETTINGS_H
+#endif // ORB_SLAM3_SETTINGS_H

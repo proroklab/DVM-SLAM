@@ -40,7 +40,7 @@ using namespace Eigen;
 
 template <int D, typename E, typename VertexXi, typename VertexXj>
 class BaseBinaryEdge : public BaseEdge<D, E> {
- public:
+public:
   typedef VertexXi VertexXiType;
   typedef VertexXj VertexXjType;
 
@@ -64,50 +64,49 @@ class BaseBinaryEdge : public BaseEdge<D, E> {
       HessianBlockTransposedType;
 
   BaseBinaryEdge()
-      : BaseEdge<D, E>(),
-        _hessianRowMajor(false),
-        _hessian(
-            0, VertexXiType::Dimension,
-            VertexXjType::
-                Dimension),  // HACK we map to the null pointer for initializing the Maps
+      : BaseEdge<D, E>(), _hessianRowMajor(false),
+        _hessian(0, VertexXiType::Dimension,
+                 VertexXjType::Dimension), // HACK we map to the null pointer
+                                           // for initializing the Maps
         _hessianTransposed(0, VertexXjType::Dimension, VertexXiType::Dimension),
-        _jacobianOplusXi(0, D, Di),
-        _jacobianOplusXj(0, D, Dj) {
+        _jacobianOplusXi(0, D, Di), _jacobianOplusXj(0, D, Dj) {
     _vertices.resize(2);
   }
 
-  virtual OptimizableGraph::Vertex* createFrom();
-  virtual OptimizableGraph::Vertex* createTo();
+  virtual OptimizableGraph::Vertex *createFrom();
+  virtual OptimizableGraph::Vertex *createTo();
 
   virtual void resize(size_t size);
 
   virtual bool allVerticesFixed() const;
 
-  virtual void linearizeOplus(JacobianWorkspace& jacobianWorkspace);
+  virtual void linearizeOplus(JacobianWorkspace &jacobianWorkspace);
 
   /**
-       * Linearizes the oplus operator in the vertex, and stores
-       * the result in temporary variables _jacobianOplusXi and _jacobianOplusXj
-       */
+   * Linearizes the oplus operator in the vertex, and stores
+   * the result in temporary variables _jacobianOplusXi and _jacobianOplusXj
+   */
   virtual void linearizeOplus();
 
-  //! returns the result of the linearization in the manifold space for the node xi
-  const JacobianXiOplusType& jacobianOplusXi() const {
+  //! returns the result of the linearization in the manifold space for the node
+  //! xi
+  const JacobianXiOplusType &jacobianOplusXi() const {
     return _jacobianOplusXi;
   }
-  //! returns the result of the linearization in the manifold space for the node xj
-  const JacobianXjOplusType& jacobianOplusXj() const {
+  //! returns the result of the linearization in the manifold space for the node
+  //! xj
+  const JacobianXjOplusType &jacobianOplusXj() const {
     return _jacobianOplusXj;
   }
 
   virtual void constructQuadraticForm();
 
-  virtual void mapHessianMemory(double* d, int i, int j, bool rowMajor);
+  virtual void mapHessianMemory(double *d, int i, int j, bool rowMajor);
 
   using BaseEdge<D, E>::resize;
   using BaseEdge<D, E>::computeError;
 
- protected:
+protected:
   using BaseEdge<D, E>::_measurement;
   using BaseEdge<D, E>::_information;
   using BaseEdge<D, E>::_error;
@@ -120,12 +119,12 @@ class BaseBinaryEdge : public BaseEdge<D, E> {
   JacobianXiOplusType _jacobianOplusXi;
   JacobianXjOplusType _jacobianOplusXj;
 
- public:
+public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #include "base_binary_edge.hpp"
 
-}  // end namespace g2o
+} // end namespace g2o
 
 #endif

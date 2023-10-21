@@ -38,11 +38,11 @@ void FeatureVector::addFeature(NodeId id, unsigned int i_feature) {
 
 // ---------------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream& out, const FeatureVector& v) {
+std::ostream &operator<<(std::ostream &out, const FeatureVector &v) {
   if (!v.empty()) {
     FeatureVector::const_iterator vit = v.begin();
 
-    const std::vector<unsigned int>* f = &vit->second;
+    const std::vector<unsigned int> *f = &vit->second;
 
     out << "<" << vit->first << ": [";
     if (!f->empty())
@@ -70,4 +70,4 @@ std::ostream& operator<<(std::ostream& out, const FeatureVector& v) {
 
 // ---------------------------------------------------------------------------
 
-}  // namespace DBoW2
+} // namespace DBoW2

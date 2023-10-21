@@ -2,7 +2,7 @@
 
 namespace g2o {
 
-void SE3mat::Retract(const Eigen::Vector3d dr, const Eigen::Vector3d& dt) {
+void SE3mat::Retract(const Eigen::Vector3d dr, const Eigen::Vector3d &dt) {
   t += R * dt;
   R = R * ExpSO3(dr);
 }
@@ -31,4 +31,4 @@ Eigen::Vector3d SE3mat::LogSO3(const Eigen::Matrix3d R) {
     return theta * w / sin(theta);
 }
 
-}  //namespace g2o
+} // namespace g2o

@@ -43,19 +43,20 @@
  */
 
 /// Executes code, only if secs are gone since last exec.
-/// extended version, in which the current time is given, e.g., timestamp of IPC message
+/// extended version, in which the current time is given, e.g., timestamp of IPC
+/// message
 #ifndef DO_EVERY_TS
-#define DO_EVERY_TS(secs, currentTime, code)   \
-  if (1) {                                     \
-    static double s_lastDone_ = (currentTime); \
-    double s_now_ = (currentTime);             \
-    if (s_lastDone_ > s_now_)                  \
-      s_lastDone_ = s_now_;                    \
-    if (s_now_ - s_lastDone_ > (secs)) {       \
-      code;                                    \
-      s_lastDone_ = s_now_;                    \
-    }                                          \
-  } else                                       \
+#define DO_EVERY_TS(secs, currentTime, code)                                   \
+  if (1) {                                                                     \
+    static double s_lastDone_ = (currentTime);                                 \
+    double s_now_ = (currentTime);                                             \
+    if (s_lastDone_ > s_now_)                                                  \
+      s_lastDone_ = s_now_;                                                    \
+    if (s_now_ - s_lastDone_ > (secs)) {                                       \
+      code;                                                                    \
+      s_lastDone_ = s_now_;                                                    \
+    }                                                                          \
+  } else                                                                       \
     (void)0
 #endif
 
@@ -81,7 +82,7 @@ typedef struct timeval {
   long tv_sec;
   long tv_usec;
 } timeval;
-int gettimeofday(struct timeval* tv, struct timezone* tz);
+int gettimeofday(struct timeval *tv, struct timezone *tz);
 #endif
 
 /**
@@ -110,16 +111,16 @@ double get_monotonic_time();
  * just create and instance at the beginning of the function.
  */
 class ScopeTime {
- public:
-  ScopeTime(const char* title);
+public:
+  ScopeTime(const char *title);
   ~ScopeTime();
 
- private:
+private:
   std::string _title;
   double _startTime;
 };
 
-}  // namespace g2o
+} // namespace g2o
 
 #ifndef MEASURE_FUNCTION_TIME
 #define MEASURE_FUNCTION_TIME g2o::ScopeTime scopeTime(__PRETTY_FUNCTION__)

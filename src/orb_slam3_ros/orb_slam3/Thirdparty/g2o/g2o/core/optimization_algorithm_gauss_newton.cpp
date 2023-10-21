@@ -39,28 +39,29 @@ using namespace std;
 namespace g2o {
 
 OptimizationAlgorithmGaussNewton::OptimizationAlgorithmGaussNewton(
-    Solver* solver)
+    Solver *solver)
     : OptimizationAlgorithmWithHessian(solver) {}
 
 OptimizationAlgorithmGaussNewton::~OptimizationAlgorithmGaussNewton() {}
 
-OptimizationAlgorithm::SolverResult OptimizationAlgorithmGaussNewton::solve(
-    int iteration, bool online) {
+OptimizationAlgorithm::SolverResult
+OptimizationAlgorithmGaussNewton::solve(int iteration, bool online) {
   assert(_optimizer && "_optimizer not set");
   assert(_solver->optimizer() == _optimizer &&
          "underlying linear solver operates on different graph");
   bool ok = true;
 
-  //here so that correct component for max-mixtures can be computed before the build structure
+  // here so that correct component for max-mixtures can be computed before the
+  // build structure
   double t = get_monotonic_time();
   _optimizer->computeActiveErrors();
-  G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+  G2OBatchStatistics *globalStats = G2OBatchStatistics::globalStats();
   if (globalStats) {
     globalStats->timeResiduals = get_monotonic_time() - t;
   }
 
   if (iteration == 0 &&
-      !online) {  // built up the CCS structure, here due to easy time measure
+      !online) { // built up the CCS structure, here due to easy time measure
     ok = _solver->buildStructure();
     if (!ok) {
       cerr << __PRETTY_FUNCTION__ << ": Failure while building CCS structure"
@@ -92,8 +93,8 @@ OptimizationAlgorithm::SolverResult OptimizationAlgorithmGaussNewton::solve(
     return Fail;
 }
 
-void OptimizationAlgorithmGaussNewton::printVerbose(std::ostream& os) const {
+void OptimizationAlgorithmGaussNewton::printVerbose(std::ostream &os) const {
   os << "\t schur= " << _solver->schur();
 }
 
-}  // namespace g2o
+} // namespace g2o

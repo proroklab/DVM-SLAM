@@ -30,8 +30,6 @@ namespace g2o {
 
 Parameter::Parameter() : _id(-1) {}
 
-void Parameter::setId(int id_) {
-  _id = id_;
-}
+void Parameter::setId(int id_) { _id = id_; }
 
-}  // namespace g2o
+} // namespace g2o

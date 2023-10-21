@@ -1,4 +1,4 @@
-/*	
+/*
  * File: Random.cpp
  * Project: DUtils library
  * Author: Dorian Galvez-Lopez
@@ -9,8 +9,8 @@
  */
 
 #include "Random.h"
-#include <cstdlib>
 #include "Timestamp.h"
+#include <cstdlib>
 using namespace std;
 
 bool DUtils::Random::m_already_seeded = false;
@@ -28,9 +28,7 @@ void DUtils::Random::SeedRandOnce() {
   }
 }
 
-void DUtils::Random::SeedRand(int seed) {
-  srand(seed);
-}
+void DUtils::Random::SeedRand(int seed) { srand(seed); }
 
 void DUtils::Random::SeedRandOnce(int seed) {
   if (!m_already_seeded) {
@@ -62,7 +60,7 @@ DUtils::Random::UnrepeatedRandomizer::UnrepeatedRandomizer(int min, int max) {
 // ---------------------------------------------------------------------------
 
 DUtils::Random::UnrepeatedRandomizer::UnrepeatedRandomizer(
-    const DUtils::Random::UnrepeatedRandomizer& rnd) {
+    const DUtils::Random::UnrepeatedRandomizer &rnd) {
   *this = rnd;
 }
 
@@ -101,9 +99,9 @@ void DUtils::Random::UnrepeatedRandomizer::reset() {
 
 // ---------------------------------------------------------------------------
 
-DUtils::Random::UnrepeatedRandomizer&
+DUtils::Random::UnrepeatedRandomizer &
 DUtils::Random::UnrepeatedRandomizer::operator=(
-    const DUtils::Random::UnrepeatedRandomizer& rnd) {
+    const DUtils::Random::UnrepeatedRandomizer &rnd) {
   if (this != &rnd) {
     this->m_min = rnd.m_min;
     this->m_max = rnd.m_max;

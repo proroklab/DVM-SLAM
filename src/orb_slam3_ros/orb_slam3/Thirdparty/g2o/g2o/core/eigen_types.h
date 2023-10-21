@@ -73,6 +73,6 @@ typedef Eigen::Transform<double, 3, Eigen::Isometry, Eigen::ColMajor>
 typedef Eigen::Transform<double, 2, Eigen::Affine, Eigen::ColMajor> Affine2D;
 typedef Eigen::Transform<double, 3, Eigen::Affine, Eigen::ColMajor> Affine3D;
 
-}  // end namespace g2o
+} // end namespace g2o
 
 #endif

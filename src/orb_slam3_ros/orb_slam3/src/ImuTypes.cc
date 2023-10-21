@@ -1,20 +1,23 @@
 /**
-* This file is part of ORB-SLAM3
-*
-* Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-* Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
-*
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-* License as published by the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-* the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of ORB-SLAM3
+ *
+ * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez
+ * Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+ * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós,
+ * University of Zaragoza.
+ *
+ * ORB-SLAM3 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "ImuTypes.h"
 #include "Converter.h"
@@ -29,14 +32,14 @@ namespace IMU {
 
 const float eps = 1e-4;
 
-Eigen::Matrix3f NormalizeRotation(const Eigen::Matrix3f& R) {
-  Eigen::JacobiSVD<Eigen::Matrix3f> svd(
-      R, Eigen::ComputeFullU | Eigen::ComputeFullV);
+Eigen::Matrix3f NormalizeRotation(const Eigen::Matrix3f &R) {
+  Eigen::JacobiSVD<Eigen::Matrix3f> svd(R, Eigen::ComputeFullU |
+                                               Eigen::ComputeFullV);
   return svd.matrixU() * svd.matrixV().transpose();
 }
 
-Eigen::Matrix3f RightJacobianSO3(const float& x, const float& y,
-                                 const float& z) {
+Eigen::Matrix3f RightJacobianSO3(const float &x, const float &y,
+                                 const float &z) {
   Eigen::Matrix3f I;
   I.setIdentity();
   const float d2 = x * x + y * y + z * z;
@@ -51,12 +54,12 @@ Eigen::Matrix3f RightJacobianSO3(const float& x, const float& y,
   }
 }
 
-Eigen::Matrix3f RightJacobianSO3(const Eigen::Vector3f& v) {
+Eigen::Matrix3f RightJacobianSO3(const Eigen::Vector3f &v) {
   return RightJacobianSO3(v(0), v(1), v(2));
 }
 
-Eigen::Matrix3f InverseRightJacobianSO3(const float& x, const float& y,
-                                        const float& z) {
+Eigen::Matrix3f InverseRightJacobianSO3(const float &x, const float &y,
+                                        const float &z) {
   Eigen::Matrix3f I;
   I.setIdentity();
   const float d2 = x * x + y * y + z * z;
@@ -73,12 +76,12 @@ Eigen::Matrix3f InverseRightJacobianSO3(const float& x, const float& y,
   }
 }
 
-Eigen::Matrix3f InverseRightJacobianSO3(const Eigen::Vector3f& v) {
+Eigen::Matrix3f InverseRightJacobianSO3(const Eigen::Vector3f &v) {
   return InverseRightJacobianSO3(v(0), v(1), v(2));
 }
 
-IntegratedRotation::IntegratedRotation(const Eigen::Vector3f& angVel,
-                                       const Bias& imuBias, const float& time) {
+IntegratedRotation::IntegratedRotation(const Eigen::Vector3f &angVel,
+                                       const Bias &imuBias, const float &time) {
   const float x = (angVel(0) - imuBias.bwx) * time;
   const float y = (angVel(1) - imuBias.bwy) * time;
   const float z = (angVel(2) - imuBias.bwz) * time;
@@ -100,35 +103,22 @@ IntegratedRotation::IntegratedRotation(const Eigen::Vector3f& angVel,
   }
 }
 
-Preintegrated::Preintegrated(const Bias& b_, const Calib& calib) {
+Preintegrated::Preintegrated(const Bias &b_, const Calib &calib) {
   Nga = calib.Cov;
   NgaWalk = calib.CovWalk;
   Initialize(b_);
 }
 
 // Copy constructor
-Preintegrated::Preintegrated(Preintegrated* pImuPre)
-    : dT(pImuPre->dT),
-      C(pImuPre->C),
-      Info(pImuPre->Info),
-      Nga(pImuPre->Nga),
-      NgaWalk(pImuPre->NgaWalk),
-      b(pImuPre->b),
-      dR(pImuPre->dR),
-      dV(pImuPre->dV),
-      dP(pImuPre->dP),
-      JRg(pImuPre->JRg),
-      JVg(pImuPre->JVg),
-      JVa(pImuPre->JVa),
-      JPg(pImuPre->JPg),
-      JPa(pImuPre->JPa),
-      avgA(pImuPre->avgA),
-      avgW(pImuPre->avgW),
-      bu(pImuPre->bu),
-      db(pImuPre->db),
-      mvMeasurements(pImuPre->mvMeasurements) {}
+Preintegrated::Preintegrated(Preintegrated *pImuPre)
+    : dT(pImuPre->dT), C(pImuPre->C), Info(pImuPre->Info), Nga(pImuPre->Nga),
+      NgaWalk(pImuPre->NgaWalk), b(pImuPre->b), dR(pImuPre->dR),
+      dV(pImuPre->dV), dP(pImuPre->dP), JRg(pImuPre->JRg), JVg(pImuPre->JVg),
+      JVa(pImuPre->JVa), JPg(pImuPre->JPg), JPa(pImuPre->JPa),
+      avgA(pImuPre->avgA), avgW(pImuPre->avgW), bu(pImuPre->bu),
+      db(pImuPre->db), mvMeasurements(pImuPre->mvMeasurements) {}
 
-void Preintegrated::CopyFrom(Preintegrated* pImuPre) {
+void Preintegrated::CopyFrom(Preintegrated *pImuPre) {
   dT = pImuPre->dT;
   C = pImuPre->C;
   Info = pImuPre->Info;
@@ -150,7 +140,7 @@ void Preintegrated::CopyFrom(Preintegrated* pImuPre) {
   mvMeasurements = pImuPre->mvMeasurements;
 }
 
-void Preintegrated::Initialize(const Bias& b_) {
+void Preintegrated::Initialize(const Bias &b_) {
   dR.setIdentity();
   dV.setZero();
   dP.setZero();
@@ -178,16 +168,16 @@ void Preintegrated::Reintegrate() {
     IntegrateNewMeasurement(aux[i].a, aux[i].w, aux[i].t);
 }
 
-void Preintegrated::IntegrateNewMeasurement(const Eigen::Vector3f& acceleration,
-                                            const Eigen::Vector3f& angVel,
-                                            const float& dt) {
+void Preintegrated::IntegrateNewMeasurement(const Eigen::Vector3f &acceleration,
+                                            const Eigen::Vector3f &angVel,
+                                            const float &dt) {
   mvMeasurements.push_back(integrable(acceleration, angVel, dt));
 
-  // Position is updated firstly, as it depends on previously computed velocity and rotation.
-  // Velocity is updated secondly, as it depends on previously computed rotation.
-  // Rotation is the last to be updated.
+  // Position is updated firstly, as it depends on previously computed velocity
+  // and rotation. Velocity is updated secondly, as it depends on previously
+  // computed rotation. Rotation is the last to be updated.
 
-  //Matrices to compute covariance
+  // Matrices to compute covariance
   Eigen::Matrix<float, 9, 9> A;
   A.setIdentity();
   Eigen::Matrix<float, 9, 6> B;
@@ -201,11 +191,13 @@ void Preintegrated::IntegrateNewMeasurement(const Eigen::Vector3f& acceleration,
   avgA = (dT * avgA + dR * acc * dt) / (dT + dt);
   avgW = (dT * avgW + accW * dt) / (dT + dt);
 
-  // Update delta position dP and velocity dV (rely on no-updated delta rotation)
+  // Update delta position dP and velocity dV (rely on no-updated delta
+  // rotation)
   dP = dP + dV * dt + 0.5f * dR * acc * dt * dt;
   dV = dV + dR * acc * dt;
 
-  // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
+  // Compute velocity and position parts of matrices A and B (rely on
+  // non-updated delta rotation)
   Eigen::Matrix<float, 3, 3> Wacc = Sophus::SO3f::hat(acc);
 
   A.block<3, 3>(3, 0) = -dR * dt * Wacc;
@@ -240,7 +232,7 @@ void Preintegrated::IntegrateNewMeasurement(const Eigen::Vector3f& acceleration,
   dT += dt;
 }
 
-void Preintegrated::MergePrevious(Preintegrated* pPrev) {
+void Preintegrated::MergePrevious(Preintegrated *pPrev) {
   if (pPrev == this)
     return;
 
@@ -264,7 +256,7 @@ void Preintegrated::MergePrevious(Preintegrated* pPrev) {
     IntegrateNewMeasurement(aux2[i].a, aux2[i].w, aux2[i].t);
 }
 
-void Preintegrated::SetNewBias(const Bias& bu_) {
+void Preintegrated::SetNewBias(const Bias &bu_) {
   std::unique_lock<std::mutex> lock(mMutex);
   bu = bu_;
 
@@ -276,20 +268,20 @@ void Preintegrated::SetNewBias(const Bias& bu_) {
   db(5) = bu_.baz - b.baz;
 }
 
-IMU::Bias Preintegrated::GetDeltaBias(const Bias& b_) {
+IMU::Bias Preintegrated::GetDeltaBias(const Bias &b_) {
   std::unique_lock<std::mutex> lock(mMutex);
   return IMU::Bias(b_.bax - b.bax, b_.bay - b.bay, b_.baz - b.baz,
                    b_.bwx - b.bwx, b_.bwy - b.bwy, b_.bwz - b.bwz);
 }
 
-Eigen::Matrix3f Preintegrated::GetDeltaRotation(const Bias& b_) {
+Eigen::Matrix3f Preintegrated::GetDeltaRotation(const Bias &b_) {
   std::unique_lock<std::mutex> lock(mMutex);
   Eigen::Vector3f dbg;
   dbg << b_.bwx - b.bwx, b_.bwy - b.bwy, b_.bwz - b.bwz;
   return NormalizeRotation(dR * Sophus::SO3f::exp(JRg * dbg).matrix());
 }
 
-Eigen::Vector3f Preintegrated::GetDeltaVelocity(const Bias& b_) {
+Eigen::Vector3f Preintegrated::GetDeltaVelocity(const Bias &b_) {
   std::unique_lock<std::mutex> lock(mMutex);
   Eigen::Vector3f dbg, dba;
   dbg << b_.bwx - b.bwx, b_.bwy - b.bwy, b_.bwz - b.bwz;
@@ -297,7 +289,7 @@ Eigen::Vector3f Preintegrated::GetDeltaVelocity(const Bias& b_) {
   return dV + JVg * dbg + JVa * dba;
 }
 
-Eigen::Vector3f Preintegrated::GetDeltaPosition(const Bias& b_) {
+Eigen::Vector3f Preintegrated::GetDeltaPosition(const Bias &b_) {
   std::unique_lock<std::mutex> lock(mMutex);
   Eigen::Vector3f dbg, dba;
   dbg << b_.bwx - b.bwx, b_.bwy - b.bwy, b_.bwz - b.bwz;
@@ -350,7 +342,7 @@ Eigen::Matrix<float, 6, 1> Preintegrated::GetDeltaBias() {
   return db;
 }
 
-void Bias::CopyFrom(Bias& b) {
+void Bias::CopyFrom(Bias &b) {
   bax = b.bax;
   bay = b.bay;
   baz = b.baz;
@@ -359,7 +351,7 @@ void Bias::CopyFrom(Bias& b) {
   bwz = b.bwz;
 }
 
-std::ostream& operator<<(std::ostream& out, const Bias& b) {
+std::ostream &operator<<(std::ostream &out, const Bias &b) {
   if (b.bwx > 0)
     out << " ";
   out << b.bwx << ",";
@@ -382,8 +374,8 @@ std::ostream& operator<<(std::ostream& out, const Bias& b) {
   return out;
 }
 
-void Calib::Set(const Sophus::SE3<float>& sophTbc, const float& ng,
-                const float& na, const float& ngw, const float& naw) {
+void Calib::Set(const Sophus::SE3<float> &sophTbc, const float &ng,
+                const float &na, const float &ngw, const float &naw) {
   mbIsSet = true;
   const float ng2 = ng * ng;
   const float na2 = na * na;
@@ -397,7 +389,7 @@ void Calib::Set(const Sophus::SE3<float>& sophTbc, const float& ng,
   CovWalk.diagonal() << ngw2, ngw2, ngw2, naw2, naw2, naw2;
 }
 
-Calib::Calib(const Calib& calib) {
+Calib::Calib(const Calib &calib) {
   mbIsSet = calib.mbIsSet;
   // Sophus/Eigen parameters
   mTbc = calib.mTbc;
@@ -406,6 +398,6 @@ Calib::Calib(const Calib& calib) {
   CovWalk = calib.CovWalk;
 }
 
-}  //namespace IMU
+} // namespace IMU
 
-}  // namespace ORB_SLAM3
+} // namespace ORB_SLAM3

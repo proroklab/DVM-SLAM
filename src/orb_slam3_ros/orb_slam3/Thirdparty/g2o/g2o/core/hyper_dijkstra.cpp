@@ -25,38 +25,38 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hyper_dijkstra.h"
+#include "../stuff/macros.h"
 #include <assert.h>
 #include <deque>
 #include <iostream>
 #include <queue>
 #include <vector>
-#include "../stuff/macros.h"
 
 namespace g2o {
 
 using namespace std;
 
-double HyperDijkstra::TreeAction::perform(HyperGraph::Vertex* v,
-                                          HyperGraph::Vertex* vParent,
-                                          HyperGraph::Edge* e) {
+double HyperDijkstra::TreeAction::perform(HyperGraph::Vertex *v,
+                                          HyperGraph::Vertex *vParent,
+                                          HyperGraph::Edge *e) {
   (void)v;
   (void)vParent;
   (void)e;
   return std::numeric_limits<double>::max();
 }
 
-double HyperDijkstra::TreeAction::perform(HyperGraph::Vertex* v,
-                                          HyperGraph::Vertex* vParent,
-                                          HyperGraph::Edge* e,
+double HyperDijkstra::TreeAction::perform(HyperGraph::Vertex *v,
+                                          HyperGraph::Vertex *vParent,
+                                          HyperGraph::Edge *e,
                                           double distance) {
   if (distance == -1)
     return perform(v, vParent, e);
   return std::numeric_limits<double>::max();
 }
 
-HyperDijkstra::AdjacencyMapEntry::AdjacencyMapEntry(HyperGraph::Vertex* child_,
-                                                    HyperGraph::Vertex* parent_,
-                                                    HyperGraph::Edge* edge_,
+HyperDijkstra::AdjacencyMapEntry::AdjacencyMapEntry(HyperGraph::Vertex *child_,
+                                                    HyperGraph::Vertex *parent_,
+                                                    HyperGraph::Edge *edge_,
                                                     double distance_) {
   _child = child_;
   _parent = parent_;
@@ -64,7 +64,7 @@ HyperDijkstra::AdjacencyMapEntry::AdjacencyMapEntry(HyperGraph::Vertex* child_,
   _distance = distance_;
 }
 
-HyperDijkstra::HyperDijkstra(HyperGraph* g) : _graph(g) {
+HyperDijkstra::HyperDijkstra(HyperGraph *g) : _graph(g) {
   for (HyperGraph::VertexIDMap::const_iterator it = _graph->vertices().begin();
        it != _graph->vertices().end(); it++) {
     AdjacencyMapEntry entry(it->second, 0, 0,
@@ -84,13 +84,13 @@ void HyperDijkstra::reset() {
   _visited.clear();
 }
 
-bool operator<(const HyperDijkstra::AdjacencyMapEntry& a,
-               const HyperDijkstra::AdjacencyMapEntry& b) {
+bool operator<(const HyperDijkstra::AdjacencyMapEntry &a,
+               const HyperDijkstra::AdjacencyMapEntry &b) {
   return a.distance() > b.distance();
 }
 
-void HyperDijkstra::shortestPaths(HyperGraph::VertexSet& vset,
-                                  HyperDijkstra::CostFunction* cost,
+void HyperDijkstra::shortestPaths(HyperGraph::VertexSet &vset,
+                                  HyperDijkstra::CostFunction *cost,
                                   double maxDistance,
                                   double comparisonConditioner, bool directed,
                                   double maxEdgeCost) {
@@ -98,7 +98,7 @@ void HyperDijkstra::shortestPaths(HyperGraph::VertexSet& vset,
   std::priority_queue<AdjacencyMapEntry> frontier;
   for (HyperGraph::VertexSet::iterator vit = vset.begin(); vit != vset.end();
        ++vit) {
-    HyperGraph::Vertex* v = *vit;
+    HyperGraph::Vertex *v = *vit;
     assert(v != 0);
     AdjacencyMap::iterator it = _adjacencyMap.find(v);
     if (it == _adjacencyMap.end()) {
@@ -114,7 +114,7 @@ void HyperDijkstra::shortestPaths(HyperGraph::VertexSet& vset,
   while (!frontier.empty()) {
     AdjacencyMapEntry entry = frontier.top();
     frontier.pop();
-    HyperGraph::Vertex* u = entry.child();
+    HyperGraph::Vertex *u = entry.child();
     AdjacencyMap::iterator ut = _adjacencyMap.find(u);
     if (ut == _adjacencyMap.end()) {
       cerr << __PRETTY_FUNCTION__ << "Vertex " << u->id()
@@ -128,14 +128,14 @@ void HyperDijkstra::shortestPaths(HyperGraph::VertexSet& vset,
     (void)insertResult;
     HyperGraph::EdgeSet::iterator et = u->edges().begin();
     while (et != u->edges().end()) {
-      HyperGraph::Edge* edge = *et;
+      HyperGraph::Edge *edge = *et;
       ++et;
 
       if (directed && edge->vertex(0) != u)
         continue;
 
       for (size_t i = 0; i < edge->vertices().size(); ++i) {
-        HyperGraph::Vertex* z = edge->vertex(i);
+        HyperGraph::Vertex *z = edge->vertex(i);
         if (z == u)
           continue;
 
@@ -144,7 +144,7 @@ void HyperDijkstra::shortestPaths(HyperGraph::VertexSet& vset,
             edgeDistance > maxEdgeCost)
           continue;
         double zDistance = uDistance + edgeDistance;
-        //cerr << z->id() << " " << zDistance << endl;
+        // cerr << z->id() << " " << zDistance << endl;
 
         AdjacencyMap::iterator ot = _adjacencyMap.find(z);
         assert(ot != _adjacencyMap.end());
@@ -161,8 +161,8 @@ void HyperDijkstra::shortestPaths(HyperGraph::VertexSet& vset,
   }
 }
 
-void HyperDijkstra::shortestPaths(HyperGraph::Vertex* v,
-                                  HyperDijkstra::CostFunction* cost,
+void HyperDijkstra::shortestPaths(HyperGraph::Vertex *v,
+                                  HyperDijkstra::CostFunction *cost,
                                   double maxDistance,
                                   double comparisonConditioner, bool directed,
                                   double maxEdgeCost) {
@@ -172,18 +172,18 @@ void HyperDijkstra::shortestPaths(HyperGraph::Vertex* v,
                 maxEdgeCost);
 }
 
-void HyperDijkstra::computeTree(AdjacencyMap& amap) {
+void HyperDijkstra::computeTree(AdjacencyMap &amap) {
   for (AdjacencyMap::iterator it = amap.begin(); it != amap.end(); ++it) {
-    AdjacencyMapEntry& entry(it->second);
+    AdjacencyMapEntry &entry(it->second);
     entry._children.clear();
   }
   for (AdjacencyMap::iterator it = amap.begin(); it != amap.end(); ++it) {
-    AdjacencyMapEntry& entry(it->second);
-    HyperGraph::Vertex* parent = entry.parent();
+    AdjacencyMapEntry &entry(it->second);
+    HyperGraph::Vertex *parent = entry.parent();
     if (!parent) {
       continue;
     }
-    HyperGraph::Vertex* v = entry.child();
+    HyperGraph::Vertex *v = entry.child();
     assert(v == it->first);
 
     AdjacencyMap::iterator pt = amap.find(parent);
@@ -192,39 +192,41 @@ void HyperDijkstra::computeTree(AdjacencyMap& amap) {
   }
 }
 
-void HyperDijkstra::visitAdjacencyMap(AdjacencyMap& amap, TreeAction* action,
+void HyperDijkstra::visitAdjacencyMap(AdjacencyMap &amap, TreeAction *action,
                                       bool useDistance) {
 
-  typedef std::deque<HyperGraph::Vertex*> Deque;
+  typedef std::deque<HyperGraph::Vertex *> Deque;
   Deque q;
-  // scans for the vertices without the parent (whcih are the roots of the trees) and applies the action to them.
+  // scans for the vertices without the parent (whcih are the roots of the
+  // trees) and applies the action to them.
   for (AdjacencyMap::iterator it = amap.begin(); it != amap.end(); ++it) {
-    AdjacencyMapEntry& entry(it->second);
+    AdjacencyMapEntry &entry(it->second);
     if (!entry.parent()) {
       action->perform(it->first, 0, 0);
       q.push_back(it->first);
     }
   }
 
-  //std::cerr << "q.size()" << q.size() << endl;
+  // std::cerr << "q.size()" << q.size() << endl;
   int count = 0;
   while (!q.empty()) {
-    HyperGraph::Vertex* parent = q.front();
+    HyperGraph::Vertex *parent = q.front();
     q.pop_front();
     ++count;
     AdjacencyMap::iterator parentIt = amap.find(parent);
     if (parentIt == amap.end()) {
       continue;
     }
-    //cerr << "parent= " << parent << " parent id= " << parent->id() << "\t children id =";
-    HyperGraph::VertexSet& childs(parentIt->second.children());
+    // cerr << "parent= " << parent << " parent id= " << parent->id() << "\t
+    // children id =";
+    HyperGraph::VertexSet &childs(parentIt->second.children());
     for (HyperGraph::VertexSet::iterator childsIt = childs.begin();
          childsIt != childs.end(); ++childsIt) {
-      HyperGraph::Vertex* child = *childsIt;
-      //cerr << child->id();
+      HyperGraph::Vertex *child = *childsIt;
+      // cerr << child->id();
       AdjacencyMap::iterator adjacencyIt = amap.find(child);
       assert(adjacencyIt != amap.end());
-      HyperGraph::Edge* edge = adjacencyIt->second.edge();
+      HyperGraph::Edge *edge = adjacencyIt->second.edge();
 
       assert(adjacencyIt->first == child);
       assert(adjacencyIt->second.child() == child);
@@ -236,16 +238,16 @@ void HyperDijkstra::visitAdjacencyMap(AdjacencyMap& amap, TreeAction* action,
       }
       q.push_back(child);
     }
-    //cerr << endl;
+    // cerr << endl;
   }
 }
 
 void HyperDijkstra::connectedSubset(
-    HyperGraph::VertexSet& connected, HyperGraph::VertexSet& visited,
-    HyperGraph::VertexSet& startingSet, HyperGraph* g, HyperGraph::Vertex* v,
-    HyperDijkstra::CostFunction* cost, double distance,
+    HyperGraph::VertexSet &connected, HyperGraph::VertexSet &visited,
+    HyperGraph::VertexSet &startingSet, HyperGraph *g, HyperGraph::Vertex *v,
+    HyperDijkstra::CostFunction *cost, double distance,
     double comparisonConditioner, double maxEdgeCost) {
-  typedef std::queue<HyperGraph::Vertex*> VertexDeque;
+  typedef std::queue<HyperGraph::Vertex *> VertexDeque;
   visited.clear();
   connected.clear();
   VertexDeque frontier;
@@ -253,7 +255,7 @@ void HyperDijkstra::connectedSubset(
   connected.insert(v);
   frontier.push(v);
   while (!frontier.empty()) {
-    HyperGraph::Vertex* v0 = frontier.front();
+    HyperGraph::Vertex *v0 = frontier.front();
     frontier.pop();
     dv.shortestPaths(v0, cost, distance, comparisonConditioner, false,
                      maxEdgeCost);
@@ -264,17 +266,17 @@ void HyperDijkstra::connectedSubset(
         continue;
       std::pair<HyperGraph::VertexSet::iterator, bool> insertOutcome =
           connected.insert(*it);
-      if (insertOutcome.second) {  // the node was not in the connectedSet;
-        frontier.push(dynamic_cast<HyperGraph::Vertex*>(*it));
+      if (insertOutcome.second) { // the node was not in the connectedSet;
+        frontier.push(dynamic_cast<HyperGraph::Vertex *>(*it));
       }
     }
   }
 }
 
-double UniformCostFunction::operator()(HyperGraph::Edge* /*edge*/,
-                                       HyperGraph::Vertex* /*from*/,
-                                       HyperGraph::Vertex* /*to*/) {
+double UniformCostFunction::operator()(HyperGraph::Edge * /*edge*/,
+                                       HyperGraph::Vertex * /*from*/,
+                                       HyperGraph::Vertex * /*to*/) {
   return 1.;
 }
 
-};  // namespace g2o
+}; // namespace g2o

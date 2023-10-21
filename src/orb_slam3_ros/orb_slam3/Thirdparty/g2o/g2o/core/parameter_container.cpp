@@ -51,11 +51,9 @@ void ParameterContainer::clear() {
   BaseClass::clear();
 }
 
-ParameterContainer::~ParameterContainer() {
-  clear();
-}
+ParameterContainer::~ParameterContainer() { clear(); }
 
-bool ParameterContainer::addParameter(Parameter* p) {
+bool ParameterContainer::addParameter(Parameter *p) {
   if (p->id() < 0)
     return false;
   iterator it = find(p->id());
@@ -65,24 +63,24 @@ bool ParameterContainer::addParameter(Parameter* p) {
   return true;
 }
 
-Parameter* ParameterContainer::getParameter(int id) {
+Parameter *ParameterContainer::getParameter(int id) {
   iterator it = find(id);
   if (it == end())
     return 0;
   return it->second;
 }
 
-Parameter* ParameterContainer::detachParameter(int id) {
+Parameter *ParameterContainer::detachParameter(int id) {
   iterator it = find(id);
   if (it == end())
     return 0;
-  Parameter* p = it->second;
+  Parameter *p = it->second;
   erase(it);
   return p;
 }
 
-bool ParameterContainer::write(std::ostream& os) const {
-  Factory* factory = Factory::instance();
+bool ParameterContainer::write(std::ostream &os) const {
+  Factory *factory = Factory::instance();
   for (const_iterator it = begin(); it != end(); it++) {
     os << factory->tag(it->second) << " ";
     os << it->second->id() << " ";
@@ -93,12 +91,12 @@ bool ParameterContainer::write(std::ostream& os) const {
 }
 
 bool ParameterContainer::read(
-    std::istream& is,
-    const std::map<std::string, std::string>* _renamedTypesLookup) {
+    std::istream &is,
+    const std::map<std::string, std::string> *_renamedTypesLookup) {
   stringstream currentLine;
   string token;
 
-  Factory* factory = Factory::instance();
+  Factory *factory = Factory::instance();
   HyperGraph::GraphElemBitset elemBitset;
   elemBitset[HyperGraph::HGET_PARAMETER] = 1;
 
@@ -117,14 +115,14 @@ bool ParameterContainer::read(
       }
     }
 
-    HyperGraph::HyperGraphElement* element =
+    HyperGraph::HyperGraphElement *element =
         factory->construct(token, elemBitset);
-    if (!element)  // not a parameter or otherwise unknown tag
+    if (!element) // not a parameter or otherwise unknown tag
       continue;
     assert(element->elementType() == HyperGraph::HGET_PARAMETER &&
            "Should be a param");
 
-    Parameter* p = static_cast<Parameter*>(element);
+    Parameter *p = static_cast<Parameter *>(element);
     int pid;
     currentLine >> pid;
     p->setId(pid);
@@ -139,9 +137,9 @@ bool ParameterContainer::read(
              << " id:" << pid << " already defined" << endl;
       }
     }
-  }  // while read line
+  } // while read line
 
   return true;
 }
 
-}  // namespace g2o
+} // namespace g2o
