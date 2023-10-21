@@ -1,43 +1,29 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
-from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QHBoxLayout, QWidget
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QPixmap, QImage, QCursor
 from sensor_msgs.msg import Image
+from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge
 import rclpy
 from rclpy.node import Node
-from PyQt5.QtGui import QPixmap, QImage
 import signal
 from functools import partial
 
 
-class MainWindow(QMainWindow):
-    def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
+class ImageViewer(QLabel):
+    def __init__(self, robot_name, node):
+        super().__init__()
 
-        self.setWindowTitle('Image Viewer')
-        central_widget = QWidget()
-        layout = QVBoxLayout()
-        self.label = QLabel()
-        layout.addWidget(self.label)
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
-        self.show()
+        self.node = node
 
-        # ROS2 init
-        rclpy.init(args=None)
-        self.node = Node('image_subscriber_node')
         self.subscription = self.node.create_subscription(
-            Image, 'robot1/camera/image_color', self.image_callback, 10)
-        # spin once, timeout_sec 5[s]
-        timeout_sec_rclpy = 5
-        rclpy.spin_once(self.node, timeout_sec=timeout_sec_rclpy)
-        print("Connected to ros")
+            Image, f'{robot_name}/camera/image_color', self.image_callback, 5)
+        self.cmd_vel_publisher = self.node.create_publisher(
+            Twist, f'{robot_name}/cmd_vel', 10)
 
-        # create timer for spining
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.timer_update)
-        self.timer.start(10)
-        print("Started timer")
+        self.initial_mouse_pos = None
+        self.twist = Twist()
 
     def image_callback(self, msg):
         bridge = CvBridge()
@@ -55,9 +41,85 @@ class MainWindow(QMainWindow):
             self.node.get_logger().error(f'Error processing the image: {e}')
 
     def display_image(self, image):
-        # Display the image using PyQt\
+        # Display the image using PyQt
         pixmap = QPixmap.fromImage(image)
-        self.label.setPixmap(pixmap)
+        self.setPixmap(pixmap)
+
+    def mousePressEvent(self, event):
+        self.setFocus(True)
+
+        self.initial_mouse_pos = event.pos()
+
+    def mouseReleaseEvent(self, event):
+        self.twist.angular.y = 0.0
+        self.twist.angular.z = 0.0
+
+        self.cmd_vel_publisher.publish(self.twist)
+
+    def mouseMoveEvent(self, event):
+        offset = event.pos() - self.initial_mouse_pos
+
+        print("Mouse moved by offset:", offset)
+
+        self.twist.angular.y = offset.y()/100
+        self.twist.angular.z = -offset.x()/100
+
+        self.cmd_vel_publisher.publish(self.twist)
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_W:
+            self.twist.linear.x = 1.0
+        elif key == Qt.Key_A:
+            self.twist.linear.y = 1.0
+        elif key == Qt.Key_S:
+            self.twist.linear.x = -1.0
+        elif key == Qt.Key_D:
+            self.twist.linear.y = -1.0
+
+        self.cmd_vel_publisher.publish(self.twist)
+
+    def keyReleaseEvent(self, event):
+        key = event.key()
+        print(key)
+        if key == Qt.Key_W or key == Qt.Key_S:
+            self.twist.linear.x = 0.0
+        elif key == Qt.Key_A or key == Qt.Key_D:
+            self.twist.linear.y = 0.0
+
+        self.cmd_vel_publisher.publish(self.twist)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent)
+
+        # ROS2 init
+        rclpy.init(args=None)
+        self.node = Node('image_subscriber_node')
+        # spin once, timeout_sec 5[s]
+        timeout_sec_rclpy = 5
+        rclpy.spin_once(self.node, timeout_sec=timeout_sec_rclpy)
+        print("Connected to ros")
+
+        self.setWindowTitle('Image Viewer')
+        central_widget = QWidget()
+
+        layout = QHBoxLayout()
+        robot1_viewer = ImageViewer("robot1", self.node)
+        layout.addWidget(robot1_viewer)
+        robot2_viewer = ImageViewer("robot2", self.node)
+        layout.addWidget(robot2_viewer)
+
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
+        self.show()
+
+        # create timer for spining
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.timer_update)
+        self.timer.start(10)
+        print("Started timer")
 
     def timer_update(self):
         rclpy.spin_once(self.node)
