@@ -20,9 +20,9 @@ File.version: "1.0"
 Camera.type: "PinHole"
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera1.fx: 186.26
-Camera1.fy: 186.26
-Camera1.cx: 400.0
+Camera1.fx: 149.0
+Camera1.fy: 149.0
+Camera1.cx: 320.0
 Camera1.cy: 240.0
 
 Camera1.k1: 0.0
@@ -30,7 +30,7 @@ Camera1.k2: 0.0
 Camera1.p1: 0.0
 Camera1.p2: 0.0
 
-Camera.width: 800
+Camera.width: 640
 Camera.height: 480
 
 # Camera frames per second 
