@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIEWER_H
-#define VIEWER_H
+#pragma once
 
 #include "FrameDrawer.h"
 #include "MapDrawer.h"
@@ -98,5 +97,3 @@ private:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // VIEWER_H

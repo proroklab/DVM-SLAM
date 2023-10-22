@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FRAME_H
-#define FRAME_H
+#pragma once
 
 #include <vector>
 
@@ -391,5 +390,3 @@ public:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // FRAME_H

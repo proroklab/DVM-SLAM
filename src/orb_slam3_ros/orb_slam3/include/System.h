@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#pragma once
 
 #include <opencv2/core/core.hpp>
 #include <stdio.h>
@@ -274,5 +273,3 @@ private:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // SYSTEM_H

@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPDRAWER_H
-#define MAPDRAWER_H
+#pragma once
 
 #include "Atlas.h"
 #include "KeyFrame.h"
@@ -72,5 +71,3 @@ private:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // MAPDRAWER_H

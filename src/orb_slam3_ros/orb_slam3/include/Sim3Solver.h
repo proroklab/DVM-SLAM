@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SIM3SOLVER_H
-#define SIM3SOLVER_H
+#pragma once
 
 #include <opencv2/opencv.hpp>
 #include <vector>
@@ -136,5 +135,3 @@ protected:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // SIM3SOLVER_H

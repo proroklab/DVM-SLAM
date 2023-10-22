@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAP_H
-#define MAP_H
+#pragma once
 
 #include "GeometricCamera.h"
 #include "KeyFrame.h"
@@ -210,5 +209,3 @@ protected:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // MAP_H

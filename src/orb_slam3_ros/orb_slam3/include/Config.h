@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,5 +48,3 @@ private:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // CONFIG_H

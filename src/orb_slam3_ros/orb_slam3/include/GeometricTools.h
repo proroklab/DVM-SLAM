@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GEOMETRIC_TOOLS_H
-#define GEOMETRIC_TOOLS_H
+#pragma once
 
 #include <Eigen/Core>
 #include <opencv2/core/core.hpp>
@@ -79,5 +78,3 @@ public:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // GEOMETRIC_TOOLS_H

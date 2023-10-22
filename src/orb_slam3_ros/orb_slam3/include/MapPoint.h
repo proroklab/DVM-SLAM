@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPPOINT_H
-#define MAPPOINT_H
+#pragma once
 
 #include "Converter.h"
 #include "Frame.h"
@@ -248,5 +247,3 @@ protected:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // MAPPOINT_H

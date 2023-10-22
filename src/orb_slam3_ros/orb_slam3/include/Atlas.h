@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ATLAS_H
-#define ATLAS_H
+#pragma once
 
 #include "GeometricCamera.h"
 #include "KannalaBrandt8.h"
@@ -165,5 +164,3 @@ protected:
 }; // class Atlas
 
 } // namespace ORB_SLAM3
-
-#endif // ATLAS_H

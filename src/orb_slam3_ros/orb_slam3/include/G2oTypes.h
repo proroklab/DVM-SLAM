@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef G2OTYPES_H
-#define G2OTYPES_H
+#pragma once
 
 #include "Thirdparty/g2o/g2o/core/base_binary_edge.h"
 #include "Thirdparty/g2o/g2o/core/base_multi_edge.h"
@@ -809,5 +808,3 @@ public:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // G2OTYPES_H

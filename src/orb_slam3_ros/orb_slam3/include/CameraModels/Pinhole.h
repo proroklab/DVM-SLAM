@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CAMERAMODELS_PINHOLE_H
-#define CAMERAMODELS_PINHOLE_H
+#pragma once
 
 #include <assert.h>
 
@@ -111,5 +110,3 @@ private:
 } // namespace ORB_SLAM3
 
 // BOOST_CLASS_EXPORT_KEY(ORBSLAM2::Pinhole)
-
-#endif // CAMERAMODELS_PINHOLE_H

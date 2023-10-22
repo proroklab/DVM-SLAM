@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ORB_SLAM3_OPTIMIZABLETYPES_H
-#define ORB_SLAM3_OPTIMIZABLETYPES_H
+#pragma once
 
 #include "Thirdparty/g2o/g2o/core/base_unary_edge.h"
 #include <Thirdparty/g2o/g2o/types/sim3.h>
@@ -232,5 +231,3 @@ public:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // ORB_SLAM3_OPTIMIZABLETYPES_H

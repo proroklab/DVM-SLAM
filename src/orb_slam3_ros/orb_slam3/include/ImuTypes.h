@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef IMUTYPES_H
-#define IMUTYPES_H
+#pragma once
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -267,5 +266,3 @@ Eigen::Matrix3f NormalizeRotation(const Eigen::Matrix3f &R);
 } // namespace IMU
 
 } // namespace ORB_SLAM3
-
-#endif // IMUTYPES_H

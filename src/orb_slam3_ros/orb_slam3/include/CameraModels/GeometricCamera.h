@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CAMERAMODELS_GEOMETRICCAMERA_H
-#define CAMERAMODELS_GEOMETRICCAMERA_H
+#pragma once
 
 #include <vector>
 
@@ -119,5 +118,3 @@ protected:
   unsigned int mnType;
 };
 } // namespace ORB_SLAM3
-
-#endif // CAMERAMODELS_GEOMETRICCAMERA_H

@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TRACKING_H
-#define TRACKING_H
+#pragma once
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
@@ -383,5 +382,3 @@ public:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // TRACKING_H

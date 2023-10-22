@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYFRAME_H
-#define KEYFRAME_H
+#pragma once
 
 #include "Frame.h"
 #include "ImuTypes.h"
@@ -542,5 +541,3 @@ public:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // KEYFRAME_H

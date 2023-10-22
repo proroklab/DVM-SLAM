@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FRAMEDRAWER_H
-#define FRAMEDRAWER_H
+#pragma once
 
 #include "Atlas.h"
 #include "MapPoint.h"
@@ -84,5 +83,3 @@ protected:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // FRAMEDRAWER_H

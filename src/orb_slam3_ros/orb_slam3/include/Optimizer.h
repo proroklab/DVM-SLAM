@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef OPTIMIZER_H
-#define OPTIMIZER_H
+#pragma once
 
 #include "Frame.h"
 #include "KeyFrame.h"
@@ -140,5 +139,3 @@ public:
 };
 
 } // namespace ORB_SLAM3
-
-#endif // OPTIMIZER_H

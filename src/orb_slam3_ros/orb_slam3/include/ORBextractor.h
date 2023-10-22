@@ -19,8 +19,7 @@
  * ORB-SLAM3. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ORBEXTRACTOR_H
-#define ORBEXTRACTOR_H
+#pragma once
 
 #include <list>
 #include <opencv2/opencv.hpp>
@@ -105,5 +104,3 @@ protected:
 };
 
 } // namespace ORB_SLAM3
-
-#endif
