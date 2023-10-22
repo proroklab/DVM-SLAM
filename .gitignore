@@ -4,3 +4,4 @@ install/
 .DS_Store
 .vscode/
 src/webots_sim/worlds/.*
+.cache/
