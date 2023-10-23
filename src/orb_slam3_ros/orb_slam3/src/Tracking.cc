@@ -3862,6 +3862,16 @@ void Tracking::SaveSubTrajectory(string strNameFile_frames,
 
 float Tracking::GetImageScale() { return mImageScale; }
 
+Sophus::SE3f Tracking::GetCamTwc() {
+  return (mCurrentFrame.GetPose()).inverse();
+}
+
+Sophus::SE3f Tracking::GetImuTwb() { return mCurrentFrame.GetImuPose(); }
+
+Eigen::Vector3f Tracking::GetImuVwb() { return mCurrentFrame.GetVelocity(); }
+
+bool Tracking::isImuPreintegrated() { return mCurrentFrame.mpImuPreintegrated; }
+
 #ifdef REGISTER_LOOP
 void Tracking::RequestStop() {
   unique_lock<mutex> lock(mMutexStop);

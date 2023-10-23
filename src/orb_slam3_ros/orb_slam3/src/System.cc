@@ -188,7 +188,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
   // Initialize the Tracking thread
   //(it will live in the main thread of execution, the one that called this
-  //constructor)
+  // constructor)
   cout << "Seq. Name: " << strSequence << endl;
   mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
                            mpAtlas, mpKeyFrameDatabase, strSettingsFile,
@@ -1361,6 +1361,48 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn() {
   unique_lock<mutex> lock(mMutexState);
   return mTrackedKeyPointsUn;
 }
+
+vector<MapPoint *> System::GetAllMapPoints() {
+  Map *pActiveMap = mpAtlas->GetCurrentMap();
+  return pActiveMap->GetAllMapPoints();
+}
+
+vector<Sophus::SE3f> System::GetAllKeyframePoses() {
+  vector<KeyFrame *> vpKFs = mpAtlas->GetAllKeyFrames();
+  sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
+
+  vector<Sophus::SE3f> vKFposes;
+
+  for (size_t i = 0; i < vpKFs.size(); i++) {
+    KeyFrame *pKF = vpKFs[i];
+
+    if (pKF->isBad())
+      continue;
+
+    // Twb can be world frame to cam0 frame (without IMU) or body in world frame
+    // (with IMU)
+    Sophus::SE3f Twb;
+    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO ||
+        mSensor == IMU_RGBD) // with IMU
+      Twb = vpKFs[i]->GetImuPose();
+    else // without IMU
+      Twb = vpKFs[i]->GetPoseInverse();
+
+    vKFposes.push_back(Twb);
+  }
+
+  return vKFposes;
+}
+
+cv::Mat System::GetCurrentFrame() { return mpFrameDrawer->DrawFrame(); }
+
+Sophus::SE3f System::GetCamTwc() { return mpTracker->GetCamTwc(); }
+
+Sophus::SE3f System::GetImuTwb() { return mpTracker->GetImuTwb(); }
+
+Eigen::Vector3f System::GetImuVwb() { return mpTracker->GetImuVwb(); }
+
+bool System::isImuPreintegrated() { return mpTracker->isImuPreintegrated(); }
 
 double System::GetTimeFromIMUInit() {
   double aux = mpLocalMapper->GetCurrKFTime() - mpLocalMapper->mFirstTs;

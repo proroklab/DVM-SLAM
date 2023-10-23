@@ -181,6 +181,14 @@ public:
   int GetTrackingState();
   std::vector<MapPoint *> GetTrackedMapPoints();
   std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
+  // Added for ROS wrapper
+  std::vector<MapPoint *> GetAllMapPoints();
+  std::vector<Sophus::SE3f> GetAllKeyframePoses();
+  cv::Mat GetCurrentFrame();
+  Sophus::SE3f GetCamTwc();
+  Sophus::SE3f GetImuTwb();
+  Eigen::Vector3f GetImuVwb();
+  bool isImuPreintegrated();
 
   // For debugging
   double GetTimeFromIMUInit();

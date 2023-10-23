@@ -100,6 +100,12 @@ public:
                       KeyFrame *pCurrentKeyFrame);
   KeyFrame *GetLastKeyFrame() { return mpLastKeyFrame; }
 
+  // Added for ROS wrapper
+  Sophus::SE3f GetCamTwc();
+  Sophus::SE3f GetImuTwb();
+  Eigen::Vector3f GetImuVwb();
+  bool isImuPreintegrated();
+
   void CreateMapInAtlas();
   // std::mutex mMutexTracks;
 
