@@ -14,21 +14,24 @@ def generate_launch_description():
         package_dir, 'resource', 'robot2.urdf')
 
     webots = WebotsLauncher(
-        world=os.path.join(package_dir, 'worlds', 'complete_apartment.wbt')
+        world=os.path.join(package_dir, 'worlds', 'complete_apartment.wbt'),
+        simulation_server_ip="10.211.55.2",
     )
 
     robot1_driver = WebotsController(
         robot_name='robot1',
         parameters=[
-            {'robot_description': robot1_description_path},
-        ]
+            {'robot_description': f'"{robot1_description_path}"'},
+        ],
+        ip_address="10.211.55.2"
     )
 
     robot2_driver = WebotsController(
         robot_name='robot2',
         parameters=[
-            {'robot_description': robot2_description_path},
-        ]
+            {'robot_description': f'"{robot2_description_path}"'},
+        ],
+        ip_address="10.211.55.2"
     )
 
     return LaunchDescription([
