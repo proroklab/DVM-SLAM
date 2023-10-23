@@ -7,12 +7,19 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+add_definitions(-w)
+
 find_package(OpenCV 4.2)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(image_transport REQUIRED)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/orb_slam3)
 SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2/lib:${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/g2o/lib")
@@ -29,9 +36,13 @@ include_directories(
   ${Pangolin_INCLUDE_DIRS}
 )
 
+add_library(orb_slam3_wrapper src/orb_slam3_wrapper.cpp)
+ament_target_dependencies(orb_slam3_wrapper rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport)
+target_link_libraries(orb_slam3_wrapper ORB_SLAM3 DBoW2)
+
 add_executable(ros_mono src/ros_mono.cpp)
-ament_target_dependencies(ros_mono rclcpp cv_bridge OpenCV)
-target_link_libraries(ros_mono ORB_SLAM3 DBoW2)
+ament_target_dependencies(ros_mono rclcpp cv_bridge OpenCV rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport)
+target_link_libraries(ros_mono ORB_SLAM3 DBoW2 orb_slam3_wrapper)
 install(TARGETS ros_mono
   DESTINATION lib/${PROJECT_NAME})
 
