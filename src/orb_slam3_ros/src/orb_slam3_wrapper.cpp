@@ -9,8 +9,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file,
       node_handle_(std::shared_ptr<OrbSlam3Wrapper>(this, [](auto *) {})),
       image_transport(node_handle_) {
   this->sensor_type = sensor_type;
-  pSLAM = new ORB_SLAM3::System(voc_file, settings_file,
-                                ORB_SLAM3::System::MONOCULAR, true);
+  pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, true);
 
   // Create services
   // save_map_service = this->create_service<orb_slam3_ros::srv::SaveMap>(

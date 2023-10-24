@@ -9,9 +9,9 @@ using namespace std;
 
 class OrbSlam3Mono : public OrbSlam3Wrapper {
 public:
-  OrbSlam3Mono(string node_name, string voc_file, string settings_file,
-               ORB_SLAM3::System::eSensor sensor_type)
-      : OrbSlam3Wrapper(node_name, voc_file, settings_file, sensor_type) {
+  OrbSlam3Mono(string voc_file, string settings_file)
+      : OrbSlam3Wrapper("orb_slam3_mono", voc_file, settings_file,
+                        ORB_SLAM3::System::MONOCULAR) {
 
     image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
         "/robot1/camera/image_color", 1,
@@ -55,8 +55,7 @@ int main(int argc, char **argv) {
   string settings_file = "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/"
                          "ubuntuSharedFolder/part_II_project/src/webots_sim/"
                          "worlds/webots.yaml";
-  auto node = std::make_shared<OrbSlam3Mono>(
-      "orb_slam_mono", voc_file, settings_file, ORB_SLAM3::System::MONOCULAR);
+  auto node = std::make_shared<OrbSlam3Mono>(voc_file, settings_file);
 
   rclcpp::spin(node);
   rclcpp::shutdown();

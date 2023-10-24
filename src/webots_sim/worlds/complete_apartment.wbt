@@ -87,7 +87,7 @@ WorldInfo {
     "This simulation was sponsored by Kamal Othman & Prof. Ahmad Rad from AISL-SFU"
   ]
   title "Complete apartment including two bedrooms, one bathroom, one restroom, stairs and a balcony"
-  basicTimeStep 64
+  basicTimeStep 128
   FPS 20
 }
 Viewpoint {
@@ -2011,7 +2011,6 @@ DEF TREES Group {
   ]
 }
 Robot {
-  name "robot1"
   translation -5.47 -5.65 1.5
   rotation 0 0 1 1.5708
   children [
@@ -2052,11 +2051,11 @@ Robot {
       antiAliasing TRUE
     }
   ]
+  name "robot1"
   controller "<extern>"
   supervisor TRUE
 }
 Robot {
-  name "robot2"
   translation -4.47 -5.65 1.5
   rotation 0 0 1 1.5708
   children [
@@ -2097,6 +2096,7 @@ Robot {
       antiAliasing TRUE
     }
   ]
+  name "robot2"
   controller "<extern>"
   supervisor TRUE
 }

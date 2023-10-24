@@ -39,6 +39,23 @@ Camera.fps: 20
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
 
+# IMU noise
+IMU.NoiseGyro: 1.7e-4 #1.6968e-04
+IMU.NoiseAcc: 2.0000e-3 #2.0e-3
+IMU.GyroWalk: 1.9393e-05 
+IMU.AccWalk: 3.0000e-03 # 3e-03
+IMU.Frequency: 20.0
+
+# Transformation from body-frame (imu) to camera
+IMU.T_b_c1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [0.0, -1.0, 0.0, 0.0,
+          0.0, 0.0, -1.0, 0.0,
+          1.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 1.0]
+
 #--------------------------------------------------------------------------------------------
 # ORB Parameters
 #--------------------------------------------------------------------------------------------
