@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 project(orb_slam3_ros)
 
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Debug)
+ENDIF()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -44,6 +48,12 @@ add_executable(ros_mono src/ros_mono.cpp)
 ament_target_dependencies(ros_mono rclcpp cv_bridge OpenCV rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport)
 target_link_libraries(ros_mono ORB_SLAM3 DBoW2 orb_slam3_wrapper)
 install(TARGETS ros_mono
+  DESTINATION lib/${PROJECT_NAME})
+
+add_executable(ros_imu_mono src/ros_imu_mono.cpp)
+ament_target_dependencies(ros_imu_mono rclcpp cv_bridge OpenCV rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport)
+target_link_libraries(ros_imu_mono ORB_SLAM3 DBoW2 orb_slam3_wrapper)
+install(TARGETS ros_imu_mono
   DESTINATION lib/${PROJECT_NAME})
 
 
