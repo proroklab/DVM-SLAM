@@ -307,6 +307,7 @@ void Map::SetLastMapChange(int currentChangeId) {
 void Map::PreSave(std::set<GeometricCamera *> &spCams) {
   int nMPWithoutObs = 0;
 
+  // QUESTIONABLE CODE //
   std::set<MapPoint *> tmp_mspMapPoints1;
   tmp_mspMapPoints1.insert(mspMapPoints.begin(), mspMapPoints.end());
 

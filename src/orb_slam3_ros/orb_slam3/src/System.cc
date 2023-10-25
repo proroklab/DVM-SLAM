@@ -1452,6 +1452,14 @@ void System::InsertTrackTime(double &time) {
 }
 #endif
 
+string System::GetSerializedCurrentMap() {
+  return mpAtlas->SerializeMap(mpAtlas->GetCurrentMap());
+}
+
+void System::AddSerializedMap(string serializedMap) {
+  mpAtlas->CreateNewMap(serializedMap);
+}
+
 void System::SaveAtlas(int type) {
   if (!mStrSaveAtlasToFile.empty()) {
     // clock_t start = clock();

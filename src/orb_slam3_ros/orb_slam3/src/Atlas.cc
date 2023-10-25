@@ -71,6 +71,34 @@ void Atlas::CreateNewMap() {
   mspMaps.insert(mpCurrentMap);
 }
 
+void Atlas::CreateNewMap(string serializedMap) {
+  std::istringstream stringStream(serializedMap);
+  boost::archive::text_iarchive ia(stringStream);
+
+  map<unsigned int, GeometricCamera *> mpCams;
+  for (GeometricCamera *pCam : mvpCameras) {
+    mpCams[pCam->GetId()] = pCam;
+  }
+
+  unique_lock<mutex> lock(mMutexAtlas);
+  cout << "Creation of new map from serialized data with id: " << Map::nNextId
+       << endl;
+  if (mpCurrentMap) {
+    if (!mspMaps.empty() && mnLastInitKFidMap < mpCurrentMap->GetMaxKFid())
+      mnLastInitKFidMap = mpCurrentMap->GetMaxKFid() +
+                          1; // The init KF is the next of current maximum
+
+    Map *newMap = new Map(mnLastInitKFidMap);
+
+    ia >> newMap;
+
+    mspMaps.insert(newMap);
+    newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
+    cout << "Successful creation of new map from serialized data with id: "
+         << Map::nNextId << endl;
+  }
+}
+
 void Atlas::ChangeMap(Map *pMap) {
   unique_lock<mutex> lock(mMutexAtlas);
   cout << "Change to map with id: " << pMap->GetId() << endl;
@@ -257,6 +285,24 @@ void Atlas::SetImuInitialized() {
 bool Atlas::isImuInitialized() {
   unique_lock<mutex> lock(mMutexAtlas);
   return mpCurrentMap->isImuInitialized();
+}
+
+string Atlas::SerializeMap(Map *mapToSerialize) {
+  set<GeometricCamera *> spCams(mvpCameras.begin(), mvpCameras.end());
+  mapToSerialize->PreSave(spCams);
+  stringstream stringStream;
+  boost::archive::text_oarchive oa(stringStream);
+
+  oa << mapToSerialize;
+
+  // Necessary??
+  map<unsigned int, GeometricCamera *> mpCams;
+  for (GeometricCamera *pCam : mvpCameras) {
+    mpCams[pCam->GetId()] = pCam;
+  }
+  mapToSerialize->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
+
+  return stringStream.str();
 }
 
 void Atlas::PreSave() {
