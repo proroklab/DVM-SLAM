@@ -3,6 +3,8 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "image_transport/image_transport.hpp"
+#include "interfaces/srv/add_map.hpp"
+#include "interfaces/srv/get_current_map.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -43,9 +45,21 @@ protected:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr kf_markers_pub;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
 
+  // ROS services
+  rclcpp::Service<interfaces::srv::GetCurrentMap>::SharedPtr
+      get_current_map_service;
+  rclcpp::Service<interfaces::srv::AddMap>::SharedPtr add_map_service;
+
   string world_frame_id = "/world";
   string imu_frame_id = "/imu";
   string cam_frame_id = "camera";
+
+  void getCurrentMap(
+      const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
+      std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response);
+
+  void addMap(const std::shared_ptr<interfaces::srv::AddMap::Request> request,
+              std::shared_ptr<interfaces::srv::AddMap::Response> response);
 
   void publish_topics(rclcpp::Time msg_time,
                       Eigen::Vector3f Wbb = Eigen::Vector3f::Zero());

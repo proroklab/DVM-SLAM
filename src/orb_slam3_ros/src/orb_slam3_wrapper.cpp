@@ -11,13 +11,6 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file,
   this->sensor_type = sensor_type;
   pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, true);
 
-  // Create services
-  // save_map_service = this->create_service<orb_slam3_ros::srv::SaveMap>(
-  //     node_name + "/save_map",
-  //     bind(&OrbSlam3Wrapper::saveMap, this, placeholders::_1))
-
-  ;
-
   // Create publishers
   pose_pub = this->create_publisher<geometry_msgs::msg::PoseStamped>(
       node_name + "/camera_pose", 1);
@@ -35,7 +28,31 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file,
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>(
         node_name + "/body_odom", 1);
   }
+
+  // Create services
+  get_current_map_service =
+      this->create_service<interfaces::srv::GetCurrentMap>(
+          node_name + "/get_current_map",
+          std::bind(&OrbSlam3Wrapper::getCurrentMap, this,
+                    std::placeholders::_1, std::placeholders::_2));
+  add_map_service = this->create_service<interfaces::srv::AddMap>(
+      node_name + "/add_map",
+      std::bind(&OrbSlam3Wrapper::addMap, this, std::placeholders::_1,
+                std::placeholders::_2));
 };
+
+void OrbSlam3Wrapper::getCurrentMap(
+    const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
+    std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
+  pSLAM->GetSerializedCurrentMap();
+  response->serialized_map = "";
+}
+
+void OrbSlam3Wrapper::addMap(
+    const std::shared_ptr<interfaces::srv::AddMap::Request> request,
+    std::shared_ptr<interfaces::srv::AddMap::Response> response) {
+  pSLAM->AddSerializedMap();
+}
 
 void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time,
                                      Eigen::Vector3f Wbb) {
