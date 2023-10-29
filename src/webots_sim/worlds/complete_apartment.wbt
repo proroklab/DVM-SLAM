@@ -87,7 +87,7 @@ WorldInfo {
     "This simulation was sponsored by Kamal Othman & Prof. Ahmad Rad from AISL-SFU"
   ]
   title "Complete apartment including two bedrooms, one bathroom, one restroom, stairs and a balcony"
-  basicTimeStep 128
+  basicTimeStep 50
   FPS 20
 }
 Viewpoint {
