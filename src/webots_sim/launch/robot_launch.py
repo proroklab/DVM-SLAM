@@ -21,7 +21,7 @@ def generate_launch_description():
     robot1_driver = WebotsController(
         robot_name='robot1',
         parameters=[
-            {'robot_description': f'"{robot1_description_path}"'},
+            {'robot_description': robot1_description_path},
         ],
         ip_address="10.211.55.2"
     )
@@ -29,7 +29,7 @@ def generate_launch_description():
     robot2_driver = WebotsController(
         robot_name='robot2',
         parameters=[
-            {'robot_description': f'"{robot2_description_path}"'},
+            {'robot_description': robot2_description_path},
         ],
         ip_address="10.211.55.2"
     )

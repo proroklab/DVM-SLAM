@@ -9,6 +9,9 @@ class RobotDriver:
         self.robot = webots_node.robot
         self.robot_node = webots_node.robot.getSelf()
 
+        self.camera = self.robot.getDevice("camera")
+        self.camera.enable(1)
+
         self.target_twist = Twist()
 
         rclpy.init(args=None)

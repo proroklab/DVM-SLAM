@@ -40,11 +40,11 @@ Camera.fps: 20
 Camera.RGB: 1
 
 # IMU noise
-IMU.NoiseGyro: 1.7e-4 #1.6968e-04
-IMU.NoiseAcc: 2.0000e-3 #2.0e-3
-IMU.GyroWalk: 1.9393e-05 
-IMU.AccWalk: 3.0000e-03 # 3e-03
-IMU.Frequency: 20.0
+IMU.NoiseGyro: 0.0
+IMU.NoiseAcc: 0.0
+IMU.GyroWalk: 0.0
+IMU.AccWalk: 0.0
+IMU.Frequency: 10.0
 
 # Transformation from body-frame (imu) to camera
 IMU.T_b_c1: !!opencv-matrix
