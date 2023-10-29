@@ -72,8 +72,8 @@ void Atlas::CreateNewMap() {
 }
 
 void Atlas::CreateNewMap(string serializedMap) {
-  std::istringstream stringStream(serializedMap);
-  boost::archive::text_iarchive ia(stringStream);
+  std::ifstream ifs("/home/joshuabird/Desktop/map", std::ios::binary);
+  boost::archive::binary_iarchive ia(ifs);
 
   map<unsigned int, GeometricCamera *> mpCams;
   for (GeometricCamera *pCam : mvpCameras) {
@@ -88,15 +88,21 @@ void Atlas::CreateNewMap(string serializedMap) {
       mnLastInitKFidMap = mpCurrentMap->GetMaxKFid() +
                           1; // The init KF is the next of current maximum
 
-    Map *newMap = new Map(mnLastInitKFidMap);
-
-    ia >> newMap;
-
-    mspMaps.insert(newMap);
-    newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
-    cout << "Successful creation of new map from serialized data with id: "
-         << Map::nNextId << endl;
+    // mpCurrentMap->SetStoredMap();
+    // cout << "Stored map with ID: " << mpCurrentMap->GetId() << endl;
   }
+  cout << "Creation of new map with last KF id: " << mnLastInitKFidMap << endl;
+
+  Map *newMap = new Map(10000);
+  ia >> newMap;
+
+  mspMaps.insert(newMap);
+  newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
+
+  // newMap->SetCurrentMap();
+
+  cout << "Successful creation of new map from serialized data with id: "
+       << Map::nNextId << endl;
 }
 
 void Atlas::ChangeMap(Map *pMap) {
@@ -287,22 +293,20 @@ bool Atlas::isImuInitialized() {
   return mpCurrentMap->isImuInitialized();
 }
 
-string Atlas::SerializeMap(Map *mapToSerialize) {
+void Atlas::SerializeMap(Map *mapToSerialize) {
   set<GeometricCamera *> spCams(mvpCameras.begin(), mvpCameras.end());
   mapToSerialize->PreSave(spCams);
-  stringstream stringStream;
-  boost::archive::text_oarchive oa(stringStream);
+  std::ofstream ofs("/home/joshuabird/Desktop/map", std::ios::binary);
+  boost::archive::binary_oarchive oa(ofs);
 
   oa << mapToSerialize;
 
   // Necessary??
-  map<unsigned int, GeometricCamera *> mpCams;
-  for (GeometricCamera *pCam : mvpCameras) {
-    mpCams[pCam->GetId()] = pCam;
-  }
-  mapToSerialize->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
-
-  return stringStream.str();
+  // map<unsigned int, GeometricCamera *> mpCams;
+  // for (GeometricCamera *pCam : mvpCameras) {
+  //   mpCams[pCam->GetId()] = pCam;
+  // }
+  // mapToSerialize->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
 }
 
 void Atlas::PreSave() {

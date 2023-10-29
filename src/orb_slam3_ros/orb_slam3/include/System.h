@@ -205,8 +205,8 @@ public:
   void InsertTrackTime(double &time);
 #endif
 
-  string GetSerializedCurrentMap();
-  void AddSerializedMap(string serializedMap);
+  void GetSerializedCurrentMap();
+  void AddSerializedMap();
 
 private:
   void SaveAtlas(int type);

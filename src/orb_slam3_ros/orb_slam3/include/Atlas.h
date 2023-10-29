@@ -28,8 +28,8 @@
 #include "MapPoint.h"
 #include "Pinhole.h"
 
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/vector.hpp>
 #include <mutex>
@@ -125,7 +125,7 @@ public:
   void SetImuInitialized();
   bool isImuInitialized();
 
-  string SerializeMap(Map *map);
+  void SerializeMap(Map *map);
 
   // Function for garantee the correction of serialization of this object
   void PreSave();
