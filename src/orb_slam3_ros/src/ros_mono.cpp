@@ -14,7 +14,7 @@ public:
                         ORB_SLAM3::System::MONOCULAR) {
 
     image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
-        "/robot1/camera/image_color", 1,
+        robot_name + "/camera/image_color", 1,
         std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
   };
 

@@ -29,6 +29,8 @@ public:
                   ORB_SLAM3::System::eSensor sensor_type);
 
 protected:
+  string robot_name;
+
   ORB_SLAM3::System *pSLAM;
   ORB_SLAM3::System::eSensor sensor_type;
 

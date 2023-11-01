@@ -8,6 +8,12 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file,
     : Node(node_name),
       node_handle_(std::shared_ptr<OrbSlam3Wrapper>(this, [](auto *) {})),
       image_transport(node_handle_) {
+  // Create parameters
+  this->declare_parameter("robot_name", "robot1");
+  robot_name = this->get_parameter("robot_name").as_string();
+
+  node_name += "_" + robot_name;
+
   this->sensor_type = sensor_type;
   pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, true);
 
