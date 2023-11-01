@@ -31,7 +31,6 @@ SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2/lib:${
 
 include_directories(
   ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/../../install/interfaces/include/interfaces
   ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_SOURCE_DIR}/orb_slam3
   ${PROJECT_SOURCE_DIR}/orb_slam3/include
@@ -47,13 +46,13 @@ ament_target_dependencies(orb_slam3_wrapper rclcpp cv_bridge OpenCV geometry_msg
 target_link_libraries(orb_slam3_wrapper ORB_SLAM3 DBoW2)
 
 add_executable(ros_mono src/ros_mono.cpp)
-ament_target_dependencies(ros_mono rclcpp cv_bridge OpenCV rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport interfaces)
+ament_target_dependencies(ros_mono rclcpp cv_bridge OpenCV rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport)
 target_link_libraries(ros_mono ORB_SLAM3 DBoW2 orb_slam3_wrapper)
 install(TARGETS ros_mono
   DESTINATION lib/${PROJECT_NAME})
 
 add_executable(ros_imu_mono src/ros_imu_mono.cpp)
-ament_target_dependencies(ros_imu_mono rclcpp cv_bridge OpenCV rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport interfaces)
+ament_target_dependencies(ros_imu_mono rclcpp cv_bridge OpenCV rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport)
 target_link_libraries(ros_imu_mono ORB_SLAM3 DBoW2 orb_slam3_wrapper)
 install(TARGETS ros_imu_mono
   DESTINATION lib/${PROJECT_NAME})
