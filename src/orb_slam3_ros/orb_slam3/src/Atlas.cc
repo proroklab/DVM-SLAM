@@ -93,7 +93,7 @@ void Atlas::CreateNewMap(string serializedMap) {
   }
   cout << "Creation of new map with last KF id: " << mnLastInitKFidMap << endl;
 
-  Map *newMap = new Map(10000);
+  Map *newMap = new Map(mnLastInitKFidMap);
   ia >> newMap;
 
   mspMaps.insert(newMap);
