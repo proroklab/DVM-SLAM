@@ -51,34 +51,34 @@ class MapPoint {
     ar &mnFirstFrame;
     ar &nObs;
     // Variables used by the tracking
-    // ar & mTrackProjX;
-    // ar & mTrackProjY;
-    // ar & mTrackDepth;
-    // ar & mTrackDepthR;
-    // ar & mTrackProjXR;
-    // ar & mTrackProjYR;
-    // ar & mbTrackInView;
-    // ar & mbTrackInViewR;
-    // ar & mnTrackScaleLevel;
-    // ar & mnTrackScaleLevelR;
-    // ar & mTrackViewCos;
-    // ar & mTrackViewCosR;
-    // ar & mnTrackReferenceForFrame;
-    // ar & mnLastFrameSeen;
+    ar &mTrackProjX;
+    ar &mTrackProjY;
+    ar &mTrackDepth;
+    ar &mTrackDepthR;
+    ar &mTrackProjXR;
+    ar &mTrackProjYR;
+    ar &mbTrackInView;
+    ar &mbTrackInViewR;
+    ar &mnTrackScaleLevel;
+    ar &mnTrackScaleLevelR;
+    ar &mTrackViewCos;
+    ar &mTrackViewCosR;
+    ar &mnTrackReferenceForFrame;
+    ar &mnLastFrameSeen;
 
     // Variables used by local mapping
-    // ar & mnBALocalForKF;
-    // ar & mnFuseCandidateForKF;
+    ar &mnBALocalForKF;
+    ar &mnFuseCandidateForKF;
 
     // Variables used by loop closing and merging
-    // ar & mnLoopPointForKF;
-    // ar & mnCorrectedByKF;
-    // ar & mnCorrectedReference;
-    // serializeMatrix(ar,mPosGBA,version);
-    // ar & mnBAGlobalForKF;
-    // ar & mnBALocalForMerge;
-    // serializeMatrix(ar,mPosMerge,version);
-    // serializeMatrix(ar,mNormalVectorMerge,version);
+    ar &mnLoopPointForKF;
+    ar &mnCorrectedByKF;
+    ar &mnCorrectedReference;
+    serializeMatrix(ar, mPosGBA, version);
+    ar &mnBAGlobalForKF;
+    ar &mnBALocalForMerge;
+    serializeMatrix(ar, mPosMerge, version);
+    serializeMatrix(ar, mNormalVectorMerge, version);
 
     // Protected variables
     ar &boost::serialization::make_array(mWorldPos.data(), mWorldPos.size());

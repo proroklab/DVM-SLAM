@@ -102,7 +102,10 @@ void Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
   mspMaps.insert(newMap);
   newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
 
-  // newMap->SetCurrentMap();
+  // Ensure that mnLastInitKFidMap is kept up to date
+  if (mnLastInitKFidMap < newMap->GetMaxKFid()) {
+    mnLastInitKFidMap = newMap->GetMaxKFid();
+  }
 
   cout << "Successful creation of new map from serialized data with id: "
        << Map::nNextId << endl;
