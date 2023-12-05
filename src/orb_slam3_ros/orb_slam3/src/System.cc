@@ -1452,14 +1452,14 @@ void System::InsertTrackTime(double &time) {
 }
 #endif
 
-void System::GetSerializedCurrentMap() {
-  mpAtlas->SerializeMap(mpAtlas->GetCurrentMap());
+vector<unsigned char> System::GetSerializedCurrentMap() {
+  return mpAtlas->SerializeMap(mpAtlas->GetCurrentMap());
 }
 
-void System::AddSerializedMap() {
+void System::AddSerializedMap(vector<unsigned char> serialized_map) {
   mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
   mpAtlas->SetORBVocabulary(mpVocabulary);
-  mpAtlas->CreateNewMap("da");
+  mpAtlas->CreateNewMap(serialized_map);
 }
 
 void System::SaveAtlas(int type) {

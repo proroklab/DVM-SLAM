@@ -78,7 +78,7 @@ public:
   ~Atlas();
 
   void CreateNewMap();
-  void CreateNewMap(string serializedMap);
+  void CreateNewMap(vector<unsigned char> serializedMap);
   void ChangeMap(Map *pMap);
 
   unsigned long int GetLastInitKFid();
@@ -125,7 +125,7 @@ public:
   void SetImuInitialized();
   bool isImuInitialized();
 
-  void SerializeMap(Map *map);
+  vector<unsigned char> SerializeMap(Map *map);
 
   // Function for garantee the correction of serialization of this object
   void PreSave();

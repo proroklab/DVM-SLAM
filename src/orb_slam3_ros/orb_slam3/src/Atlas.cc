@@ -25,6 +25,8 @@
 #include "GeometricCamera.h"
 #include "KannalaBrandt8.h"
 #include "Pinhole.h"
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
 
 namespace ORB_SLAM3 {
 
@@ -71,9 +73,10 @@ void Atlas::CreateNewMap() {
   mspMaps.insert(mpCurrentMap);
 }
 
-void Atlas::CreateNewMap(string serializedMap) {
-  std::ifstream ifs("/home/joshuabird/Desktop/map", std::ios::binary);
-  boost::archive::binary_iarchive ia(ifs);
+void Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
+  std::string serializedMapString(serializedMap.begin(), serializedMap.end());
+  std::istringstream stream(serializedMapString);
+  boost::archive::binary_iarchive ia(stream);
 
   map<unsigned int, GeometricCamera *> mpCams;
   for (GeometricCamera *pCam : mvpCameras) {
@@ -293,11 +296,11 @@ bool Atlas::isImuInitialized() {
   return mpCurrentMap->isImuInitialized();
 }
 
-void Atlas::SerializeMap(Map *mapToSerialize) {
+vector<unsigned char> Atlas::SerializeMap(Map *mapToSerialize) {
   set<GeometricCamera *> spCams(mvpCameras.begin(), mvpCameras.end());
   mapToSerialize->PreSave(spCams);
-  std::ofstream ofs("/home/joshuabird/Desktop/map", std::ios::binary);
-  boost::archive::binary_oarchive oa(ofs);
+  std::stringstream stream;
+  boost::archive::binary_oarchive oa(stream);
 
   oa << mapToSerialize;
 
@@ -307,6 +310,12 @@ void Atlas::SerializeMap(Map *mapToSerialize) {
   //   mpCams[pCam->GetId()] = pCam;
   // }
   // mapToSerialize->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
+
+  string serializedMapString = stream.str();
+  vector<unsigned char> serializedMap(serializedMapString.begin(),
+                                      serializedMapString.end());
+
+  return serializedMap;
 }
 
 void Atlas::PreSave() {
