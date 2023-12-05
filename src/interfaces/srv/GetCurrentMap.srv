@@ -1,2 +1,2 @@
 ---
-string serialized_map
+byte[] serialized_map

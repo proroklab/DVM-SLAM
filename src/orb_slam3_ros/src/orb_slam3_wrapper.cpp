@@ -50,14 +50,17 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file,
 void OrbSlam3Wrapper::getCurrentMap(
     const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
     std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
-  pSLAM->GetSerializedCurrentMap();
-  response->serialized_map = "";
+  response->serialized_map = pSLAM->GetSerializedCurrentMap();
 }
 
 void OrbSlam3Wrapper::addMap(
     const std::shared_ptr<interfaces::srv::AddMap::Request> request,
     std::shared_ptr<interfaces::srv::AddMap::Response> response) {
-  pSLAM->AddSerializedMap();
+
+  RCLCPP_INFO(this->get_logger(), "Received serialized map. Size: %d",
+              request->serialized_map.size());
+
+  pSLAM->AddSerializedMap(request->serialized_map);
 }
 
 void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time,

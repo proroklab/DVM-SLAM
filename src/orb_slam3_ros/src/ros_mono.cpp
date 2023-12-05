@@ -16,10 +16,20 @@ public:
     image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
         robot_name + "/camera/image_color", 1,
         std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+
+    if (robot_name != "robot1") {
+      add_map_client = this->create_client<interfaces::srv::AddMap>(
+          "orb_slam3_mono_robot1/add_map");
+
+      timer_ = create_wall_timer(std::chrono::seconds(10),
+                                 std::bind(&OrbSlam3Mono::share_map, this));
+    }
   };
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscriber;
+  rclcpp::Client<interfaces::srv::AddMap>::SharedPtr add_map_client;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   void grab_image(const sensor_msgs::msg::Image::SharedPtr msg) {
     try {
@@ -43,6 +53,17 @@ private:
       RCLCPP_ERROR(this->get_logger(), "Could not convert from '%s' to 'bgr8'.",
                    msg->encoding.c_str());
     }
+  }
+
+  void share_map() {
+    // Create the request
+    auto request = std::make_shared<interfaces::srv::AddMap::Request>();
+    std::vector<unsigned char> serializedMap = pSLAM->GetSerializedCurrentMap();
+    request->serialized_map = serializedMap;
+
+    auto future = add_map_client->async_send_request(request);
+
+    cout << "Sent serialized map. Size:" << request->serialized_map.size();
   }
 };
 
