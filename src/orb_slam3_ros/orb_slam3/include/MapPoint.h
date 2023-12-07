@@ -74,11 +74,11 @@ class MapPoint {
     ar &mnLoopPointForKF;
     ar &mnCorrectedByKF;
     ar &mnCorrectedReference;
-    serializeMatrix(ar, mPosGBA, version);
+    // serializeMatrix(ar, mPosGBA, version);
     ar &mnBAGlobalForKF;
     ar &mnBALocalForMerge;
-    serializeMatrix(ar, mPosMerge, version);
-    serializeMatrix(ar, mNormalVectorMerge, version);
+    // serializeMatrix(ar, mPosMerge, version);
+    // serializeMatrix(ar, mNormalVectorMerge, version);
 
     // Protected variables
     ar &boost::serialization::make_array(mWorldPos.data(), mWorldPos.size());
