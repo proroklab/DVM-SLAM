@@ -78,7 +78,7 @@ public:
   ~Atlas();
 
   void CreateNewMap();
-  void CreateNewMap(vector<unsigned char> serializedMap);
+  Map *CreateNewMap(vector<unsigned char> serializedMap);
   void ChangeMap(Map *pMap);
 
   unsigned long int GetLastInitKFid();

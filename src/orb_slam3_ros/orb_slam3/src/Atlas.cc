@@ -73,7 +73,7 @@ void Atlas::CreateNewMap() {
   mspMaps.insert(mpCurrentMap);
 }
 
-void Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
+Map *Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
   std::string serializedMapString(serializedMap.begin(), serializedMap.end());
   std::istringstream stream(serializedMapString);
   boost::archive::binary_iarchive ia(stream);
@@ -109,6 +109,8 @@ void Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
 
   cout << "Successful creation of new map from serialized data with id: "
        << Map::nNextId << endl;
+
+  return newMap;
 }
 
 void Atlas::ChangeMap(Map *pMap) {

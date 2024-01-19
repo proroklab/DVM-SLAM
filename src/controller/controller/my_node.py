@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QHBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QHBoxLayout, QWidget, QVBoxLayout, QPushButton
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap, QImage, QCursor
 from sensor_msgs.msg import Image
@@ -9,6 +9,9 @@ import rclpy
 from rclpy.node import Node
 import signal
 from functools import partial
+from interfaces.srv import GetCurrentMap, AddMap
+from functools import partial
+import cv2 as cv
 
 
 class ImageViewer(QLabel):
@@ -29,6 +32,7 @@ class ImageViewer(QLabel):
         bridge = CvBridge()
         try:
             cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            cv_image = cv.resize(cv_image, (160, 120))
             # Convert the OpenCV image to QImage
             height, width, channels = cv_image.shape
             bytes_per_line = 3 * width
@@ -79,7 +83,6 @@ class ImageViewer(QLabel):
 
     def keyReleaseEvent(self, event):
         key = event.key()
-        print(key)
         if key == Qt.Key_W or key == Qt.Key_S:
             self.twist.linear.x = 0.0
         elif key == Qt.Key_A or key == Qt.Key_D:
@@ -89,6 +92,8 @@ class ImageViewer(QLabel):
 
 
 class MainWindow(QMainWindow):
+    robot_names = ["robot1", "robot2"]
+
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
@@ -103,11 +108,33 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Image Viewer')
         central_widget = QWidget()
 
+        # Create service clients
+        self.get_current_map_clients = []
+        self.add_map_clients = []
+        for robot_name in self.robot_names:
+            self.get_current_map_clients.append(
+                self.node.create_client(
+                    GetCurrentMap, f'orb_slam3_mono_{robot_name}/get_current_map')
+            )
+            self.add_map_clients.append(
+                self.node.create_client(
+                    AddMap, f'orb_slam3_mono_{robot_name}/add_map')
+            )
+
         layout = QHBoxLayout()
-        robot1_viewer = ImageViewer("robot1", self.node)
-        layout.addWidget(robot1_viewer)
-        robot2_viewer = ImageViewer("robot2", self.node)
-        layout.addWidget(robot2_viewer)
+        for robot_name in self.robot_names:
+            robot_layout = QVBoxLayout()
+
+            robot_viewer = ImageViewer(robot_name, self.node)
+            robot_layout.addWidget(robot_viewer)
+
+            share_map_button = QPushButton("Share Map")
+            share_map_button.clicked.connect(
+                partial(self.share_map, robot_name)
+            )
+            robot_layout.addWidget(share_map_button)
+
+            layout.addLayout(robot_layout)
 
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
@@ -118,6 +145,25 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.timer_update)
         self.timer.start(10)
         print("Started timer")
+
+    def share_map(self, robot_name):
+        robot_index = self.robot_names.index(robot_name)
+
+        other_robot_indicies = list(range(0, len(self.robot_names)))
+        other_robot_indicies.remove(robot_index)
+
+        # Get robot's serialized map
+        req = GetCurrentMap.Request()
+        future = self.get_current_map_clients[robot_index].call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        serialized_map = future.result().serialized_map
+
+        # Send it to all other robots
+        req = AddMap.Request()
+        req.serialized_map = serialized_map
+        for other_robot_index in other_robot_indicies:
+            future = self.add_map_clients[other_robot_index].call_async(req)
+            rclpy.spin_until_future_complete(self.node, future)
 
     def timer_update(self):
         rclpy.spin_once(self.node)

@@ -17,13 +17,9 @@ public:
         robot_name + "/camera/image_color", 1,
         std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
 
-    if (robot_name != "robot1") {
-      add_map_client = this->create_client<interfaces::srv::AddMap>(
-          "orb_slam3_mono_robot1/add_map");
-
-      timer_ = create_wall_timer(std::chrono::seconds(10),
-                                 std::bind(&OrbSlam3Mono::share_map, this));
-    }
+    add_map_client = this->create_client<interfaces::srv::AddMap>(
+        robot_name == "robot1" ? "orb_slam3_mono_robot2/add_map"
+                               : "orb_slam3_mono_robot1/add_map");
   };
 
 private:

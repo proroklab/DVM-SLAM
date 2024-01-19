@@ -21,6 +21,7 @@
 
 #include "System.h"
 #include "Converter.h"
+#include "KeyFrameDatabase.h"
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -1459,7 +1460,14 @@ vector<unsigned char> System::GetSerializedCurrentMap() {
 void System::AddSerializedMap(vector<unsigned char> serialized_map) {
   mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
   mpAtlas->SetORBVocabulary(mpVocabulary);
-  mpAtlas->CreateNewMap(serialized_map);
+  Map *newMap = mpAtlas->CreateNewMap(serialized_map);
+
+  // Insert KFs from new map into loop closer queue to try merge with existing
+  // maps
+  // Sometimes works
+  for (KeyFrame *pKF : mpAtlas->GetCurrentMap()->GetAllKeyFrames()) {
+    mpLoopCloser->InsertKeyFrame(pKF);
+  }
 }
 
 void System::SaveAtlas(int type) {
