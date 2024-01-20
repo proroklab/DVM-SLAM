@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(orb_slam3_ros)
 
 IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Debug)
+  SET(CMAKE_BUILD_TYPE Release)
 ENDIF()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
