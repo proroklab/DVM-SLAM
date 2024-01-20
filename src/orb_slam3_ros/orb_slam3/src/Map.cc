@@ -402,6 +402,15 @@ void Map::PostLoad(
     mpKeyFrameId[pKFi->mnId] = pKFi;
   }
 
+  // Need to make ids consistant with the other already generated maps
+  // TODO: does this break loading maps from a file?
+  for (MapPoint *pMPi : mspMapPoints) {
+    pMPi->mnId = MapPoint::nNextId++;
+  }
+  for (KeyFrame *pKFi : mspKeyFrames) {
+    pKFi->mnId = KeyFrame::nNextId++;
+  }
+
   // References reconstruction between different instances
   for (MapPoint *pMPi : mspMapPoints) {
     if (!pMPi || pMPi->isBad())
@@ -430,15 +439,6 @@ void Map::PostLoad(
   mvpKeyFrameOrigins.reserve(mvBackupKeyFrameOriginsId.size());
   for (int i = 0; i < mvBackupKeyFrameOriginsId.size(); ++i) {
     mvpKeyFrameOrigins.push_back(mpKeyFrameId[mvBackupKeyFrameOriginsId[i]]);
-  }
-
-  // Need to make ids consistant with the other already generated maps
-  // TODO: does this break loading maps from a file?
-  for (MapPoint *pMPi : mspMapPoints) {
-    pMPi->mnId = MapPoint::nNextId++;
-  }
-  for (KeyFrame *pKFi : mspKeyFrames) {
-    pKFi->mnId = KeyFrame::nNextId++;
   }
 
   mvpBackupMapPoints.clear();

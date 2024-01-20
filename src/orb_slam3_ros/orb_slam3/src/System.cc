@@ -1464,7 +1464,6 @@ void System::AddSerializedMap(vector<unsigned char> serialized_map) {
 
   // Insert KFs from new map into loop closer queue to try merge with existing
   // maps
-  // Sometimes works
   for (KeyFrame *pKF : mpAtlas->GetCurrentMap()->GetAllKeyFrames()) {
     mpLoopCloser->InsertKeyFrame(pKF);
   }

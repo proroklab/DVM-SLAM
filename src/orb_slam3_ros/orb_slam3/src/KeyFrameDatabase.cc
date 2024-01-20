@@ -613,7 +613,7 @@ void KeyFrameDatabase::DetectNBestCandidates(KeyFrame *pKF,
 
         if (pKFi->mnPlaceRecognitionQuery != pKF->mnId) {
           pKFi->mnPlaceRecognitionWords = 0;
-          if (!spConnectedKF.count(pKFi)) {
+          if (!spConnectedKF.count(pKFi) && pKFi->mnId != pKF->mnId) {
 
             pKFi->mnPlaceRecognitionQuery = pKF->mnId;
             lKFsSharingWords.push_back(pKFi);

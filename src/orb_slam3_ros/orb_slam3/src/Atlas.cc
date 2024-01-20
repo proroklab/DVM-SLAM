@@ -94,18 +94,13 @@ Map *Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
     // mpCurrentMap->SetStoredMap();
     // cout << "Stored map with ID: " << mpCurrentMap->GetId() << endl;
   }
-  cout << "Creation of new map with last KF id: " << mnLastInitKFidMap << endl;
+  cout << "Creation of new map with init KF id: " << mnLastInitKFidMap << endl;
 
   Map *newMap = new Map(mnLastInitKFidMap);
   ia >> newMap;
 
   mspMaps.insert(newMap);
   newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
-
-  // Ensure that mnLastInitKFidMap is kept up to date
-  if (mnLastInitKFidMap < newMap->GetMaxKFid()) {
-    mnLastInitKFidMap = newMap->GetMaxKFid();
-  }
 
   cout << "Successful creation of new map from serialized data with id: "
        << Map::nNextId << endl;
