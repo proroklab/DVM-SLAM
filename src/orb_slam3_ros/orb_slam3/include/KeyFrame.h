@@ -38,6 +38,8 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_serialize.hpp>
 
 namespace ORB_SLAM3 {
 
@@ -54,6 +56,7 @@ class KeyFrame {
   template <class Archive>
   void serialize(Archive &ar, const unsigned int version) {
     ar &mnId;
+    ar &uuid.data;
     ar &const_cast<long unsigned int &>(mnFrameId);
     ar &const_cast<double &>(mTimeStamp);
     // Grid
@@ -310,6 +313,7 @@ public:
 public:
   static long unsigned int nNextId;
   long unsigned int mnId;
+  boost::uuids::uuid uuid;
   const long unsigned int mnFrameId;
 
   const double mTimeStamp;

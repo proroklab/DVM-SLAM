@@ -22,6 +22,8 @@
 #include "KeyFrame.h"
 #include "Converter.h"
 #include "ImuTypes.h"
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 #include <mutex>
 
 namespace ORB_SLAM3 {
@@ -83,6 +85,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB)
       mvKeysRight(F.mvKeysRight), NLeft(F.Nleft), NRight(F.Nright),
       mTrl(F.GetRelativePoseTrl()), mnNumberOfOpt(0), mbHasVelocity(false) {
   mnId = nNextId++;
+  uuid = boost::uuids::random_generator()();
 
   mGrid.resize(mnGridCols);
   if (F.Nleft != -1)
