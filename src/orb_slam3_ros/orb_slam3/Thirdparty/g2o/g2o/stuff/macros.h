@@ -37,8 +37,8 @@
 
 // GCC the one and only
 #if defined(__GNUC__)
-#define G2O_ATTRIBUTE_CONSTRUCTOR(func)                                        \
-  static void func(void) __attribute__((constructor));                         \
+#define G2O_ATTRIBUTE_CONSTRUCTOR(func)                                                                                \
+  static void func(void) __attribute__((constructor));                                                                 \
   static void func(void)
 
 #define G2O_ATTRIBUTE_UNUSED __attribute__((unused))
@@ -73,9 +73,9 @@ for static C++ objects. For GCC, uses a constructor attribute."
 
         (As posted on Stack OVerflow)
 */
-#define G2O_ATTRIBUTE_CONSTRUCTOR(f)                                           \
-  __pragma(section(".CRT$XCU", read)) static void __cdecl f(void);             \
-  __declspec(allocate(".CRT$XCU")) void(__cdecl * f##_)(void) = f;             \
+#define G2O_ATTRIBUTE_CONSTRUCTOR(f)                                                                                   \
+  __pragma(section(".CRT$XCU", read)) static void __cdecl f(void);                                                     \
+  __declspec(allocate(".CRT$XCU")) void(__cdecl * f##_)(void) = f;                                                     \
   static void __cdecl f(void)
 
 #define G2O_ATTRIBUTE_UNUSED
@@ -112,11 +112,11 @@ for static C++ objects. For GCC, uses a constructor attribute."
 // some macros that are only useful for c++
 #ifdef __cplusplus
 
-#define G2O_FSKIP_LINE(f)                                                      \
-  {                                                                            \
-    char c = ' ';                                                              \
-    while (c != '\n' && f.good() && !(f).eof())                                \
-      (f).get(c);                                                              \
+#define G2O_FSKIP_LINE(f)                                                                                              \
+  {                                                                                                                    \
+    char c = ' ';                                                                                                      \
+    while (c != '\n' && f.good() && !(f).eof())                                                                        \
+      (f).get(c);                                                                                                      \
   }
 
 #ifndef PVAR

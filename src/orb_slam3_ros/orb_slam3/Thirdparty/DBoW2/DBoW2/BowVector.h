@@ -47,8 +47,8 @@ enum ScoringType {
 /// Vector of words to represent images
 class BowVector : public std::map<WordId, WordValue> {
   friend class boost::serialization::access;
-  template <class Archive> void serialize(Archive &ar, const int version) {
-    ar &boost::serialization::base_object<std::map<WordId, WordValue>>(*this);
+  template <class Archive> void serialize(Archive& ar, const int version) {
+    ar& boost::serialization::base_object<std::map<WordId, WordValue>>(*this);
   }
 
 public:
@@ -88,14 +88,14 @@ public:
    * @param out stream
    * @param v
    */
-  friend std::ostream &operator<<(std::ostream &out, const BowVector &v);
+  friend std::ostream& operator<<(std::ostream& out, const BowVector& v);
 
   /**
    * Saves the bow vector as a vector in a matlab file
    * @param filename
    * @param W number of words in the vocabulary
    */
-  void saveM(const std::string &filename, size_t W) const;
+  void saveM(const std::string& filename, size_t W) const;
 };
 
 } // namespace DBoW2

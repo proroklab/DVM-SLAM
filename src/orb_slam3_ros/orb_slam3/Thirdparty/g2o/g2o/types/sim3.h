@@ -51,12 +51,17 @@ public:
     s = 1.;
   }
 
-  Sim3(const Quaterniond &r, const Vector3d &t, double s) : r(r), t(t), s(s) {}
+  Sim3(const Quaterniond& r, const Vector3d& t, double s)
+    : r(r)
+    , t(t)
+    , s(s) { }
 
-  Sim3(const Matrix3d &R, const Vector3d &t, double s)
-      : r(Quaterniond(R)), t(t), s(s) {}
+  Sim3(const Matrix3d& R, const Vector3d& t, double s)
+    : r(Quaterniond(R))
+    , t(t)
+    , s(s) { }
 
-  Sim3(const Vector7d &update) {
+  Sim3(const Vector7d& update) {
 
     Vector3d omega;
     for (int i = 0; i < 3; i++)
@@ -83,23 +88,24 @@ public:
         A = 1. / 2.;
         B = 1. / 6.;
         R = (I + Omega + Omega * Omega);
-      } else {
+      }
+      else {
         double theta2 = theta * theta;
         A = (1 - cos(theta)) / (theta2);
         B = (theta - sin(theta)) / (theta2 * theta);
-        R = I + sin(theta) / theta * Omega +
-            (1 - cos(theta)) / (theta * theta) * Omega2;
+        R = I + sin(theta) / theta * Omega + (1 - cos(theta)) / (theta * theta) * Omega2;
       }
-    } else {
+    }
+    else {
       C = (s - 1) / sigma;
       if (theta < eps) {
         double sigma2 = sigma * sigma;
         A = ((sigma - 1) * s + 1) / sigma2;
         B = ((0.5 * sigma2 - sigma + 1) * s) / (sigma2 * sigma);
         R = (I + Omega + Omega2);
-      } else {
-        R = I + sin(theta) / theta * Omega +
-            (1 - cos(theta)) / (theta * theta) * Omega2;
+      }
+      else {
+        R = I + sin(theta) / theta * Omega + (1 - cos(theta)) / (theta * theta) * Omega2;
 
         double a = s * sin(theta);
         double b = s * cos(theta);
@@ -117,7 +123,7 @@ public:
     t = W * upsilon;
   }
 
-  Vector3d map(const Vector3d &xyz) const { return s * (r * xyz) + t; }
+  Vector3d map(const Vector3d& xyz) const { return s * (r * xyz) + t; }
 
   Vector7d log() const {
     Vector7d res;
@@ -142,7 +148,8 @@ public:
         Omega = skew(omega);
         A = 1. / 2.;
         B = 1. / 6.;
-      } else {
+      }
+      else {
         double theta = acos(d);
         double theta2 = theta * theta;
         omega = theta / (2 * sqrt(1 - d * d)) * deltaR(R);
@@ -150,7 +157,8 @@ public:
         A = (1 - cos(theta)) / (theta2);
         B = (theta - sin(theta)) / (theta2 * theta);
       }
-    } else {
+    }
+    else {
       C = (s - 1) / sigma;
       if (d > 1 - eps) {
 
@@ -159,7 +167,8 @@ public:
         Omega = skew(omega);
         A = ((sigma - 1) * s + 1) / (sigma2);
         B = ((0.5 * sigma2 - sigma + 1) * s) / (sigma2 * sigma);
-      } else {
+      }
+      else {
         double theta = acos(d);
         omega = theta / (2 * sqrt(1 - d * d)) * deltaR(R);
         Omega = skew(omega);
@@ -187,9 +196,7 @@ public:
     return res;
   }
 
-  Sim3 inverse() const {
-    return Sim3(r.conjugate(), r.conjugate() * ((-1. / s) * t), 1. / s);
-  }
+  Sim3 inverse() const { return Sim3(r.conjugate(), r.conjugate() * ((-1. / s) * t), 1. / s); }
 
   double operator[](int i) const {
     assert(i < 8);
@@ -203,7 +210,7 @@ public:
     return s;
   }
 
-  double &operator[](int i) {
+  double& operator[](int i) {
     assert(i < 8);
     if (i < 4) {
 
@@ -215,7 +222,7 @@ public:
     return s;
   }
 
-  Sim3 operator*(const Sim3 &other) const {
+  Sim3 operator*(const Sim3& other) const {
     Sim3 ret;
     ret.r = r * other.r;
     ret.t = s * (r * other.t) + t;
@@ -223,26 +230,26 @@ public:
     return ret;
   }
 
-  Sim3 &operator*=(const Sim3 &other) {
+  Sim3& operator*=(const Sim3& other) {
     Sim3 ret = (*this) * other;
     *this = ret;
     return *this;
   }
 
-  inline const Vector3d &translation() const { return t; }
+  inline const Vector3d& translation() const { return t; }
 
-  inline Vector3d &translation() { return t; }
+  inline Vector3d& translation() { return t; }
 
-  inline const Quaterniond &rotation() const { return r; }
+  inline const Quaterniond& rotation() const { return r; }
 
-  inline Quaterniond &rotation() { return r; }
+  inline Quaterniond& rotation() { return r; }
 
-  inline const double &scale() const { return s; }
+  inline const double& scale() const { return s; }
 
-  inline double &scale() { return s; }
+  inline double& scale() { return s; }
 };
 
-inline std::ostream &operator<<(std::ostream &out_str, const Sim3 &sim3) {
+inline std::ostream& operator<<(std::ostream& out_str, const Sim3& sim3) {
   out_str << sim3.rotation().coeffs() << std::endl;
   out_str << sim3.translation() << std::endl;
   out_str << sim3.scale() << std::endl;

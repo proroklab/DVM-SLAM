@@ -46,12 +46,12 @@ public:
    * construct the Dogleg algorithm, which will use the given Solver for solving
    * the linearized system.
    */
-  explicit OptimizationAlgorithmDogleg(BlockSolverBase *solver);
+  explicit OptimizationAlgorithmDogleg(BlockSolverBase* solver);
   virtual ~OptimizationAlgorithmDogleg();
 
   virtual SolverResult solve(int iteration, bool online = false);
 
-  virtual void printVerbose(std::ostream &os) const;
+  virtual void printVerbose(std::ostream& os) const;
 
   //! return the type of the last step taken by the algorithm
   int lastStep() const { return _lastStep; }
@@ -59,25 +59,24 @@ public:
   double trustRegion() const { return _delta; }
 
   //! convert the type into an integer
-  static const char *stepType2Str(int stepType);
+  static const char* stepType2Str(int stepType);
 
 protected:
   // parameters
-  Property<int> *_maxTrialsAfterFailure;
-  Property<double> *_userDeltaInit;
+  Property<int>* _maxTrialsAfterFailure;
+  Property<double>* _userDeltaInit;
   // damping to enforce positive definite matrix
-  Property<double> *_initialLambda;
-  Property<double> *_lamdbaFactor;
+  Property<double>* _initialLambda;
+  Property<double>* _lamdbaFactor;
 
-  Eigen::VectorXd _hsd;       ///< steepest decent step
-  Eigen::VectorXd _hdl;       ///< final dogleg step
+  Eigen::VectorXd _hsd; ///< steepest decent step
+  Eigen::VectorXd _hdl; ///< final dogleg step
   Eigen::VectorXd _auxVector; ///< auxilary vector used to perform
                               ///< multiplications or other stuff
 
-  double
-      _currentLambda; ///< the damping factor to force positive definite matrix
-  double _delta;      ///< trust region
-  int _lastStep;      ///< type of the step taken by the algorithm
+  double _currentLambda; ///< the damping factor to force positive definite matrix
+  double _delta; ///< trust region
+  int _lastStep; ///< type of the step taken by the algorithm
   bool _wasPDInAllIterations; ///< the matrix we solve was positive definite in
                               ///< all iterations -> if not apply damping
   int _lastNumTries;

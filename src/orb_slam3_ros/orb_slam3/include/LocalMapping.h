@@ -40,23 +40,23 @@ class Atlas;
 class LocalMapping {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  LocalMapping(System *pSys, Atlas *pAtlas, const float bMonocular,
-               bool bInertial, const string &_strSeqName = std::string());
+  LocalMapping(
+    System* pSys, Atlas* pAtlas, const float bMonocular, bool bInertial, const string& _strSeqName = std::string());
 
-  void SetLoopCloser(LoopClosing *pLoopCloser);
+  void SetLoopCloser(LoopClosing* pLoopCloser);
 
-  void SetTracker(Tracking *pTracker);
+  void SetTracker(Tracking* pTracker);
 
   // Main function
   void Run();
 
-  void InsertKeyFrame(KeyFrame *pKF);
+  void InsertKeyFrame(KeyFrame* pKF);
   void EmptyQueue();
 
   // Thread Synch
   void RequestStop();
   void RequestReset();
-  void RequestResetActiveMap(Map *pMap);
+  void RequestResetActiveMap(Map* pMap);
   bool Stop();
   void Release();
   bool isStopped();
@@ -77,7 +77,7 @@ public:
 
   bool IsInitializing();
   double GetCurrKFTime();
-  KeyFrame *GetCurrKF();
+  KeyFrame* GetCurrKF();
 
   std::mutex mMutexImuInit;
 
@@ -136,7 +136,7 @@ protected:
   void SearchInNeighbors();
   void KeyFrameCulling();
 
-  System *mpSystem;
+  System* mpSystem;
 
   bool mbMonocular;
   bool mbInertial;
@@ -144,7 +144,7 @@ protected:
   void ResetIfRequested();
   bool mbResetRequested;
   bool mbResetRequestedActiveMap;
-  Map *mpMapToReset;
+  Map* mpMapToReset;
   std::mutex mMutexReset;
 
   bool CheckFinish();
@@ -153,16 +153,16 @@ protected:
   bool mbFinished;
   std::mutex mMutexFinish;
 
-  Atlas *mpAtlas;
+  Atlas* mpAtlas;
 
-  LoopClosing *mpLoopCloser;
-  Tracking *mpTracker;
+  LoopClosing* mpLoopCloser;
+  Tracking* mpTracker;
 
-  std::list<KeyFrame *> mlNewKeyFrames;
+  std::list<KeyFrame*> mlNewKeyFrames;
 
-  KeyFrame *mpCurrentKeyFrame;
+  KeyFrame* mpCurrentKeyFrame;
 
-  std::list<MapPoint *> mlpRecentAddedMapPoints;
+  std::list<MapPoint*> mlpRecentAddedMapPoints;
 
   std::mutex mMutexNewKFs;
 
@@ -176,8 +176,7 @@ protected:
   bool mbAcceptKeyFrames;
   std::mutex mMutexAccept;
 
-  void InitializeIMU(float priorG = 1e2, float priorA = 1e6,
-                     bool bFirst = false);
+  void InitializeIMU(float priorG = 1e2, float priorA = 1e6, bool bFirst = false);
   void ScaleRefinement();
 
   bool bInitializing;

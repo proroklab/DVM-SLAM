@@ -52,11 +52,15 @@ public:
     _t.setZero();
   }
 
-  SE3Quat(const Matrix3d &R, const Vector3d &t) : _r(Quaterniond(R)), _t(t) {
+  SE3Quat(const Matrix3d& R, const Vector3d& t)
+    : _r(Quaterniond(R))
+    , _t(t) {
     normalizeRotation();
   }
 
-  SE3Quat(const Quaterniond &q, const Vector3d &t) : _r(q), _t(t) {
+  SE3Quat(const Quaterniond& q, const Vector3d& t)
+    : _r(q)
+    , _t(t) {
     normalizeRotation();
   }
 
@@ -64,9 +68,8 @@ public:
    * templaized constructor which allows v to be an arbitrary Eigen Vector type,
    * e.g., Vector6d or Map<Vector6d>
    */
-  template <typename Derived> explicit SE3Quat(const MatrixBase<Derived> &v) {
-    assert((v.size() == 6 || v.size() == 7) &&
-           "Vector dimension does not match");
+  template <typename Derived> explicit SE3Quat(const MatrixBase<Derived>& v) {
+    assert((v.size() == 6 || v.size() == 7) && "Vector dimension does not match");
     if (v.size() == 6) {
       for (int i = 0; i < 3; i++) {
         _t[i] = v[i];
@@ -75,11 +78,13 @@ public:
       _r.w() = 0.; // recover the positive w
       if (_r.norm() > 1.) {
         _r.normalize();
-      } else {
+      }
+      else {
         double w2 = 1. - _r.squaredNorm();
         _r.w() = (w2 < 0.) ? 0. : sqrt(w2);
       }
-    } else if (v.size() == 7) {
+    }
+    else if (v.size() == 7) {
       int idx = 0;
       for (int i = 0; i < 3; ++i, ++idx)
         _t(i) = v(idx);
@@ -89,15 +94,15 @@ public:
     }
   }
 
-  inline const Vector3d &translation() const { return _t; }
+  inline const Vector3d& translation() const { return _t; }
 
-  inline void setTranslation(const Vector3d &t_) { _t = t_; }
+  inline void setTranslation(const Vector3d& t_) { _t = t_; }
 
-  inline const Quaterniond &rotation() const { return _r; }
+  inline const Quaterniond& rotation() const { return _r; }
 
-  void setRotation(const Quaterniond &r_) { _r = r_; }
+  void setRotation(const Quaterniond& r_) { _r = r_; }
 
-  inline SE3Quat operator*(const SE3Quat &tr2) const {
+  inline SE3Quat operator*(const SE3Quat& tr2) const {
     SE3Quat result(*this);
     result._t += _r * tr2._t;
     result._r *= tr2._r;
@@ -105,14 +110,14 @@ public:
     return result;
   }
 
-  inline SE3Quat &operator*=(const SE3Quat &tr2) {
+  inline SE3Quat& operator*=(const SE3Quat& tr2) {
     _t += _r * tr2._t;
     _r *= tr2._r;
     normalizeRotation();
     return *this;
   }
 
-  inline Vector3d operator*(const Vector3d &v) const { return _t + _r * v; }
+  inline Vector3d operator*(const Vector3d& v) const { return _t + _r * v; }
 
   inline SE3Quat inverse() const {
     SE3Quat ret;
@@ -140,7 +145,7 @@ public:
     return v;
   }
 
-  inline void fromVector(const Vector7d &v) {
+  inline void fromVector(const Vector7d& v) {
     _r = Quaterniond(v[6], v[3], v[4], v[5]);
     _t = Vector3d(v[0], v[1], v[2]);
   }
@@ -156,11 +161,12 @@ public:
     return v;
   }
 
-  inline void fromMinimalVector(const Vector6d &v) {
+  inline void fromMinimalVector(const Vector6d& v) {
     double w = 1. - v[3] * v[3] - v[4] * v[4] - v[5] * v[5];
     if (w > 0) {
       _r = Quaterniond(sqrt(w), v[3], v[4], v[5]);
-    } else {
+    }
+    else {
       _r = Quaterniond(0, -v[3], -v[4], -v[5]);
     }
     _t = Vector3d(v[0], v[1], v[2]);
@@ -181,13 +187,13 @@ public:
       omega = 0.5 * dR;
       Matrix3d Omega = skew(omega);
       V_inv = Matrix3d::Identity() - 0.5 * Omega + (1. / 12.) * (Omega * Omega);
-    } else {
+    }
+    else {
       double theta = acos(d);
       omega = theta / (2 * sqrt(1 - d * d)) * dR;
       Matrix3d Omega = skew(omega);
-      V_inv = (Matrix3d::Identity() - 0.5 * Omega +
-               (1 - theta / (2 * tan(theta / 2))) / (theta * theta) *
-                   (Omega * Omega));
+      V_inv
+        = (Matrix3d::Identity() - 0.5 * Omega + (1 - theta / (2 * tan(theta / 2))) / (theta * theta) * (Omega * Omega));
     }
 
     upsilon = V_inv * _t;
@@ -201,9 +207,9 @@ public:
     return res;
   }
 
-  Vector3d map(const Vector3d &xyz) const { return _r * xyz + _t; }
+  Vector3d map(const Vector3d& xyz) const { return _r * xyz + _t; }
 
-  static SE3Quat exp(const Vector6d &update) {
+  static SE3Quat exp(const Vector6d& update) {
     Vector3d omega;
     for (int i = 0; i < 3; i++)
       omega[i] = update[i];
@@ -221,14 +227,14 @@ public:
       R = (Matrix3d::Identity() + Omega + Omega * Omega);
 
       V = R;
-    } else {
+    }
+    else {
       Matrix3d Omega2 = Omega * Omega;
 
-      R = (Matrix3d::Identity() + sin(theta) / theta * Omega +
-           (1 - cos(theta)) / (theta * theta) * Omega2);
+      R = (Matrix3d::Identity() + sin(theta) / theta * Omega + (1 - cos(theta)) / (theta * theta) * Omega2);
 
-      V = (Matrix3d::Identity() + (1 - cos(theta)) / (theta * theta) * Omega +
-           (theta - sin(theta)) / (pow(theta, 3)) * Omega2);
+      V = (Matrix3d::Identity() + (1 - cos(theta)) / (theta * theta) * Omega
+        + (theta - sin(theta)) / (pow(theta, 3)) * Omega2);
     }
     return SE3Quat(Quaterniond(R), V * upsilon);
   }
@@ -269,7 +275,7 @@ public:
   }
 };
 
-inline std::ostream &operator<<(std::ostream &out_str, const SE3Quat &se3) {
+inline std::ostream& operator<<(std::ostream& out_str, const SE3Quat& se3) {
   out_str << se3.to_homogeneous_matrix() << std::endl;
   return out_str;
 }

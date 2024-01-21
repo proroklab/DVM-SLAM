@@ -53,26 +53,24 @@ public:
   /*
    * Constructor from file
    */
-  Settings(const std::string &configFile, const int &sensor);
+  Settings(const std::string& configFile, const int& sensor);
 
   /*
    * Ostream operator overloading to dump settings to the terminal
    */
-  friend std::ostream &operator<<(std::ostream &output, const Settings &s);
+  friend std::ostream& operator<<(std::ostream& output, const Settings& s);
 
   /*
    * Getter methods
    */
   CameraType cameraType() { return cameraType_; }
-  GeometricCamera *camera1() { return calibration1_; }
-  GeometricCamera *camera2() { return calibration2_; }
+  GeometricCamera* camera1() { return calibration1_; }
+  GeometricCamera* camera2() { return calibration2_; }
   cv::Mat camera1DistortionCoef() {
-    return cv::Mat(vPinHoleDistorsion1_.size(), 1, CV_32F,
-                   vPinHoleDistorsion1_.data());
+    return cv::Mat(vPinHoleDistorsion1_.size(), 1, CV_32F, vPinHoleDistorsion1_.data());
   }
   cv::Mat camera2DistortionCoef() {
-    return cv::Mat(vPinHoleDistorsion2_.size(), 1, CV_32F,
-                   vPinHoleDistorsion1_.data());
+    return cv::Mat(vPinHoleDistorsion2_.size(), 1, CV_32F, vPinHoleDistorsion1_.data());
   }
 
   Sophus::SE3f Tlr() { return Tlr_; }
@@ -128,36 +126,34 @@ public:
 
 private:
   template <typename T>
-  T readParameter(cv::FileStorage &fSettings, const std::string &name,
-                  bool &found, const bool required = true) {
+  T readParameter(cv::FileStorage& fSettings, const std::string& name, bool& found, const bool required = true) {
     cv::FileNode node = fSettings[name];
     if (node.empty()) {
       if (required) {
-        std::cerr << name << " required parameter does not exist, aborting..."
-                  << std::endl;
+        std::cerr << name << " required parameter does not exist, aborting..." << std::endl;
         exit(-1);
-      } else {
-        std::cerr << name << " optional parameter does not exist..."
-                  << std::endl;
+      }
+      else {
+        std::cerr << name << " optional parameter does not exist..." << std::endl;
         found = false;
         return T();
       }
-
-    } else {
+    }
+    else {
       found = true;
       return (T)node;
     }
   }
 
-  void readCamera1(cv::FileStorage &fSettings);
-  void readCamera2(cv::FileStorage &fSettings);
-  void readImageInfo(cv::FileStorage &fSettings);
-  void readIMU(cv::FileStorage &fSettings);
-  void readRGBD(cv::FileStorage &fSettings);
-  void readORB(cv::FileStorage &fSettings);
-  void readViewer(cv::FileStorage &fSettings);
-  void readLoadAndSave(cv::FileStorage &fSettings);
-  void readOtherParameters(cv::FileStorage &fSettings);
+  void readCamera1(cv::FileStorage& fSettings);
+  void readCamera2(cv::FileStorage& fSettings);
+  void readImageInfo(cv::FileStorage& fSettings);
+  void readIMU(cv::FileStorage& fSettings);
+  void readRGBD(cv::FileStorage& fSettings);
+  void readORB(cv::FileStorage& fSettings);
+  void readViewer(cv::FileStorage& fSettings);
+  void readLoadAndSave(cv::FileStorage& fSettings);
+  void readOtherParameters(cv::FileStorage& fSettings);
 
   void precomputeRectificationMaps();
 

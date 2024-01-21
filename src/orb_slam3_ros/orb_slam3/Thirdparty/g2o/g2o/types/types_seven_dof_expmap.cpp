@@ -28,15 +28,16 @@
 
 namespace g2o {
 
-VertexSim3Expmap::VertexSim3Expmap() : BaseVertex<7, Sim3>() {
+VertexSim3Expmap::VertexSim3Expmap()
+  : BaseVertex<7, Sim3>() {
   _marginalized = false;
   _fix_scale = false;
 }
 
 EdgeSim3::EdgeSim3()
-    : BaseBinaryEdge<7, Sim3, VertexSim3Expmap, VertexSim3Expmap>() {}
+  : BaseBinaryEdge<7, Sim3, VertexSim3Expmap, VertexSim3Expmap>() { }
 
-bool VertexSim3Expmap::read(std::istream &is) {
+bool VertexSim3Expmap::read(std::istream& is) {
   Vector7d cam2world;
   for (int i = 0; i < 6; i++) {
     is >> cam2world[i];
@@ -59,7 +60,7 @@ bool VertexSim3Expmap::read(std::istream &is) {
   return true;
 }
 
-bool VertexSim3Expmap::write(std::ostream &os) const {
+bool VertexSim3Expmap::write(std::ostream& os) const {
   Sim3 cam2world(estimate().inverse());
   Vector7d lv = cam2world.log();
   for (int i = 0; i < 7; i++) {
@@ -74,7 +75,7 @@ bool VertexSim3Expmap::write(std::ostream &os) const {
   return os.good();
 }
 
-bool EdgeSim3::read(std::istream &is) {
+bool EdgeSim3::read(std::istream& is) {
   Vector7d v7;
   for (int i = 0; i < 7; i++) {
     is >> v7[i];
@@ -92,7 +93,7 @@ bool EdgeSim3::read(std::istream &is) {
   return true;
 }
 
-bool EdgeSim3::write(std::ostream &os) const {
+bool EdgeSim3::write(std::ostream& os) const {
   Sim3 cam2world(measurement().inverse());
   Vector7d v7 = cam2world.log();
   for (int i = 0; i < 7; i++) {
@@ -108,9 +109,9 @@ bool EdgeSim3::write(std::ostream &os) const {
 /**Sim3ProjectXYZ*/
 
 EdgeSim3ProjectXYZ::EdgeSim3ProjectXYZ()
-    : BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSim3Expmap>() {}
+  : BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSim3Expmap>() { }
 
-bool EdgeSim3ProjectXYZ::read(std::istream &is) {
+bool EdgeSim3ProjectXYZ::read(std::istream& is) {
   for (int i = 0; i < 2; i++) {
     is >> _measurement[i];
   }
@@ -124,7 +125,7 @@ bool EdgeSim3ProjectXYZ::read(std::istream &is) {
   return true;
 }
 
-bool EdgeSim3ProjectXYZ::write(std::ostream &os) const {
+bool EdgeSim3ProjectXYZ::write(std::ostream& os) const {
   for (int i = 0; i < 2; i++) {
     os << _measurement[i] << " ";
   }
@@ -139,9 +140,9 @@ bool EdgeSim3ProjectXYZ::write(std::ostream &os) const {
 /**InverseSim3ProjectXYZ*/
 
 EdgeInverseSim3ProjectXYZ::EdgeInverseSim3ProjectXYZ()
-    : BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSim3Expmap>() {}
+  : BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSim3Expmap>() { }
 
-bool EdgeInverseSim3ProjectXYZ::read(std::istream &is) {
+bool EdgeInverseSim3ProjectXYZ::read(std::istream& is) {
   for (int i = 0; i < 2; i++) {
     is >> _measurement[i];
   }
@@ -155,7 +156,7 @@ bool EdgeInverseSim3ProjectXYZ::read(std::istream &is) {
   return true;
 }
 
-bool EdgeInverseSim3ProjectXYZ::write(std::ostream &os) const {
+bool EdgeInverseSim3ProjectXYZ::write(std::ostream& os) const {
   for (int i = 0; i < 2; i++) {
     os << _measurement[i] << " ";
   }

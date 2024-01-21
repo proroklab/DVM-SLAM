@@ -32,8 +32,13 @@
 namespace g2o {
 
 Solver::Solver()
-    : _optimizer(0), _x(0), _b(0), _xSize(0), _maxXSize(0), _isLevenberg(false),
-      _additionalVectorSpace(0) {}
+  : _optimizer(0)
+  , _x(0)
+  , _b(0)
+  , _xSize(0)
+  , _maxXSize(0)
+  , _isLevenberg(false)
+  , _additionalVectorSpace(0) { }
 
 Solver::~Solver() {
   delete[] _x;
@@ -57,7 +62,8 @@ void Solver::resizeVector(size_t sx) {
       delete[] _b;
       _b = new double[_maxXSize];
       std::swap(_b, _x);
-    } else {
+    }
+    else {
       _b = new double[_maxXSize];
 #ifndef NDEBUG
       memset(_b, 0, _maxXSize * sizeof(double));
@@ -66,9 +72,7 @@ void Solver::resizeVector(size_t sx) {
   }
 }
 
-void Solver::setOptimizer(SparseOptimizer *optimizer) {
-  _optimizer = optimizer;
-}
+void Solver::setOptimizer(SparseOptimizer* optimizer) { _optimizer = optimizer; }
 
 void Solver::setLevenberg(bool levenberg) { _isLevenberg = levenberg; }
 

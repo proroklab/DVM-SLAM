@@ -40,10 +40,10 @@ class Settings;
 class Viewer {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Viewer(System *pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
-         Tracking *pTracking, const string &strSettingPath, Settings *settings);
+  Viewer(System* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Tracking* pTracking,
+    const string& strSettingPath, Settings* settings);
 
-  void newParameterLoader(Settings *settings);
+  void newParameterLoader(Settings* settings);
 
   // Main thread function. Draw points, keyframes, the current camera pose and
   // the last processed frame. Drawing is refreshed according to the camera fps.
@@ -67,14 +67,14 @@ public:
   bool both;
 
 private:
-  bool ParseViewerParamFile(cv::FileStorage &fSettings);
+  bool ParseViewerParamFile(cv::FileStorage& fSettings);
 
   bool Stop();
 
-  System *mpSystem;
-  FrameDrawer *mpFrameDrawer;
-  MapDrawer *mpMapDrawer;
-  Tracking *mpTracker;
+  System* mpSystem;
+  FrameDrawer* mpFrameDrawer;
+  MapDrawer* mpMapDrawer;
+  Tracking* mpTracker;
 
   // 1/fps in ms
   double mT;

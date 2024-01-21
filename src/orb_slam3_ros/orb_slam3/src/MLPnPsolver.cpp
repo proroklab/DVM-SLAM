@@ -54,10 +54,12 @@
 #include <Eigen/Sparse>
 
 namespace ORB_SLAM3 {
-MLPnPsolver::MLPnPsolver(const Frame &F,
-                         const vector<MapPoint *> &vpMapPointMatches)
-    : mnInliersi(0), mnIterations(0), mnBestInliers(0), N(0),
-      mpCamera(F.mpCamera) {
+MLPnPsolver::MLPnPsolver(const Frame& F, const vector<MapPoint*>& vpMapPointMatches)
+  : mnInliersi(0)
+  , mnIterations(0)
+  , mnBestInliers(0)
+  , N(0)
+  , mpCamera(F.mpCamera) {
   mvpMapPointMatches = vpMapPointMatches;
   mvBearingVecs.reserve(F.mvpMapPoints.size());
   mvP2D.reserve(F.mvpMapPoints.size());
@@ -68,13 +70,13 @@ MLPnPsolver::MLPnPsolver(const Frame &F,
 
   int idx = 0;
   for (size_t i = 0, iend = mvpMapPointMatches.size(); i < iend; i++) {
-    MapPoint *pMP = vpMapPointMatches[i];
+    MapPoint* pMP = vpMapPointMatches[i];
 
     if (pMP) {
       if (!pMP->isBad()) {
         if (i >= F.mvKeysUn.size())
           continue;
-        const cv::KeyPoint &kp = F.mvKeysUn[i];
+        const cv::KeyPoint& kp = F.mvKeysUn[i];
 
         mvP2D.push_back(kp.pt);
         mvSigma2.push_back(F.mvLevelSigma2[kp.octave]);
@@ -102,9 +104,8 @@ MLPnPsolver::MLPnPsolver(const Frame &F,
 }
 
 // RANSAC methods
-bool MLPnPsolver::iterate(int nIterations, bool &bNoMore,
-                          vector<bool> &vbInliers, int &nInliers,
-                          Eigen::Matrix4f &Tout) {
+bool MLPnPsolver::iterate(
+  int nIterations, bool& bNoMore, vector<bool>& vbInliers, int& nInliers, Eigen::Matrix4f& Tout) {
   Tout.setIdentity();
   bNoMore = false;
   vbInliers.clear();
@@ -220,9 +221,8 @@ bool MLPnPsolver::iterate(int nIterations, bool &bNoMore,
   return false;
 }
 
-void MLPnPsolver::SetRansacParameters(double probability, int minInliers,
-                                      int maxIterations, int minSet,
-                                      float epsilon, float th2) {
+void MLPnPsolver::SetRansacParameters(
+  double probability, int minInliers, int maxIterations, int minSet, float epsilon, float th2) {
   mRansacProb = probability;
   mRansacMinInliers = minInliers;
   mRansacMaxIts = maxIterations;
@@ -267,12 +267,9 @@ void MLPnPsolver::CheckInliers() {
     cv::Point3f P3Dw(p(0), p(1), p(2));
     cv::Point2f P2D = mvP2D[i];
 
-    float xc =
-        mRi[0][0] * P3Dw.x + mRi[0][1] * P3Dw.y + mRi[0][2] * P3Dw.z + mti[0];
-    float yc =
-        mRi[1][0] * P3Dw.x + mRi[1][1] * P3Dw.y + mRi[1][2] * P3Dw.z + mti[1];
-    float zc =
-        mRi[2][0] * P3Dw.x + mRi[2][1] * P3Dw.y + mRi[2][2] * P3Dw.z + mti[2];
+    float xc = mRi[0][0] * P3Dw.x + mRi[0][1] * P3Dw.y + mRi[0][2] * P3Dw.z + mti[0];
+    float yc = mRi[1][0] * P3Dw.x + mRi[1][1] * P3Dw.y + mRi[1][2] * P3Dw.z + mti[1];
+    float zc = mRi[2][0] * P3Dw.x + mRi[2][1] * P3Dw.y + mRi[2][2] * P3Dw.z + mti[2];
 
     cv::Point3f P3Dc(xc, yc, zc);
     cv::Point2f uv = mpCamera->project(P3Dc);
@@ -285,7 +282,8 @@ void MLPnPsolver::CheckInliers() {
     if (error2 < mvMaxError[i]) {
       mvbInliersi[i] = true;
       mnInliersi++;
-    } else {
+    }
+    else {
       mvbInliersi[i] = false;
     }
   }
@@ -348,10 +346,8 @@ bool MLPnPsolver::Refine() {
 }
 
 // MLPnP methods
-void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
-                              const cov3_mats_t &covMats,
-                              const std::vector<int> &indices,
-                              transformation_t &result) {
+void MLPnPsolver::computePose(const bearingVectors_t& f, const points_t& p, const cov3_mats_t& covMats,
+  const std::vector<int>& indices, transformation_t& result) {
   size_t numberCorrespondences = indices.size();
   assert(numberCorrespondences > 5);
 
@@ -366,7 +362,7 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
     points3.col(i) = p[indices[i]];
     // nullspace of right vector
     Eigen::JacobiSVD<Eigen::MatrixXd, Eigen::HouseholderQRPreconditioner> svd_f(
-        f_current.transpose(), Eigen::ComputeFullV);
+      f_current.transpose(), Eigen::ComputeFullV);
     nullspaces[i] = svd_f.matrixV().block(0, 1, 3, 2);
     points3v[i] = p[indices[i]];
   }
@@ -397,8 +393,7 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
   //////////////////////////////////////
   // 2. stochastic model
   //////////////////////////////////////
-  Eigen::SparseMatrix<double> P(2 * numberCorrespondences,
-                                2 * numberCorrespondences);
+  Eigen::SparseMatrix<double> P(2 * numberCorrespondences, 2 * numberCorrespondences);
   bool use_cov = false;
   P.setIdentity(); // standard
 
@@ -428,7 +423,8 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
   if (planar) {
     colsA = 9;
     A = Eigen::MatrixXd(rowsA, 9);
-  } else
+  }
+  else
     A = Eigen::MatrixXd(rowsA, 12);
   A.setZero();
 
@@ -465,7 +461,8 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
       A(2 * i, 8) = nullspaces[i](2, 0);
       A(2 * i + 1, 8) = nullspaces[i](2, 1);
     }
-  } else {
+  }
+  else {
     for (size_t i = 0; i < numberCorrespondences; ++i) {
       point_t pt3_current = points3.col(i);
 
@@ -513,8 +510,7 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
   //////////////////////////////////////
   Eigen::MatrixXd AtPA;
   if (use_cov)
-    AtPA = A.transpose() * P *
-           A; // setting up the full normal equations seems to be unstable
+    AtPA = A.transpose() * P * A; // setting up the full normal equations seems to be unstable
   else
     AtPA = A.transpose() * A;
 
@@ -532,17 +528,14 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
     rotation_t tmp;
     // until now, we only estimated
     // row one and two of the transposed rotation matrix
-    tmp << 0.0, result1(0, 0), result1(1, 0), 0.0, result1(2, 0), result1(3, 0),
-        0.0, result1(4, 0), result1(5, 0);
+    tmp << 0.0, result1(0, 0), result1(1, 0), 0.0, result1(2, 0), result1(3, 0), 0.0, result1(4, 0), result1(5, 0);
     // row 3
     tmp.col(0) = tmp.col(1).cross(tmp.col(2));
     tmp.transposeInPlace();
 
-    double scale =
-        1.0 / std::sqrt(std::abs(tmp.col(1).norm() * tmp.col(2).norm()));
+    double scale = 1.0 / std::sqrt(std::abs(tmp.col(1).norm() * tmp.col(2).norm()));
     // find best rotation matrix in frobenius sense
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(tmp, Eigen::ComputeFullU |
-                                                          Eigen::ComputeFullV);
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(tmp, Eigen::ComputeFullU | Eigen::ComputeFullV);
     rotation_t Rout1 = svd_R_frob.matrixU() * svd_R_frob.matrixV().transpose();
     // test if we found a good rotation matrix
     if (Rout1.determinant() < 0)
@@ -550,8 +543,7 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
     // rotate this matrix back using the eigen frame
     Rout1 = eigenRot.transpose() * Rout1;
 
-    translation_t t =
-        scale * translation_t(result1(6, 0), result1(7, 0), result1(8, 0));
+    translation_t t = scale * translation_t(result1(6, 0), result1(7, 0), result1(8, 0));
     Rout1.transposeInPlace();
     Rout1 *= -1;
     if (Rout1.determinant() < 0.0)
@@ -580,41 +572,34 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
       point_t reproPt;
       double norms = 0.0;
       for (int p = 0; p < 6; ++p) {
-        reproPt =
-            Ts[i].block<3, 3>(0, 0) * points3v[p] + Ts[i].block<3, 1>(0, 3);
+        reproPt = Ts[i].block<3, 3>(0, 0) * points3v[p] + Ts[i].block<3, 1>(0, 3);
         reproPt = reproPt / reproPt.norm();
         norms += (1.0 - reproPt.transpose() * f[indices[p]]);
       }
       normVal[i] = norms;
     }
-    std::vector<double>::iterator findMinRepro =
-        std::min_element(std::begin(normVal), std::end(normVal));
+    std::vector<double>::iterator findMinRepro = std::min_element(std::begin(normVal), std::end(normVal));
     int idx = std::distance(std::begin(normVal), findMinRepro);
     Rout = Ts[idx].block<3, 3>(0, 0);
     tout = Ts[idx].block<3, 1>(0, 3);
-  } else // non-planar
+  }
+  else // non-planar
   {
     rotation_t tmp;
-    tmp << result1(0, 0), result1(3, 0), result1(6, 0), result1(1, 0),
-        result1(4, 0), result1(7, 0), result1(2, 0), result1(5, 0),
-        result1(8, 0);
+    tmp << result1(0, 0), result1(3, 0), result1(6, 0), result1(1, 0), result1(4, 0), result1(7, 0), result1(2, 0),
+      result1(5, 0), result1(8, 0);
     // get the scale
-    double scale =
-        1.0 / std::pow(std::abs(tmp.col(0).norm() * tmp.col(1).norm() *
-                                tmp.col(2).norm()),
-                       1.0 / 3.0);
+    double scale = 1.0 / std::pow(std::abs(tmp.col(0).norm() * tmp.col(1).norm() * tmp.col(2).norm()), 1.0 / 3.0);
     // double scale = 1.0 / std::sqrt(std::abs(tmp.col(0).norm() *
     // tmp.col(1).norm()));
     //  find best rotation matrix in frobenius sense
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(tmp, Eigen::ComputeFullU |
-                                                          Eigen::ComputeFullV);
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd_R_frob(tmp, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Rout = svd_R_frob.matrixU() * svd_R_frob.matrixV().transpose();
     // test if we found a good rotation matrix
     if (Rout.determinant() < 0)
       Rout *= -1.0;
     // scale translation
-    tout = Rout * (scale * translation_t(result1(9, 0), result1(10, 0),
-                                         result1(11, 0)));
+    tout = Rout * (scale * translation_t(result1(9, 0), result1(10, 0), result1(11, 0)));
 
     // find correct direction in terms of reprojection error, just take the
     // first 6 correspondences
@@ -630,8 +615,7 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
         Ts[s].block<3, 1>(0, 3) = -tout;
       Ts[s] = Ts[s].inverse().eval();
       for (int p = 0; p < 6; ++p) {
-        bearingVector_t v =
-            Ts[s].block<3, 3>(0, 0) * points3v[p] + Ts[s].block<3, 1>(0, 3);
+        bearingVector_t v = Ts[s].block<3, 3>(0, 0) * points3v[p] + Ts[s].block<3, 1>(0, 3);
         v = v / v.norm();
         error[s] += (1.0 - v.transpose() * f[indices[p]]);
       }
@@ -664,23 +648,21 @@ void MLPnPsolver::computePose(const bearingVectors_t &f, const points_t &p,
   result.block<3, 1>(0, 3) = tout;
 }
 
-Eigen::Matrix3d MLPnPsolver::rodrigues2rot(const Eigen::Vector3d &omega) {
+Eigen::Matrix3d MLPnPsolver::rodrigues2rot(const Eigen::Vector3d& omega) {
   rotation_t R = Eigen::Matrix3d::Identity();
 
   Eigen::Matrix3d skewW;
-  skewW << 0.0, -omega(2), omega(1), omega(2), 0.0, -omega(0), -omega(1),
-      omega(0), 0.0;
+  skewW << 0.0, -omega(2), omega(1), omega(2), 0.0, -omega(0), -omega(1), omega(0), 0.0;
 
   double omega_norm = omega.norm();
 
   if (omega_norm > std::numeric_limits<double>::epsilon())
-    R = R + sin(omega_norm) / omega_norm * skewW +
-        (1 - cos(omega_norm)) / (omega_norm * omega_norm) * (skewW * skewW);
+    R = R + sin(omega_norm) / omega_norm * skewW + (1 - cos(omega_norm)) / (omega_norm * omega_norm) * (skewW * skewW);
 
   return R;
 }
 
-Eigen::Vector3d MLPnPsolver::rot2rodrigues(const Eigen::Matrix3d &R) {
+Eigen::Vector3d MLPnPsolver::rot2rodrigues(const Eigen::Matrix3d& R) {
   rodrigues_t omega;
   omega << 0.0, 0.0, 0.0;
 
@@ -696,10 +678,8 @@ Eigen::Vector3d MLPnPsolver::rot2rodrigues(const Eigen::Matrix3d &R) {
   return omega;
 }
 
-void MLPnPsolver::mlpnp_gn(Eigen::VectorXd &x, const points_t &pts,
-                           const std::vector<Eigen::MatrixXd> &nullspaces,
-                           const Eigen::SparseMatrix<double> Kll,
-                           bool use_cov) {
+void MLPnPsolver::mlpnp_gn(Eigen::VectorXd& x, const points_t& pts, const std::vector<Eigen::MatrixXd>& nullspaces,
+  const Eigen::SparseMatrix<double> Kll, bool use_cov) {
   const int numObservations = pts.size();
   const int numUnknowns = 6;
   // check redundancy
@@ -754,7 +734,8 @@ void MLPnPsolver::mlpnp_gn(Eigen::VectorXd &x, const points_t &pts,
       stop = true;
       x = x - dx;
       break;
-    } else
+    }
+    else
       x = x - dx;
 
     ++it_cnt;
@@ -762,10 +743,8 @@ void MLPnPsolver::mlpnp_gn(Eigen::VectorXd &x, const points_t &pts,
     //  result
 }
 
-void MLPnPsolver::mlpnp_residuals_and_jacs(
-    const Eigen::VectorXd &x, const points_t &pts,
-    const std::vector<Eigen::MatrixXd> &nullspaces, Eigen::VectorXd &r,
-    Eigen::MatrixXd &fjac, bool getJacs) {
+void MLPnPsolver::mlpnp_residuals_and_jacs(const Eigen::VectorXd& x, const points_t& pts,
+  const std::vector<Eigen::MatrixXd>& nullspaces, Eigen::VectorXd& r, Eigen::MatrixXd& fjac, bool getJacs) {
   rodrigues_t w(x[0], x[1], x[2]);
   translation_t T(x[3], x[4], x[5]);
 
@@ -805,11 +784,8 @@ void MLPnPsolver::mlpnp_residuals_and_jacs(
   }
 }
 
-void MLPnPsolver::mlpnpJacs(const point_t &pt,
-                            const Eigen::Vector3d &nullspace_r,
-                            const Eigen::Vector3d &nullspace_s,
-                            const rodrigues_t &w, const translation_t &t,
-                            Eigen::MatrixXd &jacs) {
+void MLPnPsolver::mlpnpJacs(const point_t& pt, const Eigen::Vector3d& nullspace_r, const Eigen::Vector3d& nullspace_s,
+  const rodrigues_t& w, const translation_t& t, Eigen::MatrixXd& jacs) {
   double r1 = nullspace_r[0];
   double r2 = nullspace_r[1];
   double r3 = nullspace_r[2];
@@ -927,10 +903,9 @@ void MLPnPsolver::mlpnpJacs(const point_t &pt,
   double t108 = Y1 * r3 * t12 * w2 * w3;
   double t109 = Z1 * r1 * t12 * w1 * w3;
   double t110 = Z1 * r2 * t12 * w2 * w3;
-  double t93 = t66 + t67 + t68 + t69 + t70 + t71 + t72 + t73 + t74 + t75 + t76 +
-               t77 + t78 + t79 + t80 + t81 + t82 + t83 + t84 + t85 + t86 + t87 +
-               t88 + t89 + t90 + t91 + t92 - t102 - t103 - t104 - t105 - t106 -
-               t107 - t108 - t109 - t110;
+  double t93 = t66 + t67 + t68 + t69 + t70 + t71 + t72 + t73 + t74 + t75 + t76 + t77 + t78 + t79 + t80 + t81 + t82 + t83
+    + t84 + t85 + t86 + t87 + t88 + t89 + t90 + t91 + t92 - t102 - t103 - t104 - t105 - t106 - t107 - t108 - t109
+    - t110;
   double t94 = t10 * t25 * w1 * w2;
   double t95 = t6 * t10 * t25 * w3;
   double t96 = t6 * t13 * t26 * w3 * 2.0;
@@ -1004,10 +979,9 @@ void MLPnPsolver::mlpnpJacs(const point_t &pt,
   double t189 = Y1 * s3 * t12 * w2 * w3;
   double t190 = Z1 * s1 * t12 * w1 * w3;
   double t191 = Z1 * s2 * t12 * w2 * w3;
-  double t167 = t140 + t141 + t142 + t143 + t144 + t145 + t146 + t147 + t148 +
-                t149 + t150 + t151 + t152 + t153 + t154 + t155 + t156 + t157 +
-                t158 + t159 + t160 + t161 + t162 + t163 + t164 + t165 + t166 -
-                t183 - t184 - t185 - t186 - t187 - t188 - t189 - t190 - t191;
+  double t167 = t140 + t141 + t142 + t143 + t144 + t145 + t146 + t147 + t148 + t149 + t150 + t151 + t152 + t153 + t154
+    + t155 + t156 + t157 + t158 + t159 + t160 + t161 + t162 + t163 + t164 + t165 + t166 - t183 - t184 - t185 - t186
+    - t187 - t188 - t189 - t190 - t191;
   double t168 = t13 * t26 * t45 * w2 * 2.0;
   double t169 = t10 * t25 * t45 * w2;
   double t170 = t168 + t169;
@@ -1048,200 +1022,129 @@ void MLPnPsolver::mlpnpJacs(const point_t &pt,
   double t214 = Y1 * t40 * 2.0;
   double t215 = Z1 * t43 * 2.0;
   double t216 = t213 + t214 + t215 - X1 * t38 * 2.0;
-  jacs(0, 0) =
-      t14 * t65 *
-          (X1 * r1 * w1 * 2.0 + X1 * r2 * w2 + X1 * r3 * w3 + Y1 * r1 * w2 +
-           Z1 * r1 * w3 + r1 * t1 * w1 * 2.0 + r2 * t2 * w1 * 2.0 +
-           r3 * t3 * w1 * 2.0 + Y1 * r3 * t5 * t12 + Y1 * r3 * t9 * t10 -
-           Z1 * r2 * t5 * t12 - Z1 * r2 * t9 * t10 - X1 * r2 * t12 * w2 -
-           X1 * r3 * t12 * w3 - Y1 * r1 * t12 * w2 + Y1 * r2 * t12 * w1 * 2.0 -
-           Z1 * r1 * t12 * w3 + Z1 * r3 * t12 * w1 * 2.0 +
-           Y1 * r3 * t5 * t10 * t11 - Z1 * r2 * t5 * t10 * t11 +
-           X1 * r2 * t12 * w1 * w3 - X1 * r3 * t12 * w1 * w2 -
-           Y1 * r1 * t12 * w1 * w3 + Z1 * r1 * t12 * w1 * w2 -
-           Y1 * r1 * t10 * t11 * w1 * w3 + Z1 * r1 * t10 * t11 * w1 * w2 -
-           X1 * r1 * t6 * t10 * t11 * w1 - X1 * r1 * t7 * t10 * t11 * w1 +
-           X1 * r2 * t5 * t10 * t11 * w2 + X1 * r3 * t5 * t10 * t11 * w3 +
-           Y1 * r1 * t5 * t10 * t11 * w2 - Y1 * r2 * t5 * t10 * t11 * w1 -
-           Y1 * r2 * t7 * t10 * t11 * w1 + Z1 * r1 * t5 * t10 * t11 * w3 -
-           Z1 * r3 * t5 * t10 * t11 * w1 - Z1 * r3 * t6 * t10 * t11 * w1 +
-           X1 * r2 * t10 * t11 * w1 * w3 - X1 * r3 * t10 * t11 * w1 * w2 +
-           Y1 * r3 * t10 * t11 * w1 * w2 * w3 +
-           Z1 * r2 * t10 * t11 * w1 * w2 * w3) -
-      t26 * t65 * t93 * w1 * 2.0 -
-      t14 * t93 * t101 *
-          (t130 +
-           t15 *
-               (-X1 * t121 +
-                Y1 * (t46 + t47 + t48 - t13 * t14 * w2 - t12 * t14 * w1 * w3) +
-                Z1 * (t35 + t36 + t37 - t13 * t14 * w3 - t10 * t25 * w1 * w2)) *
-               2.0 +
-           t18 * (t135 + t137 - Y1 * (t132 + t133 - t13 * t14 * w1 * 2.0)) *
-               2.0) *
-          (1.0 / 2.0);
-  jacs(0, 1) =
-      t14 * t65 *
-          (X1 * r2 * w1 + Y1 * r1 * w1 + Y1 * r2 * w2 * 2.0 + Y1 * r3 * w3 +
-           Z1 * r2 * w3 + r1 * t1 * w2 * 2.0 + r2 * t2 * w2 * 2.0 +
-           r3 * t3 * w2 * 2.0 - X1 * r3 * t6 * t12 - X1 * r3 * t9 * t10 +
-           Z1 * r1 * t6 * t12 + Z1 * r1 * t9 * t10 + X1 * r1 * t12 * w2 * 2.0 -
-           X1 * r2 * t12 * w1 - Y1 * r1 * t12 * w1 - Y1 * r3 * t12 * w3 -
-           Z1 * r2 * t12 * w3 + Z1 * r3 * t12 * w2 * 2.0 -
-           X1 * r3 * t6 * t10 * t11 + Z1 * r1 * t6 * t10 * t11 +
-           X1 * r2 * t12 * w2 * w3 - Y1 * r1 * t12 * w2 * w3 +
-           Y1 * r3 * t12 * w1 * w2 - Z1 * r2 * t12 * w1 * w2 -
-           Y1 * r1 * t10 * t11 * w2 * w3 + Y1 * r3 * t10 * t11 * w1 * w2 -
-           Z1 * r2 * t10 * t11 * w1 * w2 - X1 * r1 * t6 * t10 * t11 * w2 +
-           X1 * r2 * t6 * t10 * t11 * w1 - X1 * r1 * t7 * t10 * t11 * w2 +
-           Y1 * r1 * t6 * t10 * t11 * w1 - Y1 * r2 * t5 * t10 * t11 * w2 -
-           Y1 * r2 * t7 * t10 * t11 * w2 + Y1 * r3 * t6 * t10 * t11 * w3 -
-           Z1 * r3 * t5 * t10 * t11 * w2 + Z1 * r2 * t6 * t10 * t11 * w3 -
-           Z1 * r3 * t6 * t10 * t11 * w2 + X1 * r2 * t10 * t11 * w2 * w3 +
-           X1 * r3 * t10 * t11 * w1 * w2 * w3 +
-           Z1 * r1 * t10 * t11 * w1 * w2 * w3) -
-      t26 * t65 * t93 * w2 * 2.0 -
-      t14 * t93 * t101 *
-          (t18 *
-               (Z1 * (-t35 + t94 + t95 + t96 - t13 * t14 * w3) - Y1 * t170 +
-                X1 * (t97 + t98 + t99 - t13 * t14 * w1 - t10 * t25 * w2 * w3)) *
-               2.0 +
-           t15 * (t180 + t182 - X1 * (t177 + t178 - t13 * t14 * w2 * 2.0)) *
-               2.0 +
-           t23 *
-               (t175 + Y1 * (t35 - t94 + t95 + t96 - t13 * t14 * w3) -
-                Z1 * t173) *
-               2.0) *
-          (1.0 / 2.0);
-  jacs(0, 2) =
-      t14 * t65 *
-          (X1 * r3 * w1 + Y1 * r3 * w2 + Z1 * r1 * w1 + Z1 * r2 * w2 +
-           Z1 * r3 * w3 * 2.0 + r1 * t1 * w3 * 2.0 + r2 * t2 * w3 * 2.0 +
-           r3 * t3 * w3 * 2.0 + X1 * r2 * t7 * t12 + X1 * r2 * t9 * t10 -
-           Y1 * r1 * t7 * t12 - Y1 * r1 * t9 * t10 + X1 * r1 * t12 * w3 * 2.0 -
-           X1 * r3 * t12 * w1 + Y1 * r2 * t12 * w3 * 2.0 - Y1 * r3 * t12 * w2 -
-           Z1 * r1 * t12 * w1 - Z1 * r2 * t12 * w2 + X1 * r2 * t7 * t10 * t11 -
-           Y1 * r1 * t7 * t10 * t11 - X1 * r3 * t12 * w2 * w3 +
-           Y1 * r3 * t12 * w1 * w3 + Z1 * r1 * t12 * w2 * w3 -
-           Z1 * r2 * t12 * w1 * w3 + Y1 * r3 * t10 * t11 * w1 * w3 +
-           Z1 * r1 * t10 * t11 * w2 * w3 - Z1 * r2 * t10 * t11 * w1 * w3 -
-           X1 * r1 * t6 * t10 * t11 * w3 - X1 * r1 * t7 * t10 * t11 * w3 +
-           X1 * r3 * t7 * t10 * t11 * w1 - Y1 * r2 * t5 * t10 * t11 * w3 -
-           Y1 * r2 * t7 * t10 * t11 * w3 + Y1 * r3 * t7 * t10 * t11 * w2 +
-           Z1 * r1 * t7 * t10 * t11 * w1 + Z1 * r2 * t7 * t10 * t11 * w2 -
-           Z1 * r3 * t5 * t10 * t11 * w3 - Z1 * r3 * t6 * t10 * t11 * w3 -
-           X1 * r3 * t10 * t11 * w2 * w3 + X1 * r2 * t10 * t11 * w1 * w2 * w3 +
-           Y1 * r1 * t10 * t11 * w1 * w2 * w3) -
-      t26 * t65 * t93 * w3 * 2.0 -
-      t14 * t93 * t101 *
-          (t18 *
-               (Z1 * (t46 - t113 + t114 + t115 - t13 * t14 * w2) - Y1 * t198 +
-                X1 * (t49 + t51 + t52 + t118 - t7 * t10 * t25)) *
-               2.0 +
-           t23 *
-               (X1 * (-t97 + t112 + t116 + t117 - t13 * t14 * w1) +
-                Y1 * (-t46 + t113 + t114 + t115 - t13 * t14 * w2) - Z1 * t195) *
-               2.0 +
-           t15 *
-               (t204 + Z1 * (t97 - t112 + t116 + t117 - t13 * t14 * w1) -
-                X1 * (t201 + t202 - t13 * t14 * w3 * 2.0)) *
-               2.0) *
-          (1.0 / 2.0);
+  jacs(0, 0) = t14 * t65
+      * (X1 * r1 * w1 * 2.0 + X1 * r2 * w2 + X1 * r3 * w3 + Y1 * r1 * w2 + Z1 * r1 * w3 + r1 * t1 * w1 * 2.0
+        + r2 * t2 * w1 * 2.0 + r3 * t3 * w1 * 2.0 + Y1 * r3 * t5 * t12 + Y1 * r3 * t9 * t10 - Z1 * r2 * t5 * t12
+        - Z1 * r2 * t9 * t10 - X1 * r2 * t12 * w2 - X1 * r3 * t12 * w3 - Y1 * r1 * t12 * w2 + Y1 * r2 * t12 * w1 * 2.0
+        - Z1 * r1 * t12 * w3 + Z1 * r3 * t12 * w1 * 2.0 + Y1 * r3 * t5 * t10 * t11 - Z1 * r2 * t5 * t10 * t11
+        + X1 * r2 * t12 * w1 * w3 - X1 * r3 * t12 * w1 * w2 - Y1 * r1 * t12 * w1 * w3 + Z1 * r1 * t12 * w1 * w2
+        - Y1 * r1 * t10 * t11 * w1 * w3 + Z1 * r1 * t10 * t11 * w1 * w2 - X1 * r1 * t6 * t10 * t11 * w1
+        - X1 * r1 * t7 * t10 * t11 * w1 + X1 * r2 * t5 * t10 * t11 * w2 + X1 * r3 * t5 * t10 * t11 * w3
+        + Y1 * r1 * t5 * t10 * t11 * w2 - Y1 * r2 * t5 * t10 * t11 * w1 - Y1 * r2 * t7 * t10 * t11 * w1
+        + Z1 * r1 * t5 * t10 * t11 * w3 - Z1 * r3 * t5 * t10 * t11 * w1 - Z1 * r3 * t6 * t10 * t11 * w1
+        + X1 * r2 * t10 * t11 * w1 * w3 - X1 * r3 * t10 * t11 * w1 * w2 + Y1 * r3 * t10 * t11 * w1 * w2 * w3
+        + Z1 * r2 * t10 * t11 * w1 * w2 * w3)
+    - t26 * t65 * t93 * w1 * 2.0
+    - t14 * t93 * t101
+      * (t130
+        + t15
+          * (-X1 * t121 + Y1 * (t46 + t47 + t48 - t13 * t14 * w2 - t12 * t14 * w1 * w3)
+            + Z1 * (t35 + t36 + t37 - t13 * t14 * w3 - t10 * t25 * w1 * w2))
+          * 2.0
+        + t18 * (t135 + t137 - Y1 * (t132 + t133 - t13 * t14 * w1 * 2.0)) * 2.0)
+      * (1.0 / 2.0);
+  jacs(0, 1) = t14 * t65
+      * (X1 * r2 * w1 + Y1 * r1 * w1 + Y1 * r2 * w2 * 2.0 + Y1 * r3 * w3 + Z1 * r2 * w3 + r1 * t1 * w2 * 2.0
+        + r2 * t2 * w2 * 2.0 + r3 * t3 * w2 * 2.0 - X1 * r3 * t6 * t12 - X1 * r3 * t9 * t10 + Z1 * r1 * t6 * t12
+        + Z1 * r1 * t9 * t10 + X1 * r1 * t12 * w2 * 2.0 - X1 * r2 * t12 * w1 - Y1 * r1 * t12 * w1 - Y1 * r3 * t12 * w3
+        - Z1 * r2 * t12 * w3 + Z1 * r3 * t12 * w2 * 2.0 - X1 * r3 * t6 * t10 * t11 + Z1 * r1 * t6 * t10 * t11
+        + X1 * r2 * t12 * w2 * w3 - Y1 * r1 * t12 * w2 * w3 + Y1 * r3 * t12 * w1 * w2 - Z1 * r2 * t12 * w1 * w2
+        - Y1 * r1 * t10 * t11 * w2 * w3 + Y1 * r3 * t10 * t11 * w1 * w2 - Z1 * r2 * t10 * t11 * w1 * w2
+        - X1 * r1 * t6 * t10 * t11 * w2 + X1 * r2 * t6 * t10 * t11 * w1 - X1 * r1 * t7 * t10 * t11 * w2
+        + Y1 * r1 * t6 * t10 * t11 * w1 - Y1 * r2 * t5 * t10 * t11 * w2 - Y1 * r2 * t7 * t10 * t11 * w2
+        + Y1 * r3 * t6 * t10 * t11 * w3 - Z1 * r3 * t5 * t10 * t11 * w2 + Z1 * r2 * t6 * t10 * t11 * w3
+        - Z1 * r3 * t6 * t10 * t11 * w2 + X1 * r2 * t10 * t11 * w2 * w3 + X1 * r3 * t10 * t11 * w1 * w2 * w3
+        + Z1 * r1 * t10 * t11 * w1 * w2 * w3)
+    - t26 * t65 * t93 * w2 * 2.0
+    - t14 * t93 * t101
+      * (t18
+          * (Z1 * (-t35 + t94 + t95 + t96 - t13 * t14 * w3) - Y1 * t170
+            + X1 * (t97 + t98 + t99 - t13 * t14 * w1 - t10 * t25 * w2 * w3))
+          * 2.0
+        + t15 * (t180 + t182 - X1 * (t177 + t178 - t13 * t14 * w2 * 2.0)) * 2.0
+        + t23 * (t175 + Y1 * (t35 - t94 + t95 + t96 - t13 * t14 * w3) - Z1 * t173) * 2.0)
+      * (1.0 / 2.0);
+  jacs(0, 2) = t14 * t65
+      * (X1 * r3 * w1 + Y1 * r3 * w2 + Z1 * r1 * w1 + Z1 * r2 * w2 + Z1 * r3 * w3 * 2.0 + r1 * t1 * w3 * 2.0
+        + r2 * t2 * w3 * 2.0 + r3 * t3 * w3 * 2.0 + X1 * r2 * t7 * t12 + X1 * r2 * t9 * t10 - Y1 * r1 * t7 * t12
+        - Y1 * r1 * t9 * t10 + X1 * r1 * t12 * w3 * 2.0 - X1 * r3 * t12 * w1 + Y1 * r2 * t12 * w3 * 2.0
+        - Y1 * r3 * t12 * w2 - Z1 * r1 * t12 * w1 - Z1 * r2 * t12 * w2 + X1 * r2 * t7 * t10 * t11
+        - Y1 * r1 * t7 * t10 * t11 - X1 * r3 * t12 * w2 * w3 + Y1 * r3 * t12 * w1 * w3 + Z1 * r1 * t12 * w2 * w3
+        - Z1 * r2 * t12 * w1 * w3 + Y1 * r3 * t10 * t11 * w1 * w3 + Z1 * r1 * t10 * t11 * w2 * w3
+        - Z1 * r2 * t10 * t11 * w1 * w3 - X1 * r1 * t6 * t10 * t11 * w3 - X1 * r1 * t7 * t10 * t11 * w3
+        + X1 * r3 * t7 * t10 * t11 * w1 - Y1 * r2 * t5 * t10 * t11 * w3 - Y1 * r2 * t7 * t10 * t11 * w3
+        + Y1 * r3 * t7 * t10 * t11 * w2 + Z1 * r1 * t7 * t10 * t11 * w1 + Z1 * r2 * t7 * t10 * t11 * w2
+        - Z1 * r3 * t5 * t10 * t11 * w3 - Z1 * r3 * t6 * t10 * t11 * w3 - X1 * r3 * t10 * t11 * w2 * w3
+        + X1 * r2 * t10 * t11 * w1 * w2 * w3 + Y1 * r1 * t10 * t11 * w1 * w2 * w3)
+    - t26 * t65 * t93 * w3 * 2.0
+    - t14 * t93 * t101
+      * (t18
+          * (Z1 * (t46 - t113 + t114 + t115 - t13 * t14 * w2) - Y1 * t198
+            + X1 * (t49 + t51 + t52 + t118 - t7 * t10 * t25))
+          * 2.0
+        + t23
+          * (X1 * (-t97 + t112 + t116 + t117 - t13 * t14 * w1) + Y1 * (-t46 + t113 + t114 + t115 - t13 * t14 * w2)
+            - Z1 * t195)
+          * 2.0
+        + t15 * (t204 + Z1 * (t97 - t112 + t116 + t117 - t13 * t14 * w1) - X1 * (t201 + t202 - t13 * t14 * w3 * 2.0))
+          * 2.0)
+      * (1.0 / 2.0);
   jacs(0, 3) = r1 * t65 - t14 * t93 * t101 * t208 * (1.0 / 2.0);
   jacs(0, 4) = r2 * t65 - t14 * t93 * t101 * t212 * (1.0 / 2.0);
   jacs(0, 5) = r3 * t65 - t14 * t93 * t101 * t216 * (1.0 / 2.0);
-  jacs(1, 0) =
-      t14 * t65 *
-          (X1 * s1 * w1 * 2.0 + X1 * s2 * w2 + X1 * s3 * w3 + Y1 * s1 * w2 +
-           Z1 * s1 * w3 + s1 * t1 * w1 * 2.0 + s2 * t2 * w1 * 2.0 +
-           s3 * t3 * w1 * 2.0 + Y1 * s3 * t5 * t12 + Y1 * s3 * t9 * t10 -
-           Z1 * s2 * t5 * t12 - Z1 * s2 * t9 * t10 - X1 * s2 * t12 * w2 -
-           X1 * s3 * t12 * w3 - Y1 * s1 * t12 * w2 + Y1 * s2 * t12 * w1 * 2.0 -
-           Z1 * s1 * t12 * w3 + Z1 * s3 * t12 * w1 * 2.0 +
-           Y1 * s3 * t5 * t10 * t11 - Z1 * s2 * t5 * t10 * t11 +
-           X1 * s2 * t12 * w1 * w3 - X1 * s3 * t12 * w1 * w2 -
-           Y1 * s1 * t12 * w1 * w3 + Z1 * s1 * t12 * w1 * w2 +
-           X1 * s2 * t10 * t11 * w1 * w3 - X1 * s3 * t10 * t11 * w1 * w2 -
-           Y1 * s1 * t10 * t11 * w1 * w3 + Z1 * s1 * t10 * t11 * w1 * w2 -
-           X1 * s1 * t6 * t10 * t11 * w1 - X1 * s1 * t7 * t10 * t11 * w1 +
-           X1 * s2 * t5 * t10 * t11 * w2 + X1 * s3 * t5 * t10 * t11 * w3 +
-           Y1 * s1 * t5 * t10 * t11 * w2 - Y1 * s2 * t5 * t10 * t11 * w1 -
-           Y1 * s2 * t7 * t10 * t11 * w1 + Z1 * s1 * t5 * t10 * t11 * w3 -
-           Z1 * s3 * t5 * t10 * t11 * w1 - Z1 * s3 * t6 * t10 * t11 * w1 +
-           Y1 * s3 * t10 * t11 * w1 * w2 * w3 +
-           Z1 * s2 * t10 * t11 * w1 * w2 * w3) -
-      t14 * t101 * t167 *
-          (t130 +
-           t15 *
-               (Y1 * (t46 + t47 + t48 - t113 - t138) +
-                Z1 * (t35 + t36 + t37 - t94 - t139) - X1 * t121) *
-               2.0 +
-           t18 * (t135 + t137 - Y1 * (-t131 + t132 + t133)) * 2.0) *
-          (1.0 / 2.0) -
-      t26 * t65 * t167 * w1 * 2.0;
-  jacs(1, 1) =
-      t14 * t65 *
-          (X1 * s2 * w1 + Y1 * s1 * w1 + Y1 * s2 * w2 * 2.0 + Y1 * s3 * w3 +
-           Z1 * s2 * w3 + s1 * t1 * w2 * 2.0 + s2 * t2 * w2 * 2.0 +
-           s3 * t3 * w2 * 2.0 - X1 * s3 * t6 * t12 - X1 * s3 * t9 * t10 +
-           Z1 * s1 * t6 * t12 + Z1 * s1 * t9 * t10 + X1 * s1 * t12 * w2 * 2.0 -
-           X1 * s2 * t12 * w1 - Y1 * s1 * t12 * w1 - Y1 * s3 * t12 * w3 -
-           Z1 * s2 * t12 * w3 + Z1 * s3 * t12 * w2 * 2.0 -
-           X1 * s3 * t6 * t10 * t11 + Z1 * s1 * t6 * t10 * t11 +
-           X1 * s2 * t12 * w2 * w3 - Y1 * s1 * t12 * w2 * w3 +
-           Y1 * s3 * t12 * w1 * w2 - Z1 * s2 * t12 * w1 * w2 +
-           X1 * s2 * t10 * t11 * w2 * w3 - Y1 * s1 * t10 * t11 * w2 * w3 +
-           Y1 * s3 * t10 * t11 * w1 * w2 - Z1 * s2 * t10 * t11 * w1 * w2 -
-           X1 * s1 * t6 * t10 * t11 * w2 + X1 * s2 * t6 * t10 * t11 * w1 -
-           X1 * s1 * t7 * t10 * t11 * w2 + Y1 * s1 * t6 * t10 * t11 * w1 -
-           Y1 * s2 * t5 * t10 * t11 * w2 - Y1 * s2 * t7 * t10 * t11 * w2 +
-           Y1 * s3 * t6 * t10 * t11 * w3 - Z1 * s3 * t5 * t10 * t11 * w2 +
-           Z1 * s2 * t6 * t10 * t11 * w3 - Z1 * s3 * t6 * t10 * t11 * w2 +
-           X1 * s3 * t10 * t11 * w1 * w2 * w3 +
-           Z1 * s1 * t10 * t11 * w1 * w2 * w3) -
-      t26 * t65 * t167 * w2 * 2.0 -
-      t14 * t101 * t167 *
-          (t18 *
-               (X1 * (t97 + t98 + t99 - t112 - t192) +
-                Z1 * (-t35 + t94 + t95 + t96 - t139) - Y1 * t170) *
-               2.0 +
-           t15 * (t180 + t182 - X1 * (-t176 + t177 + t178)) * 2.0 +
-           t23 * (t175 + Y1 * (t35 - t94 + t95 + t96 - t139) - Z1 * t173) *
-               2.0) *
-          (1.0 / 2.0);
-  jacs(1, 2) =
-      t14 * t65 *
-          (X1 * s3 * w1 + Y1 * s3 * w2 + Z1 * s1 * w1 + Z1 * s2 * w2 +
-           Z1 * s3 * w3 * 2.0 + s1 * t1 * w3 * 2.0 + s2 * t2 * w3 * 2.0 +
-           s3 * t3 * w3 * 2.0 + X1 * s2 * t7 * t12 + X1 * s2 * t9 * t10 -
-           Y1 * s1 * t7 * t12 - Y1 * s1 * t9 * t10 + X1 * s1 * t12 * w3 * 2.0 -
-           X1 * s3 * t12 * w1 + Y1 * s2 * t12 * w3 * 2.0 - Y1 * s3 * t12 * w2 -
-           Z1 * s1 * t12 * w1 - Z1 * s2 * t12 * w2 + X1 * s2 * t7 * t10 * t11 -
-           Y1 * s1 * t7 * t10 * t11 - X1 * s3 * t12 * w2 * w3 +
-           Y1 * s3 * t12 * w1 * w3 + Z1 * s1 * t12 * w2 * w3 -
-           Z1 * s2 * t12 * w1 * w3 - X1 * s3 * t10 * t11 * w2 * w3 +
-           Y1 * s3 * t10 * t11 * w1 * w3 + Z1 * s1 * t10 * t11 * w2 * w3 -
-           Z1 * s2 * t10 * t11 * w1 * w3 - X1 * s1 * t6 * t10 * t11 * w3 -
-           X1 * s1 * t7 * t10 * t11 * w3 + X1 * s3 * t7 * t10 * t11 * w1 -
-           Y1 * s2 * t5 * t10 * t11 * w3 - Y1 * s2 * t7 * t10 * t11 * w3 +
-           Y1 * s3 * t7 * t10 * t11 * w2 + Z1 * s1 * t7 * t10 * t11 * w1 +
-           Z1 * s2 * t7 * t10 * t11 * w2 - Z1 * s3 * t5 * t10 * t11 * w3 -
-           Z1 * s3 * t6 * t10 * t11 * w3 + X1 * s2 * t10 * t11 * w1 * w2 * w3 +
-           Y1 * s1 * t10 * t11 * w1 * w2 * w3) -
-      t26 * t65 * t167 * w3 * 2.0 -
-      t14 * t101 * t167 *
-          (t18 *
-               (Z1 * (t46 - t113 + t114 + t115 - t138) - Y1 * t198 +
-                X1 * (t49 + t51 + t52 + t118 - t199)) *
-               2.0 +
-           t23 *
-               (X1 * (-t97 + t112 + t116 + t117 - t192) +
-                Y1 * (-t46 + t113 + t114 + t115 - t138) - Z1 * t195) *
-               2.0 +
-           t15 *
-               (t204 + Z1 * (t97 - t112 + t116 + t117 - t192) -
-                X1 * (-t200 + t201 + t202)) *
-               2.0) *
-          (1.0 / 2.0);
+  jacs(1, 0) = t14 * t65
+      * (X1 * s1 * w1 * 2.0 + X1 * s2 * w2 + X1 * s3 * w3 + Y1 * s1 * w2 + Z1 * s1 * w3 + s1 * t1 * w1 * 2.0
+        + s2 * t2 * w1 * 2.0 + s3 * t3 * w1 * 2.0 + Y1 * s3 * t5 * t12 + Y1 * s3 * t9 * t10 - Z1 * s2 * t5 * t12
+        - Z1 * s2 * t9 * t10 - X1 * s2 * t12 * w2 - X1 * s3 * t12 * w3 - Y1 * s1 * t12 * w2 + Y1 * s2 * t12 * w1 * 2.0
+        - Z1 * s1 * t12 * w3 + Z1 * s3 * t12 * w1 * 2.0 + Y1 * s3 * t5 * t10 * t11 - Z1 * s2 * t5 * t10 * t11
+        + X1 * s2 * t12 * w1 * w3 - X1 * s3 * t12 * w1 * w2 - Y1 * s1 * t12 * w1 * w3 + Z1 * s1 * t12 * w1 * w2
+        + X1 * s2 * t10 * t11 * w1 * w3 - X1 * s3 * t10 * t11 * w1 * w2 - Y1 * s1 * t10 * t11 * w1 * w3
+        + Z1 * s1 * t10 * t11 * w1 * w2 - X1 * s1 * t6 * t10 * t11 * w1 - X1 * s1 * t7 * t10 * t11 * w1
+        + X1 * s2 * t5 * t10 * t11 * w2 + X1 * s3 * t5 * t10 * t11 * w3 + Y1 * s1 * t5 * t10 * t11 * w2
+        - Y1 * s2 * t5 * t10 * t11 * w1 - Y1 * s2 * t7 * t10 * t11 * w1 + Z1 * s1 * t5 * t10 * t11 * w3
+        - Z1 * s3 * t5 * t10 * t11 * w1 - Z1 * s3 * t6 * t10 * t11 * w1 + Y1 * s3 * t10 * t11 * w1 * w2 * w3
+        + Z1 * s2 * t10 * t11 * w1 * w2 * w3)
+    - t14 * t101 * t167
+      * (t130 + t15 * (Y1 * (t46 + t47 + t48 - t113 - t138) + Z1 * (t35 + t36 + t37 - t94 - t139) - X1 * t121) * 2.0
+        + t18 * (t135 + t137 - Y1 * (-t131 + t132 + t133)) * 2.0)
+      * (1.0 / 2.0)
+    - t26 * t65 * t167 * w1 * 2.0;
+  jacs(1, 1) = t14 * t65
+      * (X1 * s2 * w1 + Y1 * s1 * w1 + Y1 * s2 * w2 * 2.0 + Y1 * s3 * w3 + Z1 * s2 * w3 + s1 * t1 * w2 * 2.0
+        + s2 * t2 * w2 * 2.0 + s3 * t3 * w2 * 2.0 - X1 * s3 * t6 * t12 - X1 * s3 * t9 * t10 + Z1 * s1 * t6 * t12
+        + Z1 * s1 * t9 * t10 + X1 * s1 * t12 * w2 * 2.0 - X1 * s2 * t12 * w1 - Y1 * s1 * t12 * w1 - Y1 * s3 * t12 * w3
+        - Z1 * s2 * t12 * w3 + Z1 * s3 * t12 * w2 * 2.0 - X1 * s3 * t6 * t10 * t11 + Z1 * s1 * t6 * t10 * t11
+        + X1 * s2 * t12 * w2 * w3 - Y1 * s1 * t12 * w2 * w3 + Y1 * s3 * t12 * w1 * w2 - Z1 * s2 * t12 * w1 * w2
+        + X1 * s2 * t10 * t11 * w2 * w3 - Y1 * s1 * t10 * t11 * w2 * w3 + Y1 * s3 * t10 * t11 * w1 * w2
+        - Z1 * s2 * t10 * t11 * w1 * w2 - X1 * s1 * t6 * t10 * t11 * w2 + X1 * s2 * t6 * t10 * t11 * w1
+        - X1 * s1 * t7 * t10 * t11 * w2 + Y1 * s1 * t6 * t10 * t11 * w1 - Y1 * s2 * t5 * t10 * t11 * w2
+        - Y1 * s2 * t7 * t10 * t11 * w2 + Y1 * s3 * t6 * t10 * t11 * w3 - Z1 * s3 * t5 * t10 * t11 * w2
+        + Z1 * s2 * t6 * t10 * t11 * w3 - Z1 * s3 * t6 * t10 * t11 * w2 + X1 * s3 * t10 * t11 * w1 * w2 * w3
+        + Z1 * s1 * t10 * t11 * w1 * w2 * w3)
+    - t26 * t65 * t167 * w2 * 2.0
+    - t14 * t101 * t167
+      * (t18 * (X1 * (t97 + t98 + t99 - t112 - t192) + Z1 * (-t35 + t94 + t95 + t96 - t139) - Y1 * t170) * 2.0
+        + t15 * (t180 + t182 - X1 * (-t176 + t177 + t178)) * 2.0
+        + t23 * (t175 + Y1 * (t35 - t94 + t95 + t96 - t139) - Z1 * t173) * 2.0)
+      * (1.0 / 2.0);
+  jacs(1, 2) = t14 * t65
+      * (X1 * s3 * w1 + Y1 * s3 * w2 + Z1 * s1 * w1 + Z1 * s2 * w2 + Z1 * s3 * w3 * 2.0 + s1 * t1 * w3 * 2.0
+        + s2 * t2 * w3 * 2.0 + s3 * t3 * w3 * 2.0 + X1 * s2 * t7 * t12 + X1 * s2 * t9 * t10 - Y1 * s1 * t7 * t12
+        - Y1 * s1 * t9 * t10 + X1 * s1 * t12 * w3 * 2.0 - X1 * s3 * t12 * w1 + Y1 * s2 * t12 * w3 * 2.0
+        - Y1 * s3 * t12 * w2 - Z1 * s1 * t12 * w1 - Z1 * s2 * t12 * w2 + X1 * s2 * t7 * t10 * t11
+        - Y1 * s1 * t7 * t10 * t11 - X1 * s3 * t12 * w2 * w3 + Y1 * s3 * t12 * w1 * w3 + Z1 * s1 * t12 * w2 * w3
+        - Z1 * s2 * t12 * w1 * w3 - X1 * s3 * t10 * t11 * w2 * w3 + Y1 * s3 * t10 * t11 * w1 * w3
+        + Z1 * s1 * t10 * t11 * w2 * w3 - Z1 * s2 * t10 * t11 * w1 * w3 - X1 * s1 * t6 * t10 * t11 * w3
+        - X1 * s1 * t7 * t10 * t11 * w3 + X1 * s3 * t7 * t10 * t11 * w1 - Y1 * s2 * t5 * t10 * t11 * w3
+        - Y1 * s2 * t7 * t10 * t11 * w3 + Y1 * s3 * t7 * t10 * t11 * w2 + Z1 * s1 * t7 * t10 * t11 * w1
+        + Z1 * s2 * t7 * t10 * t11 * w2 - Z1 * s3 * t5 * t10 * t11 * w3 - Z1 * s3 * t6 * t10 * t11 * w3
+        + X1 * s2 * t10 * t11 * w1 * w2 * w3 + Y1 * s1 * t10 * t11 * w1 * w2 * w3)
+    - t26 * t65 * t167 * w3 * 2.0
+    - t14 * t101 * t167
+      * (t18 * (Z1 * (t46 - t113 + t114 + t115 - t138) - Y1 * t198 + X1 * (t49 + t51 + t52 + t118 - t199)) * 2.0
+        + t23 * (X1 * (-t97 + t112 + t116 + t117 - t192) + Y1 * (-t46 + t113 + t114 + t115 - t138) - Z1 * t195) * 2.0
+        + t15 * (t204 + Z1 * (t97 - t112 + t116 + t117 - t192) - X1 * (-t200 + t201 + t202)) * 2.0)
+      * (1.0 / 2.0);
   jacs(1, 3) = s1 * t65 - t14 * t101 * t167 * t208 * (1.0 / 2.0);
   jacs(1, 4) = s2 * t65 - t14 * t101 * t167 * t212 * (1.0 / 2.0);
   jacs(1, 5) = s3 * t65 - t14 * t101 * t167 * t216 * (1.0 / 2.0);

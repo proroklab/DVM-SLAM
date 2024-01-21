@@ -40,12 +40,12 @@ public:
    * construct the Levenberg algorithm, which will use the given Solver for
    * solving the linearized system.
    */
-  explicit OptimizationAlgorithmLevenberg(Solver *solver);
+  explicit OptimizationAlgorithmLevenberg(Solver* solver);
   virtual ~OptimizationAlgorithmLevenberg();
 
   virtual SolverResult solve(int iteration, bool online = false);
 
-  virtual void printVerbose(std::ostream &os) const;
+  virtual void printVerbose(std::ostream& os) const;
 
   //! return the currently used damping factor
   double currentLambda() const { return _currentLambda; }
@@ -69,8 +69,8 @@ public:
 
 protected:
   // Levenberg parameters
-  Property<int> *_maxTrialsAfterFailure;
-  Property<double> *_userLambdaInit;
+  Property<int>* _maxTrialsAfterFailure;
+  Property<double>* _userLambdaInit;
   double _currentLambda;
   double _tau;
   double _goodStepLowerScale; ///< lower bound for lambda decrease if a good LM

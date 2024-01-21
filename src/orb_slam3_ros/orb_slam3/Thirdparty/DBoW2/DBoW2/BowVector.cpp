@@ -19,11 +19,11 @@ namespace DBoW2 {
 
 // --------------------------------------------------------------------------
 
-BowVector::BowVector(void) {}
+BowVector::BowVector(void) { }
 
 // --------------------------------------------------------------------------
 
-BowVector::~BowVector(void) {}
+BowVector::~BowVector(void) { }
 
 // --------------------------------------------------------------------------
 
@@ -32,7 +32,8 @@ void BowVector::addWeight(WordId id, WordValue v) {
 
   if (vit != this->end() && !(this->key_comp()(id, vit->first))) {
     vit->second += v;
-  } else {
+  }
+  else {
     this->insert(vit, BowVector::value_type(id, v));
   }
 }
@@ -56,7 +57,8 @@ void BowVector::normalize(LNorm norm_type) {
   if (norm_type == DBoW2::L1) {
     for (it = begin(); it != end(); ++it)
       norm += fabs(it->second);
-  } else {
+  }
+  else {
     for (it = begin(); it != end(); ++it)
       norm += it->second * it->second;
     norm = sqrt(norm);
@@ -70,7 +72,7 @@ void BowVector::normalize(LNorm norm_type) {
 
 // --------------------------------------------------------------------------
 
-std::ostream &operator<<(std::ostream &out, const BowVector &v) {
+std::ostream& operator<<(std::ostream& out, const BowVector& v) {
   BowVector::const_iterator vit;
   std::vector<unsigned int>::const_iterator iit;
   unsigned int i = 0;
@@ -86,7 +88,7 @@ std::ostream &operator<<(std::ostream &out, const BowVector &v) {
 
 // --------------------------------------------------------------------------
 
-void BowVector::saveM(const std::string &filename, size_t W) const {
+void BowVector::saveM(const std::string& filename, size_t W) const {
   std::fstream f(filename.c_str(), std::ios::out);
 
   WordId last = 0;

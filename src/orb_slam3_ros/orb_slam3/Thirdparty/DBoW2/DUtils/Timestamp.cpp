@@ -43,7 +43,7 @@ Timestamp::Timestamp(Timestamp::tOptions option) {
     setTime(0.);
 }
 
-Timestamp::~Timestamp(void) {}
+Timestamp::~Timestamp(void) { }
 
 bool Timestamp::empty() const { return m_secs == 0 && m_usecs == 0; }
 
@@ -63,12 +63,13 @@ void Timestamp::setToCurrentTime() {
 #endif
 }
 
-void Timestamp::setTime(const string &stime) {
+void Timestamp::setTime(const string& stime) {
   string::size_type p = stime.find('.');
   if (p == string::npos) {
     m_secs = atol(stime.c_str());
     m_usecs = 0;
-  } else {
+  }
+  else {
     m_secs = atol(stime.substr(0, p).c_str());
 
     string s_usecs = stime.substr(p + 1, 6);
@@ -82,9 +83,7 @@ void Timestamp::setTime(double s) {
   m_usecs = (s - (double)m_secs) * 1e6;
 }
 
-double Timestamp::getFloatTime() const {
-  return double(m_secs) + double(m_usecs) / 1000000.0;
-}
+double Timestamp::getFloatTime() const { return double(m_secs) + double(m_usecs) / 1000000.0; }
 
 string Timestamp::getStringTime() const {
   char buf[32];
@@ -92,16 +91,14 @@ string Timestamp::getStringTime() const {
   return string(buf);
 }
 
-double Timestamp::operator-(const Timestamp &t) const {
-  return this->getFloatTime() - t.getFloatTime();
-}
+double Timestamp::operator-(const Timestamp& t) const { return this->getFloatTime() - t.getFloatTime(); }
 
-Timestamp &Timestamp::operator+=(double s) {
+Timestamp& Timestamp::operator+=(double s) {
   *this = *this + s;
   return *this;
 }
 
-Timestamp &Timestamp::operator-=(double s) {
+Timestamp& Timestamp::operator-=(double s) {
   *this = *this - s;
   return *this;
 }
@@ -146,7 +143,7 @@ Timestamp Timestamp::minus(unsigned long secs, unsigned long usecs) const {
   return t;
 }
 
-bool Timestamp::operator>(const Timestamp &t) const {
+bool Timestamp::operator>(const Timestamp& t) const {
   if (m_secs > t.m_secs)
     return true;
   else if (m_secs == t.m_secs)
@@ -155,7 +152,7 @@ bool Timestamp::operator>(const Timestamp &t) const {
     return false;
 }
 
-bool Timestamp::operator>=(const Timestamp &t) const {
+bool Timestamp::operator>=(const Timestamp& t) const {
   if (m_secs > t.m_secs)
     return true;
   else if (m_secs == t.m_secs)
@@ -164,7 +161,7 @@ bool Timestamp::operator>=(const Timestamp &t) const {
     return false;
 }
 
-bool Timestamp::operator<(const Timestamp &t) const {
+bool Timestamp::operator<(const Timestamp& t) const {
   if (m_secs < t.m_secs)
     return true;
   else if (m_secs == t.m_secs)
@@ -173,7 +170,7 @@ bool Timestamp::operator<(const Timestamp &t) const {
     return false;
 }
 
-bool Timestamp::operator<=(const Timestamp &t) const {
+bool Timestamp::operator<=(const Timestamp& t) const {
   if (m_secs < t.m_secs)
     return true;
   else if (m_secs == t.m_secs)
@@ -182,9 +179,7 @@ bool Timestamp::operator<=(const Timestamp &t) const {
     return false;
 }
 
-bool Timestamp::operator==(const Timestamp &t) const {
-  return (m_secs == t.m_secs && m_usecs == t.m_usecs);
-}
+bool Timestamp::operator==(const Timestamp& t) const { return (m_secs == t.m_secs && m_usecs == t.m_usecs); }
 
 string Timestamp::Format(bool machine_friendly) const {
   struct tm tm_time;
@@ -201,7 +196,8 @@ string Timestamp::Format(bool machine_friendly) const {
 
   if (machine_friendly) {
     strftime(buffer, 128, "%Y%m%d_%H%M%S", &tm_time);
-  } else {
+  }
+  else {
     strftime(buffer, 128, "%c", &tm_time); // Thu Aug 23 14:55:02 2001
   }
 

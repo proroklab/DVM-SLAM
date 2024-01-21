@@ -53,9 +53,7 @@ template <typename T> inline T square(T x) { return x * x; }
 /**
  * return the hypot of x and y
  */
-template <typename T> inline T hypot(T x, T y) {
-  return (T)(sqrt(x * x + y * y));
-}
+template <typename T> inline T hypot(T x, T y) { return (T)(sqrt(x * x + y * y)); }
 
 /**
  * return the squared hypot of x and y
@@ -147,7 +145,7 @@ template <typename T> inline T wrap(T l, T x, T u) {
 /**
  * tests whether there is a NaN in the array
  */
-inline bool arrayHasNaN(const double *array, int size, int *nanIndex = 0) {
+inline bool arrayHasNaN(const double* array, int size, int* nanIndex = 0) {
   for (int i = 0; i < size; ++i)
     if (g2o_isnan(array[i])) {
       if (nanIndex)

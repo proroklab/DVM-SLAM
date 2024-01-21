@@ -62,18 +62,16 @@ class MLPnPsolver {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  MLPnPsolver(const Frame &F, const vector<MapPoint *> &vpMapPointMatches);
+  MLPnPsolver(const Frame& F, const vector<MapPoint*>& vpMapPointMatches);
 
   ~MLPnPsolver();
 
-  void SetRansacParameters(double probability = 0.99, int minInliers = 8,
-                           int maxIterations = 300, int minSet = 6,
-                           float epsilon = 0.4, float th2 = 5.991);
+  void SetRansacParameters(double probability = 0.99, int minInliers = 8, int maxIterations = 300, int minSet = 6,
+    float epsilon = 0.4, float th2 = 5.991);
 
   // Find metod is necessary?
 
-  bool iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers,
-               int &nInliers, Eigen::Matrix4f &Tout);
+  bool iterate(int nIterations, bool& bNoMore, vector<bool>& vbInliers, int& nInliers, Eigen::Matrix4f& Tout);
 
   // Type definitions needed by the original code
 
@@ -83,9 +81,7 @@ public:
   typedef Eigen::Vector3d bearingVector_t;
 
   /** An array of bearing-vectors */
-  typedef std::vector<bearingVector_t,
-                      Eigen::aligned_allocator<bearingVector_t>>
-      bearingVectors_t;
+  typedef std::vector<bearingVector_t, Eigen::aligned_allocator<bearingVector_t>> bearingVectors_t;
 
   /** A 2-matrix containing the 2D covariance information of a bearing vector
    */
@@ -95,8 +91,7 @@ public:
   typedef Eigen::Matrix3d cov3_mat_t;
 
   /** An array of 3D covariance matrices */
-  typedef std::vector<cov3_mat_t, Eigen::aligned_allocator<cov3_mat_t>>
-      cov3_mats_t;
+  typedef std::vector<cov3_mat_t, Eigen::aligned_allocator<cov3_mat_t>> cov3_mats_t;
 
   /** A 3-vector describing a point in 3D-space */
   typedef Eigen::Vector3d point_t;
@@ -137,22 +132,17 @@ private:
    * reference system), the camera rays and (optionally) the covariance matrix
    * of those camera rays. Result is stored in solution
    */
-  void computePose(const bearingVectors_t &f, const points_t &p,
-                   const cov3_mats_t &covMats, const std::vector<int> &indices,
-                   transformation_t &result);
+  void computePose(const bearingVectors_t& f, const points_t& p, const cov3_mats_t& covMats,
+    const std::vector<int>& indices, transformation_t& result);
 
-  void mlpnp_gn(Eigen::VectorXd &x, const points_t &pts,
-                const std::vector<Eigen::MatrixXd> &nullspaces,
-                const Eigen::SparseMatrix<double> Kll, bool use_cov);
+  void mlpnp_gn(Eigen::VectorXd& x, const points_t& pts, const std::vector<Eigen::MatrixXd>& nullspaces,
+    const Eigen::SparseMatrix<double> Kll, bool use_cov);
 
-  void mlpnp_residuals_and_jacs(const Eigen::VectorXd &x, const points_t &pts,
-                                const std::vector<Eigen::MatrixXd> &nullspaces,
-                                Eigen::VectorXd &r, Eigen::MatrixXd &fjac,
-                                bool getJacs);
+  void mlpnp_residuals_and_jacs(const Eigen::VectorXd& x, const points_t& pts,
+    const std::vector<Eigen::MatrixXd>& nullspaces, Eigen::VectorXd& r, Eigen::MatrixXd& fjac, bool getJacs);
 
-  void mlpnpJacs(const point_t &pt, const Eigen::Vector3d &nullspace_r,
-                 const Eigen::Vector3d &nullspace_s, const rodrigues_t &w,
-                 const translation_t &t, Eigen::MatrixXd &jacs);
+  void mlpnpJacs(const point_t& pt, const Eigen::Vector3d& nullspace_r, const Eigen::Vector3d& nullspace_s,
+    const rodrigues_t& w, const translation_t& t, Eigen::MatrixXd& jacs);
 
   // Auxiliar methods
 
@@ -162,7 +152,7 @@ private:
    * \param[in] omega The Rodrigues-parameters of a rotation.
    * \return The 3x3 rotation matrix.
    */
-  Eigen::Matrix3d rodrigues2rot(const Eigen::Vector3d &omega);
+  Eigen::Matrix3d rodrigues2rot(const Eigen::Vector3d& omega);
 
   /**
    * \brief Compute the Rodrigues-parameters of a rotation matrix.
@@ -170,12 +160,12 @@ private:
    * \param[in] R The 3x3 rotation matrix.
    * \return The Rodrigues-parameters.
    */
-  Eigen::Vector3d rot2rodrigues(const Eigen::Matrix3d &R);
+  Eigen::Vector3d rot2rodrigues(const Eigen::Matrix3d& R);
 
   //----------------------------------------------------
   // Fields of the solver
   //----------------------------------------------------
-  vector<MapPoint *> mvpMapPointMatches;
+  vector<MapPoint*> mvpMapPointMatches;
 
   // 2D Points
   vector<cv::Point2f> mvP2D;
@@ -237,7 +227,7 @@ private:
   // th*th*sigma(level)*sigma(level)
   vector<float> mvMaxError;
 
-  GeometricCamera *mpCamera;
+  GeometricCamera* mpCamera;
 };
 
 } // namespace ORB_SLAM3

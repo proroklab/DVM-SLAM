@@ -38,40 +38,30 @@ using namespace std;
 
 namespace g2o {
 
-OptimizationAlgorithmDogleg::OptimizationAlgorithmDogleg(
-    BlockSolverBase *solver)
-    : OptimizationAlgorithmWithHessian(solver) {
-  _userDeltaInit =
-      _properties.makeProperty<Property<double>>("initialDelta", 1e4);
-  _maxTrialsAfterFailure =
-      _properties.makeProperty<Property<int>>("maxTrialsAfterFailure", 100);
-  _initialLambda =
-      _properties.makeProperty<Property<double>>("initialLambda", 1e-7);
-  _lamdbaFactor =
-      _properties.makeProperty<Property<double>>("lambdaFactor", 10.);
+OptimizationAlgorithmDogleg::OptimizationAlgorithmDogleg(BlockSolverBase* solver)
+  : OptimizationAlgorithmWithHessian(solver) {
+  _userDeltaInit = _properties.makeProperty<Property<double>>("initialDelta", 1e4);
+  _maxTrialsAfterFailure = _properties.makeProperty<Property<int>>("maxTrialsAfterFailure", 100);
+  _initialLambda = _properties.makeProperty<Property<double>>("initialLambda", 1e-7);
+  _lamdbaFactor = _properties.makeProperty<Property<double>>("lambdaFactor", 10.);
   _delta = _userDeltaInit->value();
   _lastStep = STEP_UNDEFINED;
   _wasPDInAllIterations = true;
 }
 
-OptimizationAlgorithmDogleg::~OptimizationAlgorithmDogleg() {}
+OptimizationAlgorithmDogleg::~OptimizationAlgorithmDogleg() { }
 
-OptimizationAlgorithm::SolverResult
-OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
+OptimizationAlgorithm::SolverResult OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
   assert(_optimizer && "_optimizer not set");
-  assert(_solver->optimizer() == _optimizer &&
-         "underlying linear solver operates on different graph");
-  assert(dynamic_cast<BlockSolverBase *>(_solver) &&
-         "underlying linear solver is not a block solver");
+  assert(_solver->optimizer() == _optimizer && "underlying linear solver operates on different graph");
+  assert(dynamic_cast<BlockSolverBase*>(_solver) && "underlying linear solver is not a block solver");
 
-  BlockSolverBase *blockSolver = static_cast<BlockSolverBase *>(_solver);
+  BlockSolverBase* blockSolver = static_cast<BlockSolverBase*>(_solver);
 
-  if (iteration == 0 &&
-      !online) { // built up the CCS structure, here due to easy time measure
+  if (iteration == 0 && !online) { // built up the CCS structure, here due to easy time measure
     bool ok = _solver->buildStructure();
     if (!ok) {
-      cerr << __PRETTY_FUNCTION__ << ": Failure while building CCS structure"
-           << endl;
+      cerr << __PRETTY_FUNCTION__ << ": Failure while building CCS structure" << endl;
       return OptimizationAlgorithm::Fail;
     }
 
@@ -86,7 +76,7 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
 
   double t = get_monotonic_time();
   _optimizer->computeActiveErrors();
-  G2OBatchStatistics *globalStats = G2OBatchStatistics::globalStats();
+  G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
   if (globalStats) {
     globalStats->timeResiduals = get_monotonic_time() - t;
     t = get_monotonic_time();
@@ -113,7 +103,7 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
 
   bool solvedGaussNewton = false;
   bool goodStep = false;
-  int &numTries = _lastNumTries;
+  int& numTries = _lastNumTries;
   numTries = 0;
   do {
     ++numTries;
@@ -129,7 +119,7 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
       while (!solverOk) {
         if (!_wasPDInAllIterations)
           _solver->setLambda(_currentLambda,
-                             true); // add _currentLambda to the diagonal
+            true); // add _currentLambda to the diagonal
         solverOk = _solver->solve();
         if (!_wasPDInAllIterations)
           _solver->restoreDiagonal();
@@ -137,9 +127,9 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
         if (!_wasPDInAllIterations) {
           // simple strategy to control the damping factor
           if (solverOk) {
-            _currentLambda = std::max(
-                minLambda, _currentLambda / (0.5 * _lamdbaFactor->value()));
-          } else {
+            _currentLambda = std::max(minLambda, _currentLambda / (0.5 * _lamdbaFactor->value()));
+          }
+          else {
             _currentLambda *= _lamdbaFactor->value();
             if (_currentLambda > maxLambda) {
               _currentLambda = maxLambda;
@@ -151,9 +141,7 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
       if (!solverOk) {
         return Fail;
       }
-      hgnNorm =
-          Eigen::VectorXd::ConstMapType(_solver->x(), _solver->vectorSize())
-              .norm();
+      hgnNorm = Eigen::VectorXd::ConstMapType(_solver->x(), _solver->vectorSize()).norm();
     }
 
     Eigen::VectorXd::ConstMapType hgn(_solver->x(), _solver->vectorSize());
@@ -162,29 +150,26 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
     if (hgnNorm < _delta) {
       _hdl = hgn;
       _lastStep = STEP_GN;
-    } else if (hsdNorm > _delta) {
+    }
+    else if (hsdNorm > _delta) {
       _hdl = _delta / hsdNorm * _hsd;
       _lastStep = STEP_SD;
-    } else {
+    }
+    else {
       _auxVector = hgn - _hsd; // b - a
       double c = _hsd.dot(_auxVector);
       double bmaSquaredNorm = _auxVector.squaredNorm();
       double beta;
       if (c <= 0.)
-        beta = (-c + sqrt(c * c + bmaSquaredNorm *
-                                      (_delta * _delta - _hsd.squaredNorm()))) /
-               bmaSquaredNorm;
+        beta = (-c + sqrt(c * c + bmaSquaredNorm * (_delta * _delta - _hsd.squaredNorm()))) / bmaSquaredNorm;
       else {
         double hsdSqrNorm = _hsd.squaredNorm();
-        beta =
-            (_delta * _delta - hsdSqrNorm) /
-            (c + sqrt(c * c + bmaSquaredNorm * (_delta * _delta - hsdSqrNorm)));
+        beta = (_delta * _delta - hsdSqrNorm) / (c + sqrt(c * c + bmaSquaredNorm * (_delta * _delta - hsdSqrNorm)));
       }
       assert(beta > 0. && beta < 1 && "Error while computing beta");
       _hdl = _hsd + beta * (hgn - _hsd);
       _lastStep = STEP_DL;
-      assert(_hdl.norm() < _delta + 1e-5 &&
-             "Computed step does not correspond to the trust region");
+      assert(_hdl.norm() < _delta + 1e-5 && "Computed step does not correspond to the trust region");
     }
 
     // compute the linear gain
@@ -206,7 +191,8 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
     if (rho > 0) { // step is good and will be accepted
       _optimizer->discardTop();
       goodStep = true;
-    } else { // recover previous state
+    }
+    else { // recover previous state
       _optimizer->pop();
     }
 
@@ -221,14 +207,13 @@ OptimizationAlgorithmDogleg::solve(int iteration, bool online) {
   return OK;
 }
 
-void OptimizationAlgorithmDogleg::printVerbose(std::ostream &os) const {
-  os << "\t Delta= " << _delta << "\t step= " << stepType2Str(_lastStep)
-     << "\t tries= " << _lastNumTries;
+void OptimizationAlgorithmDogleg::printVerbose(std::ostream& os) const {
+  os << "\t Delta= " << _delta << "\t step= " << stepType2Str(_lastStep) << "\t tries= " << _lastNumTries;
   if (!_wasPDInAllIterations)
     os << "\t lambda= " << _currentLambda;
 }
 
-const char *OptimizationAlgorithmDogleg::stepType2Str(int stepType) {
+const char* OptimizationAlgorithmDogleg::stepType2Str(int stepType) {
   switch (stepType) {
   case STEP_SD:
     return "Descent";

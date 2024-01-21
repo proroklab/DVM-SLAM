@@ -49,9 +49,7 @@ struct OptimizableGraph;
  */
 class JacobianWorkspace {
 public:
-  typedef std::vector<Eigen::VectorXd,
-                      Eigen::aligned_allocator<Eigen::VectorXd>>
-      WorkspaceVector;
+  typedef std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> WorkspaceVector;
 
 public:
   JacobianWorkspace();
@@ -66,12 +64,12 @@ public:
    * update the maximum required workspace needed by taking into account this
    * edge
    */
-  void updateSize(const HyperGraph::Edge *e);
+  void updateSize(const HyperGraph::Edge* e);
 
   /**
    * update the required workspace by looking at a full graph
    */
-  void updateSize(const OptimizableGraph &graph);
+  void updateSize(const OptimizableGraph& graph);
 
   /**
    * manually update with the given parameters
@@ -81,19 +79,17 @@ public:
   /**
    * return the workspace for a vertex in an edge
    */
-  double *workspaceForVertex(int vertexIndex) {
-    assert(vertexIndex >= 0 && (size_t)vertexIndex < _workspace.size() &&
-           "Index out of bounds");
+  double* workspaceForVertex(int vertexIndex) {
+    assert(vertexIndex >= 0 && (size_t)vertexIndex < _workspace.size() && "Index out of bounds");
     return _workspace[vertexIndex].data();
   }
 
 protected:
-  WorkspaceVector
-      _workspace;      ///< the memory pre-allocated for computing the Jacobians
+  WorkspaceVector _workspace; ///< the memory pre-allocated for computing the Jacobians
   int _maxNumVertices; ///< the maximum number of vertices connected by a
                        ///< hyper-edge
-  int _maxDimension;   ///< the maximum dimension (number of elements) for a
-                       ///< Jacobian
+  int _maxDimension; ///< the maximum dimension (number of elements) for a
+                     ///< Jacobian
 };
 
 } // namespace g2o

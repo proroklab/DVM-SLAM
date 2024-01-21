@@ -42,31 +42,30 @@ public:
   /**
    * create a hyper graph element. Has to implemented in derived class.
    */
-  virtual HyperGraph::HyperGraphElement *construct() = 0;
+  virtual HyperGraph::HyperGraphElement* construct() = 0;
   /**
    * name of the class to be created. Has to implemented in derived class.
    */
-  virtual const std::string &name() const = 0;
+  virtual const std::string& name() const = 0;
 
-  virtual ~AbstractHyperGraphElementCreator() {}
+  virtual ~AbstractHyperGraphElementCreator() { }
 };
 
 /**
  * \brief templatized creator class which creates graph elements
  */
-template <typename T>
-class HyperGraphElementCreator : public AbstractHyperGraphElementCreator {
+template <typename T> class HyperGraphElementCreator : public AbstractHyperGraphElementCreator {
 public:
-  HyperGraphElementCreator() : _name(typeid(T).name()) {}
-#if defined(WINDOWS) &&                                                        \
-    defined(__GNUC__) // force stack alignment on Windows with GCC
+  HyperGraphElementCreator()
+    : _name(typeid(T).name()) { }
+#if defined(WINDOWS) && defined(__GNUC__) // force stack alignment on Windows with GCC
   __attribute__((force_align_arg_pointer))
 #endif
-  HyperGraph::HyperGraphElement *
+  HyperGraph::HyperGraphElement*
   construct() {
     return new T;
   }
-  virtual const std::string &name() const { return _name; }
+  virtual const std::string& name() const { return _name; }
 
 protected:
   std::string _name;

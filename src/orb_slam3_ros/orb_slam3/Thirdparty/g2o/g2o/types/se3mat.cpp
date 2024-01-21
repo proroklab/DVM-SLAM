@@ -2,7 +2,7 @@
 
 namespace g2o {
 
-void SE3mat::Retract(const Eigen::Vector3d dr, const Eigen::Vector3d &dt) {
+void SE3mat::Retract(const Eigen::Vector3d dr, const Eigen::Vector3d& dt) {
   t += R * dt;
   R = R * ExpSO3(dr);
 }
@@ -16,8 +16,7 @@ Eigen::Matrix3d SE3mat::ExpSO3(const Eigen::Vector3d r) {
   if (theta < 1e-6)
     return Eigen::Matrix3d::Identity() + W + 0.5l * W * W;
   else
-    return Eigen::Matrix3d::Identity() + W * sin(theta) / theta +
-           W * W * (1 - cos(theta)) / (theta * theta);
+    return Eigen::Matrix3d::Identity() + W * sin(theta) / theta + W * W * (1 - cos(theta)) / (theta * theta);
 }
 
 Eigen::Vector3d SE3mat::LogSO3(const Eigen::Matrix3d R) {

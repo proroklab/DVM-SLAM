@@ -63,15 +63,14 @@ protected:
 class OpenMPMutex {
 public:
 #ifdef NDEBUG
-  OpenMPMutex() {}
+  OpenMPMutex() { }
 #else
-  OpenMPMutex() : _cnt(0) {}
+  OpenMPMutex()
+    : _cnt(0) { }
 #endif
   ~OpenMPMutex() { assert(_cnt == 0 && "Freeing locked mutex"); }
   void lock() { assert(++_cnt == 1 && "Locking already locked mutex"); }
-  void unlock() {
-    assert(--_cnt == 0 && "Trying to unlock a mutex which is not locked");
-  }
+  void unlock() { assert(--_cnt == 0 && "Trying to unlock a mutex which is not locked"); }
 
 protected:
 #ifndef NDEBUG
@@ -86,15 +85,16 @@ protected:
  */
 class ScopedOpenMPMutex {
 public:
-  explicit ScopedOpenMPMutex(OpenMPMutex *mutex) : _mutex(mutex) {
+  explicit ScopedOpenMPMutex(OpenMPMutex* mutex)
+    : _mutex(mutex) {
     _mutex->lock();
   }
   ~ScopedOpenMPMutex() { _mutex->unlock(); }
 
 private:
-  OpenMPMutex *const _mutex;
-  ScopedOpenMPMutex(const ScopedOpenMPMutex &);
-  void operator=(const ScopedOpenMPMutex &);
+  OpenMPMutex* const _mutex;
+  ScopedOpenMPMutex(const ScopedOpenMPMutex&);
+  void operator=(const ScopedOpenMPMutex&);
 };
 
 } // namespace g2o

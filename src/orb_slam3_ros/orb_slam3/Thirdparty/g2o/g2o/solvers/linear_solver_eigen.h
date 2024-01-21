@@ -47,50 +47,46 @@ namespace g2o {
  * Has no dependencies except Eigen. Hence, should compile almost everywhere
  * without to much issues. Performance should be similar to CSparse, I guess.
  */
-template <typename MatrixType>
-class LinearSolverEigen : public LinearSolver<MatrixType> {
+template <typename MatrixType> class LinearSolverEigen : public LinearSolver<MatrixType> {
 public:
   typedef Eigen::SparseMatrix<double, Eigen::ColMajor> SparseMatrix;
   typedef Eigen::Triplet<double> Triplet;
-  typedef Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic, int>
-      PermutationMatrix;
+  typedef Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic, int> PermutationMatrix;
   /**
    * \brief Sub-classing Eigen's SimplicialLDLT to perform ordering with a given
    * ordering
    */
-  class CholeskyDecomposition
-      : public Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper> {
+  class CholeskyDecomposition : public Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper> {
   public:
     CholeskyDecomposition()
-        : Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper>() {}
-    using Eigen::SimplicialLDLT<SparseMatrix,
-                                Eigen::Upper>::analyzePattern_preordered;
+      : Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper>() { }
+    using Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper>::analyzePattern_preordered;
 
-    void analyzePatternWithPermutation(SparseMatrix &a,
-                                       const PermutationMatrix &permutation) {
+    void analyzePatternWithPermutation(SparseMatrix& a, const PermutationMatrix& permutation) {
       m_Pinv = permutation;
       m_P = permutation.inverse();
       int size = a.cols();
       SparseMatrix ap(size, size);
-      ap.selfadjointView<Eigen::Upper>() =
-          a.selfadjointView<UpLo>().twistedBy(m_P);
+      ap.selfadjointView<Eigen::Upper>() = a.selfadjointView<UpLo>().twistedBy(m_P);
       analyzePattern_preordered(ap, true);
     }
   };
 
 public:
   LinearSolverEigen()
-      : LinearSolver<MatrixType>(), _init(true), _blockOrdering(false),
-        _writeDebug(false) {}
+    : LinearSolver<MatrixType>()
+    , _init(true)
+    , _blockOrdering(false)
+    , _writeDebug(false) { }
 
-  virtual ~LinearSolverEigen() {}
+  virtual ~LinearSolverEigen() { }
 
   virtual bool init() {
     _init = true;
     return true;
   }
 
-  bool solve(const SparseBlockMatrix<MatrixType> &A, double *x, double *b) {
+  bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b) {
     if (_init)
       _sparseMatrix.resize(A.rows(), A.cols());
     fillSparseMatrix(A, !_init);
@@ -100,8 +96,7 @@ public:
 
     double t = get_monotonic_time();
     _cholesky.factorize(_sparseMatrix);
-    if (_cholesky.info() !=
-        Eigen::Success) { // the matrix is not positive definite
+    if (_cholesky.info() != Eigen::Success) { // the matrix is not positive definite
       if (_writeDebug) {
         std::cerr << "Cholesky failure, writing debug.txt (Hessian loadable by "
                      "Octave)"
@@ -115,12 +110,11 @@ public:
     VectorXD::MapType xx(x, _sparseMatrix.cols());
     VectorXD::ConstMapType bb(b, _sparseMatrix.cols());
     xx = _cholesky.solve(bb);
-    G2OBatchStatistics *globalStats = G2OBatchStatistics::globalStats();
+    G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
     if (globalStats) {
       globalStats->timeNumericDecomposition = get_monotonic_time() - t;
-      globalStats->choleskyNNZ =
-          _cholesky.matrixL().nestedExpression().nonZeros() +
-          _sparseMatrix.cols(); // the elements of D
+      globalStats->choleskyNNZ
+        = _cholesky.matrixL().nestedExpression().nonZeros() + _sparseMatrix.cols(); // the elements of D
     }
 
     return true;
@@ -147,11 +141,12 @@ protected:
    * compute the fill-in reducing ordering once and re-use for all
    * the following iterations.
    */
-  void computeSymbolicDecomposition(const SparseBlockMatrix<MatrixType> &A) {
+  void computeSymbolicDecomposition(const SparseBlockMatrix<MatrixType>& A) {
     double t = get_monotonic_time();
     if (!_blockOrdering) {
       _cholesky.analyzePattern(_sparseMatrix);
-    } else {
+    }
+    else {
       // block ordering with the Eigen Interface
       // This is really ugly currently, as it calls internal functions from
       // Eigen and modifies the SparseMatrix class
@@ -160,12 +155,10 @@ protected:
         // prepare a block structure matrix for calling AMD
         std::vector<Triplet> triplets;
         for (size_t c = 0; c < A.blockCols().size(); ++c) {
-          const typename SparseBlockMatrix<MatrixType>::IntBlockMap &column =
-              A.blockCols()[c];
-          for (typename SparseBlockMatrix<
-                   MatrixType>::IntBlockMap::const_iterator it = column.begin();
+          const typename SparseBlockMatrix<MatrixType>::IntBlockMap& column = A.blockCols()[c];
+          for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it = column.begin();
                it != column.end(); ++it) {
-            const int &r = it->first;
+            const int& r = it->first;
             if (r > static_cast<int>(c)) // only upper triangle
               break;
             triplets.push_back(Triplet(r, c, 0.));
@@ -189,40 +182,37 @@ protected:
       scalarP.resize(rows);
       int scalarIdx = 0;
       for (int i = 0; i < blockP.size(); ++i) {
-        const int &p = blockP.indices()(i);
+        const int& p = blockP.indices()(i);
         int base = A.colBaseOfBlock(p);
         int nCols = A.colsOfBlock(p);
         for (int j = 0; j < nCols; ++j)
           scalarP.indices()(scalarIdx++) = base++;
       }
-      assert(scalarIdx == rows &&
-             "did not completely fill the permutation matrix");
+      assert(scalarIdx == rows && "did not completely fill the permutation matrix");
       // analyze with the scalar permutation
       _cholesky.analyzePatternWithPermutation(_sparseMatrix, scalarP);
     }
-    G2OBatchStatistics *globalStats = G2OBatchStatistics::globalStats();
+    G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
     if (globalStats)
       globalStats->timeSymbolicDecomposition = get_monotonic_time() - t;
   }
 
-  void fillSparseMatrix(const SparseBlockMatrix<MatrixType> &A,
-                        bool onlyValues) {
+  void fillSparseMatrix(const SparseBlockMatrix<MatrixType>& A, bool onlyValues) {
     if (onlyValues) {
       A.fillCCS(_sparseMatrix.valuePtr(), true);
-    } else {
+    }
+    else {
 
       // create from triplet structure
       std::vector<Triplet> triplets;
       triplets.reserve(A.nonZeros());
       for (size_t c = 0; c < A.blockCols().size(); ++c) {
         int colBaseOfBlock = A.colBaseOfBlock(c);
-        const typename SparseBlockMatrix<MatrixType>::IntBlockMap &column =
-            A.blockCols()[c];
-        for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator
-                 it = column.begin();
+        const typename SparseBlockMatrix<MatrixType>::IntBlockMap& column = A.blockCols()[c];
+        for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it = column.begin();
              it != column.end(); ++it) {
           int rowBaseOfBlock = A.rowBaseOfBlock(it->first);
-          const MatrixType &m = *(it->second);
+          const MatrixType& m = *(it->second);
           for (int cc = 0; cc < m.cols(); ++cc) {
             int aux_c = colBaseOfBlock + cc;
             for (int rr = 0; rr < m.rows(); ++rr) {

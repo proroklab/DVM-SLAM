@@ -34,19 +34,18 @@ namespace g2o {
 /**
  * \brief Implementation of the Gauss Newton Algorithm
  */
-class OptimizationAlgorithmGaussNewton
-    : public OptimizationAlgorithmWithHessian {
+class OptimizationAlgorithmGaussNewton : public OptimizationAlgorithmWithHessian {
 public:
   /**
    * construct the Gauss Newton algorithm, which use the given Solver for
    * solving the linearized system.
    */
-  explicit OptimizationAlgorithmGaussNewton(Solver *solver);
+  explicit OptimizationAlgorithmGaussNewton(Solver* solver);
   virtual ~OptimizationAlgorithmGaussNewton();
 
   virtual SolverResult solve(int iteration, bool online = false);
 
-  virtual void printVerbose(std::ostream &os) const;
+  virtual void printVerbose(std::ostream& os) const;
 };
 
 } // namespace g2o

@@ -46,17 +46,18 @@
 /// extended version, in which the current time is given, e.g., timestamp of IPC
 /// message
 #ifndef DO_EVERY_TS
-#define DO_EVERY_TS(secs, currentTime, code)                                   \
-  if (1) {                                                                     \
-    static double s_lastDone_ = (currentTime);                                 \
-    double s_now_ = (currentTime);                                             \
-    if (s_lastDone_ > s_now_)                                                  \
-      s_lastDone_ = s_now_;                                                    \
-    if (s_now_ - s_lastDone_ > (secs)) {                                       \
-      code;                                                                    \
-      s_lastDone_ = s_now_;                                                    \
-    }                                                                          \
-  } else                                                                       \
+#define DO_EVERY_TS(secs, currentTime, code)                                                                           \
+  if (1) {                                                                                                             \
+    static double s_lastDone_ = (currentTime);                                                                         \
+    double s_now_ = (currentTime);                                                                                     \
+    if (s_lastDone_ > s_now_)                                                                                          \
+      s_lastDone_ = s_now_;                                                                                            \
+    if (s_now_ - s_lastDone_ > (secs)) {                                                                               \
+      code;                                                                                                            \
+      s_lastDone_ = s_now_;                                                                                            \
+    }                                                                                                                  \
+  }                                                                                                                    \
+  else                                                                                                                 \
     (void)0
 #endif
 
@@ -66,12 +67,13 @@
 #endif
 
 #ifndef MEASURE_TIME
-#define MEASURE_TIME(text, code)                                               \
-  if (1) {                                                                     \
-    double _start_time_ = g2o::get_time();                                     \
-    code;                                                                      \
-    fprintf(stderr, "%s took %f sec\n", text, g2o::get_time() - _start_time_); \
-  } else                                                                       \
+#define MEASURE_TIME(text, code)                                                                                       \
+  if (1) {                                                                                                             \
+    double _start_time_ = g2o::get_time();                                                                             \
+    code;                                                                                                              \
+    fprintf(stderr, "%s took %f sec\n", text, g2o::get_time() - _start_time_);                                         \
+  }                                                                                                                    \
+  else                                                                                                                 \
     (void)0
 #endif
 
@@ -82,7 +84,7 @@ typedef struct timeval {
   long tv_sec;
   long tv_usec;
 } timeval;
-int gettimeofday(struct timeval *tv, struct timezone *tz);
+int gettimeofday(struct timeval* tv, struct timezone* tz);
 #endif
 
 /**
@@ -112,7 +114,7 @@ double get_monotonic_time();
  */
 class ScopeTime {
 public:
-  ScopeTime(const char *title);
+  ScopeTime(const char* title);
   ~ScopeTime();
 
 private:

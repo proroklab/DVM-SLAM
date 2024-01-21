@@ -78,18 +78,18 @@ public:
    * base hyper graph element, specialized in vertex and edge
    */
   struct HyperGraphElement {
-    virtual ~HyperGraphElement() {}
+    virtual ~HyperGraphElement() { }
     /**
      * returns the type of the graph element, see HyperGraphElementType
      */
     virtual HyperGraphElementType elementType() const = 0;
   };
 
-  typedef std::set<Edge *> EdgeSet;
-  typedef std::set<Vertex *> VertexSet;
+  typedef std::set<Edge*> EdgeSet;
+  typedef std::set<Vertex*> VertexSet;
 
-  typedef std::tr1::unordered_map<int, Vertex *> VertexIDMap;
-  typedef std::vector<Vertex *> VertexContainer;
+  typedef std::tr1::unordered_map<int, Vertex*> VertexIDMap;
+  typedef std::vector<Vertex*> VertexContainer;
 
   //! abstract Vertex, your types must derive from that one
   class Vertex : public HyperGraphElement {
@@ -101,9 +101,9 @@ public:
     int id() const { return _id; }
     virtual void setId(int newId) { _id = newId; }
     //! returns the set of hyper-edges that are leaving/entering in this vertex
-    const EdgeSet &edges() const { return _edges; }
+    const EdgeSet& edges() const { return _edges; }
     //! returns the set of hyper-edges that are leaving/entering in this vertex
-    EdgeSet &edges() { return _edges; }
+    EdgeSet& edges() { return _edges; }
     virtual HyperGraphElementType elementType() const { return HGET_VERTEX; }
 
   protected:
@@ -130,30 +130,30 @@ public:
             returns the vector of pointers to the vertices connected by the
        hyper-edge.
             */
-    const VertexContainer &vertices() const { return _vertices; }
+    const VertexContainer& vertices() const { return _vertices; }
     /**
             returns the vector of pointers to the vertices connected by the
        hyper-edge.
             */
-    VertexContainer &vertices() { return _vertices; }
+    VertexContainer& vertices() { return _vertices; }
     /**
             returns the pointer to the ith vertex connected to the hyper-edge.
             */
-    const Vertex *vertex(size_t i) const {
+    const Vertex* vertex(size_t i) const {
       assert(i < _vertices.size() && "index out of bounds");
       return _vertices[i];
     }
     /**
             returns the pointer to the ith vertex connected to the hyper-edge.
             */
-    Vertex *vertex(size_t i) {
+    Vertex* vertex(size_t i) {
       assert(i < _vertices.size() && "index out of bounds");
       return _vertices[i];
     }
     /**
             set the ith vertex on the hyper-edge to the pointer supplied
             */
-    void setVertex(size_t i, Vertex *v) {
+    void setVertex(size_t i, Vertex* v) {
       assert(i < _vertices.size() && "index out of bounds");
       _vertices[i] = v;
     }
@@ -175,29 +175,29 @@ public:
 
   //! returns a vertex <i>id</i> in the hyper-graph, or 0 if the vertex id is
   //! not present
-  Vertex *vertex(int id);
+  Vertex* vertex(int id);
   //! returns a vertex <i>id</i> in the hyper-graph, or 0 if the vertex id is
   //! not present
-  const Vertex *vertex(int id) const;
+  const Vertex* vertex(int id) const;
 
   //! removes a vertex from the graph. Returns true on success (vertex was
   //! present)
-  virtual bool removeVertex(Vertex *v);
+  virtual bool removeVertex(Vertex* v);
   //! removes a vertex from the graph. Returns true on success (edge was
   //! present)
-  virtual bool removeEdge(Edge *e);
+  virtual bool removeEdge(Edge* e);
   //! clears the graph and empties all structures.
   virtual void clear();
 
   //! @returns the map <i>id -> vertex</i> where the vertices are stored
-  const VertexIDMap &vertices() const { return _vertices; }
+  const VertexIDMap& vertices() const { return _vertices; }
   //! @returns the map <i>id -> vertex</i> where the vertices are stored
-  VertexIDMap &vertices() { return _vertices; }
+  VertexIDMap& vertices() { return _vertices; }
 
   //! @returns the set of edges of the hyper graph
-  const EdgeSet &edges() const { return _edges; }
+  const EdgeSet& edges() const { return _edges; }
   //! @returns the set of edges of the hyper graph
-  EdgeSet &edges() { return _edges; }
+  EdgeSet& edges() { return _edges; }
 
   /**
    * adds a vertex to the graph. The id of the vertex should be set before
@@ -205,20 +205,20 @@ public:
    * with the same id is already in the graph.
    * returns true, on success, or false on failure.
    */
-  virtual bool addVertex(Vertex *v);
+  virtual bool addVertex(Vertex* v);
 
   /**
    * Adds an edge  to the graph. If the edge is already in the graph, it
    * does nothing and returns false. Otherwise it returns true.
    */
-  virtual bool addEdge(Edge *e);
+  virtual bool addEdge(Edge* e);
 
   /**
        * changes the id of a vertex already in the graph, and updates the
      bookkeeping
        @ returns false if the vertex is not in the graph;
        */
-  virtual bool changeId(Vertex *v, int newId);
+  virtual bool changeId(Vertex* v, int newId);
 
 protected:
   VertexIDMap _vertices;
@@ -226,8 +226,8 @@ protected:
 
 private:
   // Disable the copy constructor and assignment operator
-  HyperGraph(const HyperGraph &) {}
-  HyperGraph &operator=(const HyperGraph &) { return *this; }
+  HyperGraph(const HyperGraph&) { }
+  HyperGraph& operator=(const HyperGraph&) { return *this; }
 };
 
 } // namespace g2o

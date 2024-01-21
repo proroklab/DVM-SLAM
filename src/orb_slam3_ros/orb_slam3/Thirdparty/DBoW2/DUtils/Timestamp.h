@@ -60,7 +60,7 @@ public:
    * @param secs seconds
    * @param usecs microseconds
    */
-  inline void getTime(unsigned long &secs, unsigned long &usecs) const {
+  inline void getTime(unsigned long& secs, unsigned long& usecs) const {
     secs = m_secs;
     usecs = m_usecs;
   }
@@ -69,7 +69,7 @@ public:
    * Sets the timestamp from a string with the time in seconds
    * @param stime: string such as "1235603336.036609"
    */
-  void setTime(const string &stime);
+  void setTime(const string& stime);
 
   /**
    * Sets the timestamp from a number of seconds from the epoch
@@ -94,7 +94,7 @@ public:
    * @param t: timestamp to subtract from this timestamp
    * @return difference in seconds
    */
-  double operator-(const Timestamp &t) const;
+  double operator-(const Timestamp& t) const;
 
   /**
    * Returns a copy of this timestamp + s seconds + us microseconds
@@ -115,14 +115,14 @@ public:
    * @param s seconds
    * @return reference to this timestamp
    */
-  Timestamp &operator+=(double s);
+  Timestamp& operator+=(double s);
 
   /**
    * Substracts s seconds to this timestamp and returns a reference to itself
    * @param s seconds
    * @return reference to this timestamp
    */
-  Timestamp &operator-=(double s);
+  Timestamp& operator-=(double s);
 
   /**
    * Returns a copy of this timestamp + s seconds
@@ -140,31 +140,31 @@ public:
    * Returns whether this timestamp is at the future of t
    * @param t
    */
-  bool operator>(const Timestamp &t) const;
+  bool operator>(const Timestamp& t) const;
 
   /**
    * Returns whether this timestamp is at the future of (or is the same as) t
    * @param t
    */
-  bool operator>=(const Timestamp &t) const;
+  bool operator>=(const Timestamp& t) const;
 
   /**
    * Returns whether this timestamp and t represent the same instant
    * @param t
    */
-  bool operator==(const Timestamp &t) const;
+  bool operator==(const Timestamp& t) const;
 
   /**
    * Returns whether this timestamp is at the past of t
    * @param t
    */
-  bool operator<(const Timestamp &t) const;
+  bool operator<(const Timestamp& t) const;
 
   /**
    * Returns whether this timestamp is at the past of (or is the same as) t
    * @param t
    */
-  bool operator<=(const Timestamp &t) const;
+  bool operator<=(const Timestamp& t) const;
 
   /**
    * Returns the timestamp in a human-readable string

@@ -13,15 +13,15 @@ public:
     t.setZero();
   }
 
-  SE3mat(const Eigen::Matrix3d &R_, const Eigen::Vector3d &t_) : R(R_), t(t_) {}
+  SE3mat(const Eigen::Matrix3d& R_, const Eigen::Vector3d& t_)
+    : R(R_)
+    , t(t_) { }
 
-  void Retract(const Eigen::Vector3d dr, const Eigen::Vector3d &dt);
+  void Retract(const Eigen::Vector3d dr, const Eigen::Vector3d& dt);
 
-  inline Eigen::Vector3d operator*(const Eigen::Vector3d &v) const {
-    return R * v + t;
-  }
+  inline Eigen::Vector3d operator*(const Eigen::Vector3d& v) const { return R * v + t; }
 
-  inline SE3mat &operator*=(const SE3mat &T2) {
+  inline SE3mat& operator*=(const SE3mat& T2) {
     t += R * T2.t;
     R *= T2.R;
     return *this;

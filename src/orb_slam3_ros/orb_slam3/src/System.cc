@@ -39,12 +39,15 @@ namespace ORB_SLAM3 {
 
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
-System::System(const string &strVocFile, const string &strSettingsFile,
-               const eSensor sensor, const bool bUseViewer, const int initFr,
-               const string &strSequence)
-    : mSensor(sensor), mpViewer(static_cast<Viewer *>(NULL)), mbReset(false),
-      mbResetActiveMap(false), mbActivateLocalizationMode(false),
-      mbDeactivateLocalizationMode(false), mbShutDown(false) {
+System::System(const string& strVocFile, const string& strSettingsFile, const eSensor sensor, const bool bUseViewer,
+  const int initFr, const string& strSequence)
+  : mSensor(sensor)
+  , mpViewer(static_cast<Viewer*>(NULL))
+  , mbReset(false)
+  , mbResetActiveMap(false)
+  , mbActivateLocalizationMode(false)
+  , mbDeactivateLocalizationMode(false)
+  , mbShutDown(false) {
   // Output welcome message
   cout << endl
        << "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, "
@@ -55,8 +58,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
           "and Juan D. Tardós, University of Zaragoza."
        << endl
        << "This program comes with ABSOLUTELY NO WARRANTY;" << endl
-       << "This is free software, and you are welcome to redistribute it"
-       << endl
+       << "This is free software, and you are welcome to redistribute it" << endl
        << "under certain conditions. See LICENSE.txt." << endl
        << endl;
 
@@ -90,7 +92,8 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     mStrSaveAtlasToFile = settings_->atlasSaveFile();
 
     cout << (*settings_) << endl;
-  } else {
+  }
+  else {
     settings_ = nullptr;
     cv::FileNode node = fsSettings["System.LoadAtlasFromFile"];
     if (!node.empty() && node.isString()) {
@@ -115,8 +118,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
   if (mStrLoadAtlasFromFile.empty()) {
     // Load ORB Vocabulary
-    cout << endl
-         << "Loading ORB Vocabulary. This could take a while..." << endl;
+    cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
     mpVocabulary = new ORBVocabulary();
     bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
@@ -133,10 +135,10 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     // Create the Atlas
     cout << "Initialization of Atlas from scratch " << endl;
     mpAtlas = new Atlas(0);
-  } else {
+  }
+  else {
     // Load ORB Vocabulary
-    cout << endl
-         << "Loading ORB Vocabulary. This could take a while..." << endl;
+    cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
     mpVocabulary = new ORBVocabulary();
     bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
@@ -154,8 +156,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
     // Load the file with an earlier session
     // clock_t start = clock();
-    cout << "Initialization of Atlas from file: " << mStrLoadAtlasFromFile
-         << endl;
+    cout << "Initialization of Atlas from file: " << mStrLoadAtlasFromFile << endl;
     bool isRead = LoadAtlas(FileType::BINARY_FILE);
 
     if (!isRead) {
@@ -191,15 +192,12 @@ System::System(const string &strVocFile, const string &strSettingsFile,
   //(it will live in the main thread of execution, the one that called this
   // constructor)
   cout << "Seq. Name: " << strSequence << endl;
-  mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                           mpAtlas, mpKeyFrameDatabase, strSettingsFile,
-                           mSensor, settings_, strSequence);
+  mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer, mpAtlas, mpKeyFrameDatabase, strSettingsFile,
+    mSensor, settings_, strSequence);
 
   // Initialize the Local Mapping thread and launch
-  mpLocalMapper = new LocalMapping(
-      this, mpAtlas, mSensor == MONOCULAR || mSensor == IMU_MONOCULAR,
-      mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD,
-      strSequence);
+  mpLocalMapper = new LocalMapping(this, mpAtlas, mSensor == MONOCULAR || mSensor == IMU_MONOCULAR,
+    mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD, strSequence);
   mptLocalMapping = new thread(&ORB_SLAM3::LocalMapping::Run, mpLocalMapper);
   mpLocalMapper->mInitFr = initFr;
   if (settings_)
@@ -207,17 +205,16 @@ System::System(const string &strVocFile, const string &strSettingsFile,
   else
     mpLocalMapper->mThFarPoints = fsSettings["thFarPoints"];
   if (mpLocalMapper->mThFarPoints != 0) {
-    cout << "Discard points further than " << mpLocalMapper->mThFarPoints
-         << " m from current camera" << endl;
+    cout << "Discard points further than " << mpLocalMapper->mThFarPoints << " m from current camera" << endl;
     mpLocalMapper->mbFarPoints = true;
-  } else
+  }
+  else
     mpLocalMapper->mbFarPoints = false;
 
   // Initialize the Loop Closing thread and launch
   //  mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR
-  mpLoopCloser =
-      new LoopClosing(mpAtlas, mpKeyFrameDatabase, mpVocabulary,
-                      mSensor != MONOCULAR, activeLC); // mSensor!=MONOCULAR);
+  mpLoopCloser = new LoopClosing(
+    mpAtlas, mpKeyFrameDatabase, mpVocabulary, mSensor != MONOCULAR, activeLC); // mSensor!=MONOCULAR);
   mptLoopClosing = new thread(&ORB_SLAM3::LoopClosing::Run, mpLoopCloser);
 
   // Set pointers between threads
@@ -236,8 +233,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
   if (bUseViewer)
   // if(false) // TODO
   {
-    mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker,
-                          strSettingsFile, settings_);
+    mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker, strSettingsFile, settings_);
     mptViewer = new thread(&Viewer::Run, mpViewer);
     mpTracker->SetViewer(mpViewer);
     mpLoopCloser->mpViewer = mpViewer;
@@ -248,10 +244,8 @@ System::System(const string &strVocFile, const string &strSettingsFile,
   Verbose::SetTh(Verbose::VERBOSITY_QUIET);
 }
 
-Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
-                                 const double &timestamp,
-                                 const vector<IMU::Point> &vImuMeas,
-                                 string filename) {
+Sophus::SE3f System::TrackStereo(const cv::Mat& imLeft, const cv::Mat& imRight, const double& timestamp,
+  const vector<IMU::Point>& vImuMeas, string filename) {
   if (mSensor != STEREO && mSensor != IMU_STEREO) {
     cerr << "ERROR: you called TrackStereo but input sensor was not set to "
             "Stereo nor Stereo-Inertial."
@@ -268,10 +262,12 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
 
     cv::remap(imLeft, imLeftToFeed, M1l, M2l, cv::INTER_LINEAR);
     cv::remap(imRight, imRightToFeed, M1r, M2r, cv::INTER_LINEAR);
-  } else if (settings_ && settings_->needToResize()) {
+  }
+  else if (settings_ && settings_->needToResize()) {
     cv::resize(imLeft, imLeftToFeed, settings_->newImSize());
     cv::resize(imRight, imRightToFeed, settings_->newImSize());
-  } else {
+  }
+  else {
     imLeftToFeed = imLeft.clone();
     imRightToFeed = imRight.clone();
   }
@@ -304,7 +300,8 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
       mpTracker->Reset();
       mbReset = false;
       mbResetActiveMap = false;
-    } else if (mbResetActiveMap) {
+    }
+    else if (mbResetActiveMap) {
       mpTracker->ResetActiveMap();
       mbResetActiveMap = false;
     }
@@ -315,8 +312,7 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
       mpTracker->GrabImuData(vImuMeas[i_imu]);
 
   // std::cout << "start GrabImageStereo" << std::endl;
-  Sophus::SE3f Tcw = mpTracker->GrabImageStereo(imLeftToFeed, imRightToFeed,
-                                                timestamp, filename);
+  Sophus::SE3f Tcw = mpTracker->GrabImageStereo(imLeftToFeed, imRightToFeed, timestamp, filename);
 
   // std::cout << "out grabber" << std::endl;
 
@@ -328,13 +324,10 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
   return Tcw;
 }
 
-Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
-                               const double &timestamp,
-                               const vector<IMU::Point> &vImuMeas,
-                               string filename) {
+Sophus::SE3f System::TrackRGBD(const cv::Mat& im, const cv::Mat& depthmap, const double& timestamp,
+  const vector<IMU::Point>& vImuMeas, string filename) {
   if (mSensor != RGBD && mSensor != IMU_RGBD) {
-    cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD."
-         << endl;
+    cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
     exit(-1);
   }
 
@@ -376,7 +369,8 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
       mpTracker->Reset();
       mbReset = false;
       mbResetActiveMap = false;
-    } else if (mbResetActiveMap) {
+    }
+    else if (mbResetActiveMap) {
       mpTracker->ResetActiveMap();
       mbResetActiveMap = false;
     }
@@ -386,8 +380,7 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
     for (size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
       mpTracker->GrabImuData(vImuMeas[i_imu]);
 
-  Sophus::SE3f Tcw =
-      mpTracker->GrabImageRGBD(imToFeed, imDepthToFeed, timestamp, filename);
+  Sophus::SE3f Tcw = mpTracker->GrabImageRGBD(imToFeed, imDepthToFeed, timestamp, filename);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
@@ -396,9 +389,8 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
   return Tcw;
 }
 
-Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp,
-                                    const vector<IMU::Point> &vImuMeas,
-                                    string filename) {
+Sophus::SE3f System::TrackMonocular(
+  const cv::Mat& im, const double& timestamp, const vector<IMU::Point>& vImuMeas, string filename) {
 
   {
     unique_lock<mutex> lock(mMutexReset);
@@ -448,7 +440,8 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp,
       mpTracker->Reset();
       mbReset = false;
       mbResetActiveMap = false;
-    } else if (mbResetActiveMap) {
+    }
+    else if (mbResetActiveMap) {
       cout << "SYSTEM-> Reseting active map in monocular case" << endl;
       mpTracker->ResetActiveMap();
       mbResetActiveMap = false;
@@ -459,8 +452,7 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp,
     for (size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
       mpTracker->GrabImuData(vImuMeas[i_imu]);
 
-  Sophus::SE3f Tcw =
-      mpTracker->GrabImageMonocular(imToFeed, timestamp, filename);
+  Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed, timestamp, filename);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
@@ -486,7 +478,8 @@ bool System::MapChanged() {
   if (n < curn) {
     n = curn;
     return true;
-  } else
+  }
+  else
     return false;
 }
 
@@ -534,8 +527,7 @@ void System::Shutdown() {
     }*/
 
   if (!mStrSaveAtlasToFile.empty()) {
-    Verbose::PrintMess("Atlas saving to file " + mStrSaveAtlasToFile,
-                       Verbose::VERBOSITY_NORMAL);
+    Verbose::PrintMess("Atlas saving to file " + mStrSaveAtlasToFile, Verbose::VERBOSITY_NORMAL);
     SaveAtlas(FileType::BINARY_FILE);
   }
 
@@ -552,14 +544,14 @@ bool System::isShutDown() {
   return mbShutDown;
 }
 
-void System::SaveTrajectoryTUM(const string &filename) {
+void System::SaveTrajectoryTUM(const string& filename) {
   cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
   if (mSensor == MONOCULAR) {
     cerr << "ERROR: SaveTrajectoryTUM cannot be used for monocular." << endl;
     return;
   }
 
-  vector<KeyFrame *> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -577,17 +569,16 @@ void System::SaveTrajectoryTUM(const string &filename) {
 
   // For each frame we have a reference keyframe (lRit), the timestamp (lT) and
   // a flag which is true when tracking failed (lbL).
-  list<ORB_SLAM3::KeyFrame *>::iterator lRit = mpTracker->mlpReferences.begin();
+  list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
   list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
   list<bool>::iterator lbL = mpTracker->mlbLost.begin();
-  for (list<Sophus::SE3f>::iterator
-           lit = mpTracker->mlRelativeFramePoses.begin(),
-           lend = mpTracker->mlRelativeFramePoses.end();
+  for (list<Sophus::SE3f>::iterator lit = mpTracker->mlRelativeFramePoses.begin(),
+                                    lend = mpTracker->mlRelativeFramePoses.end();
        lit != lend; lit++, lRit++, lT++, lbL++) {
     if (*lbL)
       continue;
 
-    KeyFrame *pKF = *lRit;
+    KeyFrame* pKF = *lRit;
 
     Sophus::SE3f Trw;
 
@@ -606,19 +597,17 @@ void System::SaveTrajectoryTUM(const string &filename) {
     Eigen::Vector3f twc = Twc.translation();
     Eigen::Quaternionf q = Twc.unit_quaternion();
 
-    f << setprecision(6) << *lT << " " << setprecision(9) << twc(0) << " "
-      << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z()
-      << " " << q.w() << endl;
+    f << setprecision(6) << *lT << " " << setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x()
+      << " " << q.y() << " " << q.z() << " " << q.w() << endl;
   }
   f.close();
   // cout << endl << "trajectory saved!" << endl;
 }
 
-void System::SaveKeyFrameTrajectoryTUM(const string &filename) {
-  cout << endl
-       << "Saving keyframe trajectory to " << filename << " ..." << endl;
+void System::SaveKeyFrameTrajectoryTUM(const string& filename) {
+  cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
 
-  vector<KeyFrame *> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -628,7 +617,7 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename) {
   f << fixed;
 
   for (size_t i = 0; i < vpKFs.size(); i++) {
-    KeyFrame *pKF = vpKFs[i];
+    KeyFrame* pKF = vpKFs[i];
 
     // pKF->SetPose(pKF->GetPose()*Two);
 
@@ -638,15 +627,14 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename) {
     Sophus::SE3f Twc = pKF->GetPoseInverse();
     Eigen::Quaternionf q = Twc.unit_quaternion();
     Eigen::Vector3f t = Twc.translation();
-    f << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t(0)
-      << " " << t(1) << " " << t(2) << " " << q.x() << " " << q.y() << " "
-      << q.z() << " " << q.w() << endl;
+    f << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t(0) << " " << t(1) << " " << t(2) << " "
+      << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
   }
 
   f.close();
 }
 
-void System::SaveTrajectoryEuRoC(const string &filename) {
+void System::SaveTrajectoryEuRoC(const string& filename) {
 
   cout << endl << "Saving trajectory to " << filename << " ..." << endl;
   /*if(mSensor==MONOCULAR)
@@ -655,28 +643,25 @@ void System::SaveTrajectoryEuRoC(const string &filename) {
     endl; return;
     }*/
 
-  vector<Map *> vpMaps = mpAtlas->GetAllMaps();
+  vector<Map*> vpMaps = mpAtlas->GetAllMaps();
   int numMaxKFs = 0;
-  Map *pBiggerMap;
-  std::cout << "There are " << std::to_string(vpMaps.size())
-            << " maps in the atlas" << std::endl;
-  for (Map *pMap : vpMaps) {
-    std::cout << "  Map " << std::to_string(pMap->GetId()) << " has "
-              << std::to_string(pMap->GetAllKeyFrames().size()) << " KFs"
-              << std::endl;
+  Map* pBiggerMap;
+  std::cout << "There are " << std::to_string(vpMaps.size()) << " maps in the atlas" << std::endl;
+  for (Map* pMap : vpMaps) {
+    std::cout << "  Map " << std::to_string(pMap->GetId()) << " has " << std::to_string(pMap->GetAllKeyFrames().size())
+              << " KFs" << std::endl;
     if (pMap->GetAllKeyFrames().size() > numMaxKFs) {
       numMaxKFs = pMap->GetAllKeyFrames().size();
       pBiggerMap = pMap;
     }
   }
 
-  vector<KeyFrame *> vpKFs = pBiggerMap->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = pBiggerMap->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
   // After a loop closure the first keyframe might not be at the origin.
-  Sophus::SE3f
-      Twb; // Can be word to cam0 or world to b depending on IMU or not.
+  Sophus::SE3f Twb; // Can be word to cam0 or world to b depending on IMU or not.
   if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD)
     Twb = vpKFs[0]->GetImuPose();
   else
@@ -694,7 +679,7 @@ void System::SaveTrajectoryEuRoC(const string &filename) {
 
   // For each frame we have a reference keyframe (lRit), the timestamp (lT) and
   // a flag which is true when tracking failed (lbL).
-  list<ORB_SLAM3::KeyFrame *>::iterator lRit = mpTracker->mlpReferences.begin();
+  list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
   list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
   list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 
@@ -704,14 +689,13 @@ void System::SaveTrajectoryEuRoC(const string &filename) {
   // mpTracker->mlFrameTimes: " << mpTracker->mlFrameTimes.size() << endl; cout
   // << "size mpTracker->mlbLost: " << mpTracker->mlbLost.size() << endl;
 
-  for (auto lit = mpTracker->mlRelativeFramePoses.begin(),
-            lend = mpTracker->mlRelativeFramePoses.end();
-       lit != lend; lit++, lRit++, lT++, lbL++) {
+  for (auto lit = mpTracker->mlRelativeFramePoses.begin(), lend = mpTracker->mlRelativeFramePoses.end(); lit != lend;
+       lit++, lRit++, lT++, lbL++) {
     // cout << "1" << endl;
     if (*lbL)
       continue;
 
-    KeyFrame *pKF = *lRit;
+    KeyFrame* pKF = *lRit;
     // cout << "KF: " << pKF->mnId << endl;
 
     Sophus::SE3f Trw;
@@ -737,26 +721,23 @@ void System::SaveTrajectoryEuRoC(const string &filename) {
 
     // cout << "3" << endl;
 
-    Trw = Trw * pKF->GetPose() *
-          Twb; // Tcp*Tpw*Twb0=Tcb0 where b0 is the new world reference
+    Trw = Trw * pKF->GetPose() * Twb; // Tcp*Tpw*Twb0=Tcb0 where b0 is the new world reference
 
     // cout << "4" << endl;
 
-    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO ||
-        mSensor == IMU_RGBD) {
+    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD) {
       Sophus::SE3f Twb = (pKF->mImuCalib.mTbc * (*lit) * Trw).inverse();
       Eigen::Quaternionf q = Twb.unit_quaternion();
       Eigen::Vector3f twb = Twb.translation();
-      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twb(0)
-        << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " "
-        << q.z() << " " << q.w() << endl;
-    } else {
+      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " "
+        << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+    }
+    else {
       Sophus::SE3f Twc = ((*lit) * Trw).inverse();
       Eigen::Quaternionf q = Twc.unit_quaternion();
       Eigen::Vector3f twc = Twc.translation();
-      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twc(0)
-        << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " "
-        << q.z() << " " << q.w() << endl;
+      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " "
+        << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
 
     // cout << "5" << endl;
@@ -766,11 +747,9 @@ void System::SaveTrajectoryEuRoC(const string &filename) {
   cout << endl << "End of saving trajectory to " << filename << " ..." << endl;
 }
 
-void System::SaveTrajectoryEuRoC(const string &filename, Map *pMap) {
+void System::SaveTrajectoryEuRoC(const string& filename, Map* pMap) {
 
-  cout << endl
-       << "Saving trajectory of map " << pMap->GetId() << " to " << filename
-       << " ..." << endl;
+  cout << endl << "Saving trajectory of map " << pMap->GetId() << " to " << filename << " ..." << endl;
   /*if(mSensor==MONOCULAR)
     {
         cerr << "ERROR: SaveTrajectoryEuRoC cannot be used for monocular." <<
@@ -779,13 +758,12 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map *pMap) {
 
   int numMaxKFs = 0;
 
-  vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
   // After a loop closure the first keyframe might not be at the origin.
-  Sophus::SE3f
-      Twb; // Can be word to cam0 or world to b dependingo on IMU or not.
+  Sophus::SE3f Twb; // Can be word to cam0 or world to b dependingo on IMU or not.
   if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD)
     Twb = vpKFs[0]->GetImuPose();
   else
@@ -803,7 +781,7 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map *pMap) {
 
   // For each frame we have a reference keyframe (lRit), the timestamp (lT) and
   // a flag which is true when tracking failed (lbL).
-  list<ORB_SLAM3::KeyFrame *>::iterator lRit = mpTracker->mlpReferences.begin();
+  list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
   list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
   list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 
@@ -813,14 +791,13 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map *pMap) {
   // mpTracker->mlFrameTimes: " << mpTracker->mlFrameTimes.size() << endl; cout
   // << "size mpTracker->mlbLost: " << mpTracker->mlbLost.size() << endl;
 
-  for (auto lit = mpTracker->mlRelativeFramePoses.begin(),
-            lend = mpTracker->mlRelativeFramePoses.end();
-       lit != lend; lit++, lRit++, lT++, lbL++) {
+  for (auto lit = mpTracker->mlRelativeFramePoses.begin(), lend = mpTracker->mlRelativeFramePoses.end(); lit != lend;
+       lit++, lRit++, lT++, lbL++) {
     // cout << "1" << endl;
     if (*lbL)
       continue;
 
-    KeyFrame *pKF = *lRit;
+    KeyFrame* pKF = *lRit;
     // cout << "KF: " << pKF->mnId << endl;
 
     Sophus::SE3f Trw;
@@ -846,26 +823,23 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map *pMap) {
 
     // cout << "3" << endl;
 
-    Trw = Trw * pKF->GetPose() *
-          Twb; // Tcp*Tpw*Twb0=Tcb0 where b0 is the new world reference
+    Trw = Trw * pKF->GetPose() * Twb; // Tcp*Tpw*Twb0=Tcb0 where b0 is the new world reference
 
     // cout << "4" << endl;
 
-    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO ||
-        mSensor == IMU_RGBD) {
+    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD) {
       Sophus::SE3f Twb = (pKF->mImuCalib.mTbc * (*lit) * Trw).inverse();
       Eigen::Quaternionf q = Twb.unit_quaternion();
       Eigen::Vector3f twb = Twb.translation();
-      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twb(0)
-        << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " "
-        << q.z() << " " << q.w() << endl;
-    } else {
+      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " "
+        << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+    }
+    else {
       Sophus::SE3f Twc = ((*lit) * Trw).inverse();
       Eigen::Quaternionf q = Twc.unit_quaternion();
       Eigen::Vector3f twc = Twc.translation();
-      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twc(0)
-        << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " "
-        << q.z() << " " << q.w() << endl;
+      f << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " "
+        << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
 
     // cout << "5" << endl;
@@ -1067,14 +1041,13 @@ endl;
     f.close();
 }*/
 
-void System::SaveKeyFrameTrajectoryEuRoC(const string &filename) {
-  cout << endl
-       << "Saving keyframe trajectory to " << filename << " ..." << endl;
+void System::SaveKeyFrameTrajectoryEuRoC(const string& filename) {
+  cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
 
-  vector<Map *> vpMaps = mpAtlas->GetAllMaps();
-  Map *pBiggerMap;
+  vector<Map*> vpMaps = mpAtlas->GetAllMaps();
+  Map* pBiggerMap;
   int numMaxKFs = 0;
-  for (Map *pMap : vpMaps) {
+  for (Map* pMap : vpMaps) {
     if (pMap && pMap->GetAllKeyFrames().size() > numMaxKFs) {
       numMaxKFs = pMap->GetAllKeyFrames().size();
       pBiggerMap = pMap;
@@ -1086,7 +1059,7 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename) {
     return;
   }
 
-  vector<KeyFrame *> vpKFs = pBiggerMap->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = pBiggerMap->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -1096,39 +1069,34 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename) {
   f << fixed;
 
   for (size_t i = 0; i < vpKFs.size(); i++) {
-    KeyFrame *pKF = vpKFs[i];
+    KeyFrame* pKF = vpKFs[i];
 
     // pKF->SetPose(pKF->GetPose()*Two);
 
     if (!pKF || pKF->isBad())
       continue;
-    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO ||
-        mSensor == IMU_RGBD) {
+    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD) {
       Sophus::SE3f Twb = pKF->GetImuPose();
       Eigen::Quaternionf q = Twb.unit_quaternion();
       Eigen::Vector3f twb = Twb.translation();
-      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9)
-        << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " "
-        << q.y() << " " << q.z() << " " << q.w() << endl;
-
-    } else {
+      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9) << twb(0) << " " << twb(1) << " "
+        << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+    }
+    else {
       Sophus::SE3f Twc = pKF->GetPoseInverse();
       Eigen::Quaternionf q = Twc.unit_quaternion();
       Eigen::Vector3f t = Twc.translation();
-      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9)
-        << t(0) << " " << t(1) << " " << t(2) << " " << q.x() << " " << q.y()
-        << " " << q.z() << " " << q.w() << endl;
+      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9) << t(0) << " " << t(1) << " " << t(2)
+        << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
   }
   f.close();
 }
 
-void System::SaveKeyFrameTrajectoryEuRoC(const string &filename, Map *pMap) {
-  cout << endl
-       << "Saving keyframe trajectory of map " << pMap->GetId() << " to "
-       << filename << " ..." << endl;
+void System::SaveKeyFrameTrajectoryEuRoC(const string& filename, Map* pMap) {
+  cout << endl << "Saving keyframe trajectory of map " << pMap->GetId() << " to " << filename << " ..." << endl;
 
-  vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -1138,26 +1106,23 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename, Map *pMap) {
   f << fixed;
 
   for (size_t i = 0; i < vpKFs.size(); i++) {
-    KeyFrame *pKF = vpKFs[i];
+    KeyFrame* pKF = vpKFs[i];
 
     if (!pKF || pKF->isBad())
       continue;
-    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO ||
-        mSensor == IMU_RGBD) {
+    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD) {
       Sophus::SE3f Twb = pKF->GetImuPose();
       Eigen::Quaternionf q = Twb.unit_quaternion();
       Eigen::Vector3f twb = Twb.translation();
-      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9)
-        << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " "
-        << q.y() << " " << q.z() << " " << q.w() << endl;
-
-    } else {
+      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9) << twb(0) << " " << twb(1) << " "
+        << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+    }
+    else {
       Sophus::SE3f Twc = pKF->GetPoseInverse();
       Eigen::Quaternionf q = Twc.unit_quaternion();
       Eigen::Vector3f t = Twc.translation();
-      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9)
-        << t(0) << " " << t(1) << " " << t(2) << " " << q.x() << " " << q.y()
-        << " " << q.z() << " " << q.w() << endl;
+      f << setprecision(6) << 1e9 * pKF->mTimeStamp << " " << setprecision(9) << t(0) << " " << t(1) << " " << t(2)
+        << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
   }
   f.close();
@@ -1224,14 +1189,14 @@ twc.at<float>(2) << endl;
     f.close();
 }*/
 
-void System::SaveTrajectoryKITTI(const string &filename) {
+void System::SaveTrajectoryKITTI(const string& filename) {
   cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
   if (mSensor == MONOCULAR) {
     cerr << "ERROR: SaveTrajectoryKITTI cannot be used for monocular." << endl;
     return;
   }
 
-  vector<KeyFrame *> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -1249,13 +1214,12 @@ void System::SaveTrajectoryKITTI(const string &filename) {
 
   // For each frame we have a reference keyframe (lRit), the timestamp (lT) and
   // a flag which is true when tracking failed (lbL).
-  list<ORB_SLAM3::KeyFrame *>::iterator lRit = mpTracker->mlpReferences.begin();
+  list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
   list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
-  for (list<Sophus::SE3f>::iterator
-           lit = mpTracker->mlRelativeFramePoses.begin(),
-           lend = mpTracker->mlRelativeFramePoses.end();
+  for (list<Sophus::SE3f>::iterator lit = mpTracker->mlRelativeFramePoses.begin(),
+                                    lend = mpTracker->mlRelativeFramePoses.end();
        lit != lend; lit++, lRit++, lT++) {
-    ORB_SLAM3::KeyFrame *pKF = *lRit;
+    ORB_SLAM3::KeyFrame* pKF = *lRit;
 
     Sophus::SE3f Trw;
 
@@ -1274,61 +1238,47 @@ void System::SaveTrajectoryKITTI(const string &filename) {
     Eigen::Matrix3f Rwc = Twc.rotationMatrix();
     Eigen::Vector3f twc = Twc.translation();
 
-    f << setprecision(9) << Rwc(0, 0) << " " << Rwc(0, 1) << " " << Rwc(0, 2)
-      << " " << twc(0) << " " << Rwc(1, 0) << " " << Rwc(1, 1) << " "
-      << Rwc(1, 2) << " " << twc(1) << " " << Rwc(2, 0) << " " << Rwc(2, 1)
-      << " " << Rwc(2, 2) << " " << twc(2) << endl;
+    f << setprecision(9) << Rwc(0, 0) << " " << Rwc(0, 1) << " " << Rwc(0, 2) << " " << twc(0) << " " << Rwc(1, 0)
+      << " " << Rwc(1, 1) << " " << Rwc(1, 2) << " " << twc(1) << " " << Rwc(2, 0) << " " << Rwc(2, 1) << " "
+      << Rwc(2, 2) << " " << twc(2) << endl;
   }
   f.close();
 }
 
-void System::SaveDebugData(const int &initIdx) {
+void System::SaveDebugData(const int& initIdx) {
   // 0. Save initialization trajectory
-  SaveTrajectoryEuRoC("init_FrameTrajectoy_" +
-                      to_string(mpLocalMapper->mInitSect) + "_" +
-                      to_string(initIdx) + ".txt");
+  SaveTrajectoryEuRoC("init_FrameTrajectoy_" + to_string(mpLocalMapper->mInitSect) + "_" + to_string(initIdx) + ".txt");
 
   // 1. Save scale
   ofstream f;
-  f.open("init_Scale_" + to_string(mpLocalMapper->mInitSect) + ".txt",
-         ios_base::app);
+  f.open("init_Scale_" + to_string(mpLocalMapper->mInitSect) + ".txt", ios_base::app);
   f << fixed;
   f << mpLocalMapper->mScale << endl;
   f.close();
 
   // 2. Save gravity direction
-  f.open("init_GDir_" + to_string(mpLocalMapper->mInitSect) + ".txt",
-         ios_base::app);
+  f.open("init_GDir_" + to_string(mpLocalMapper->mInitSect) + ".txt", ios_base::app);
   f << fixed;
-  f << mpLocalMapper->mRwg(0, 0) << "," << mpLocalMapper->mRwg(0, 1) << ","
-    << mpLocalMapper->mRwg(0, 2) << endl;
-  f << mpLocalMapper->mRwg(1, 0) << "," << mpLocalMapper->mRwg(1, 1) << ","
-    << mpLocalMapper->mRwg(1, 2) << endl;
-  f << mpLocalMapper->mRwg(2, 0) << "," << mpLocalMapper->mRwg(2, 1) << ","
-    << mpLocalMapper->mRwg(2, 2) << endl;
+  f << mpLocalMapper->mRwg(0, 0) << "," << mpLocalMapper->mRwg(0, 1) << "," << mpLocalMapper->mRwg(0, 2) << endl;
+  f << mpLocalMapper->mRwg(1, 0) << "," << mpLocalMapper->mRwg(1, 1) << "," << mpLocalMapper->mRwg(1, 2) << endl;
+  f << mpLocalMapper->mRwg(2, 0) << "," << mpLocalMapper->mRwg(2, 1) << "," << mpLocalMapper->mRwg(2, 2) << endl;
   f.close();
 
   // 3. Save computational cost
-  f.open("init_CompCost_" + to_string(mpLocalMapper->mInitSect) + ".txt",
-         ios_base::app);
+  f.open("init_CompCost_" + to_string(mpLocalMapper->mInitSect) + ".txt", ios_base::app);
   f << fixed;
   f << mpLocalMapper->mCostTime << endl;
   f.close();
 
   // 4. Save biases
-  f.open("init_Biases_" + to_string(mpLocalMapper->mInitSect) + ".txt",
-         ios_base::app);
+  f.open("init_Biases_" + to_string(mpLocalMapper->mInitSect) + ".txt", ios_base::app);
   f << fixed;
-  f << mpLocalMapper->mbg(0) << "," << mpLocalMapper->mbg(1) << ","
-    << mpLocalMapper->mbg(2) << endl;
-  f << mpLocalMapper->mba(0) << "," << mpLocalMapper->mba(1) << ","
-    << mpLocalMapper->mba(2) << endl;
+  f << mpLocalMapper->mbg(0) << "," << mpLocalMapper->mbg(1) << "," << mpLocalMapper->mbg(2) << endl;
+  f << mpLocalMapper->mba(0) << "," << mpLocalMapper->mba(1) << "," << mpLocalMapper->mba(2) << endl;
   f.close();
 
   // 5. Save covariance matrix
-  f.open("init_CovMatrix_" + to_string(mpLocalMapper->mInitSect) + "_" +
-             to_string(initIdx) + ".txt",
-         ios_base::app);
+  f.open("init_CovMatrix_" + to_string(mpLocalMapper->mInitSect) + "_" + to_string(initIdx) + ".txt", ios_base::app);
   f << fixed;
   for (int i = 0; i < mpLocalMapper->mcovInertial.rows(); i++) {
     for (int j = 0; j < mpLocalMapper->mcovInertial.cols(); j++) {
@@ -1341,8 +1291,7 @@ void System::SaveDebugData(const int &initIdx) {
   f.close();
 
   // 6. Save initialization time
-  f.open("init_Time_" + to_string(mpLocalMapper->mInitSect) + ".txt",
-         ios_base::app);
+  f.open("init_Time_" + to_string(mpLocalMapper->mInitSect) + ".txt", ios_base::app);
   f << fixed;
   f << mpLocalMapper->mInitTime << endl;
   f.close();
@@ -1353,7 +1302,7 @@ int System::GetTrackingState() {
   return mTrackingState;
 }
 
-vector<MapPoint *> System::GetTrackedMapPoints() {
+vector<MapPoint*> System::GetTrackedMapPoints() {
   unique_lock<mutex> lock(mMutexState);
   return mTrackedMapPoints;
 }
@@ -1363,19 +1312,19 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn() {
   return mTrackedKeyPointsUn;
 }
 
-vector<MapPoint *> System::GetAllMapPoints() {
-  Map *pActiveMap = mpAtlas->GetCurrentMap();
+vector<MapPoint*> System::GetAllMapPoints() {
+  Map* pActiveMap = mpAtlas->GetCurrentMap();
   return pActiveMap->GetAllMapPoints();
 }
 
 vector<Sophus::SE3f> System::GetAllKeyframePoses() {
-  vector<KeyFrame *> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   vector<Sophus::SE3f> vKFposes;
 
   for (size_t i = 0; i < vpKFs.size(); i++) {
-    KeyFrame *pKF = vpKFs[i];
+    KeyFrame* pKF = vpKFs[i];
 
     if (pKF->isBad())
       continue;
@@ -1383,8 +1332,7 @@ vector<Sophus::SE3f> System::GetAllKeyframePoses() {
     // Twb can be world frame to cam0 frame (without IMU) or body in world frame
     // (with IMU)
     Sophus::SE3f Twb;
-    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO ||
-        mSensor == IMU_RGBD) // with IMU
+    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD) // with IMU
       Twb = vpKFs[i]->GetImuPose();
     else // without IMU
       Twb = vpKFs[i]->GetPoseInverse();
@@ -1417,8 +1365,7 @@ bool System::isLost() {
   if (!mpAtlas->isImuInitialized())
     return false;
   else {
-    if ((mpTracker->mState ==
-         Tracking::LOST)) //||(mpTracker->mState==Tracking::RECENTLY_LOST))
+    if ((mpTracker->mState == Tracking::LOST)) //||(mpTracker->mState==Tracking::RECENTLY_LOST))
       return true;
     else
       return false;
@@ -1430,7 +1377,8 @@ bool System::isFinished() { return (GetTimeFromIMUInit() > 0.1); }
 void System::ChangeDataset() {
   if (mpAtlas->GetCurrentMap()->KeyFramesInMap() < 12) {
     mpTracker->ResetActiveMap();
-  } else {
+  }
+  else {
     mpTracker->CreateMapInAtlas();
   }
 
@@ -1440,36 +1388,26 @@ void System::ChangeDataset() {
 float System::GetImageScale() { return mpTracker->GetImageScale(); }
 
 #ifdef REGISTER_TIMES
-void System::InsertRectTime(double &time) {
-  mpTracker->vdRectStereo_ms.push_back(time);
-}
+void System::InsertRectTime(double& time) { mpTracker->vdRectStereo_ms.push_back(time); }
 
-void System::InsertResizeTime(double &time) {
-  mpTracker->vdResizeImage_ms.push_back(time);
-}
+void System::InsertResizeTime(double& time) { mpTracker->vdResizeImage_ms.push_back(time); }
 
-void System::InsertTrackTime(double &time) {
-  mpTracker->vdTrackTotal_ms.push_back(time);
-}
+void System::InsertTrackTime(double& time) { mpTracker->vdTrackTotal_ms.push_back(time); }
 #endif
 
-vector<unsigned char> System::GetSerializedCurrentMap() {
-  return mpAtlas->SerializeMap(mpAtlas->GetCurrentMap());
-}
+vector<unsigned char> System::GetSerializedCurrentMap() { return mpAtlas->SerializeMap(mpAtlas->GetCurrentMap()); }
 
 void System::AddSerializedMap(vector<unsigned char> serialized_map) {
   mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
   mpAtlas->SetORBVocabulary(mpVocabulary);
-  Map *newMap = mpAtlas->CreateNewMap(serialized_map);
+  Map* newMap = mpAtlas->CreateNewMap(serialized_map);
 
   // Insert KFs from new map into loop closer queue to try merge with existing
   // maps
-  vector<KeyFrame *> currentMapKeyFrames =
-      mpAtlas->GetCurrentMap()->GetAllKeyFrames();
-  std::sort(
-      currentMapKeyFrames.begin(), currentMapKeyFrames.end(),
-      [](const KeyFrame *a, const KeyFrame *b) { return a->mnId < b->mnId; });
-  for (KeyFrame *pKF : currentMapKeyFrames) {
+  vector<KeyFrame*> currentMapKeyFrames = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
+  std::sort(currentMapKeyFrames.begin(), currentMapKeyFrames.end(),
+    [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
+  for (KeyFrame* pKF : currentMapKeyFrames) {
     mpLoopCloser->InsertKeyFrame(pKF);
   }
 }
@@ -1485,8 +1423,7 @@ void System::SaveAtlas(int type) {
     pathSaveFileName = pathSaveFileName.append(mStrSaveAtlasToFile);
     pathSaveFileName = pathSaveFileName.append(".osa");
 
-    string strVocabularyChecksum =
-        CalculateCheckSum(mStrVocabularyFilePath, TEXT_FILE);
+    string strVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath, TEXT_FILE);
     std::size_t found = mStrVocabularyFilePath.find_last_of("/\\");
     string strVocabularyName = mStrVocabularyFilePath.substr(found + 1);
 
@@ -1501,7 +1438,8 @@ void System::SaveAtlas(int type) {
       oa << strVocabularyChecksum;
       oa << mpAtlas;
       cout << "End to write the save text file" << endl;
-    } else if (type == BINARY_FILE) // File binary
+    }
+    else if (type == BINARY_FILE) // File binary
     {
       cout << "Starting to write the save binary file" << endl;
       std::remove(pathSaveFileName.c_str());
@@ -1537,7 +1475,8 @@ bool System::LoadAtlas(int type) {
     ia >> mpAtlas;
     cout << "End to load the save text file " << endl;
     isRead = true;
-  } else if (type == BINARY_FILE) // File binary
+  }
+  else if (type == BINARY_FILE) // File binary
   {
     cout << "Starting to read the save binary file" << endl;
     std::ifstream ifs(pathLoadFileName, std::ios::binary);
@@ -1555,8 +1494,7 @@ bool System::LoadAtlas(int type) {
 
   if (isRead) {
     // Check if the vocabulary is the same
-    string strInputVocabularyChecksum =
-        CalculateCheckSum(mStrVocabularyFilePath, TEXT_FILE);
+    string strInputVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath, TEXT_FILE);
 
     if (strInputVocabularyChecksum.compare(strVocChecksum) != 0) {
       cout << "The vocabulary load isn't the same which the load session was "
@@ -1586,8 +1524,7 @@ string System::CalculateCheckSum(string filename, int type) {
 
   ifstream f(filename.c_str(), flags);
   if (!f.is_open()) {
-    cout << "[E] Unable to open the in file " << filename << " for Md5 hash."
-         << endl;
+    cout << "[E] Unable to open the in file " << filename << " for Md5 hash." << endl;
     return checksum;
   }
 

@@ -66,56 +66,53 @@ public:
    * and stores them in given SparseBlockMatrix.
    * If your solver does not support computing the marginals, return false.
    */
-  virtual bool
-  computeMarginals(SparseBlockMatrix<MatrixXd> &spinv,
-                   const std::vector<std::pair<int, int>> &blockIndices) = 0;
+  virtual bool computeMarginals(
+    SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int>>& blockIndices)
+    = 0;
 
   /**
    * update the structures for online processing
    */
-  virtual bool updateStructure(const std::vector<HyperGraph::Vertex *> &vset,
-                               const HyperGraph::EdgeSet &edges) = 0;
+  virtual bool updateStructure(const std::vector<HyperGraph::Vertex*>& vset, const HyperGraph::EdgeSet& edges) = 0;
 
   /**
    * called by the optimizer if verbose. re-implement, if you want to print
    * something
    */
-  virtual void printVerbose(std::ostream &os) const { (void)os; };
+  virtual void printVerbose(std::ostream& os) const { (void)os; };
 
 public:
   //! return the optimizer operating on
-  const SparseOptimizer *optimizer() const { return _optimizer; }
-  SparseOptimizer *optimizer() { return _optimizer; }
+  const SparseOptimizer* optimizer() const { return _optimizer; }
+  SparseOptimizer* optimizer() { return _optimizer; }
 
   /**
    * specify on which optimizer the solver should work on
    */
-  void setOptimizer(SparseOptimizer *optimizer);
+  void setOptimizer(SparseOptimizer* optimizer);
 
   //! return the properties of the solver
-  const PropertyMap &properties() const { return _properties; }
+  const PropertyMap& properties() const { return _properties; }
 
   /**
    * update the properties from a string, see PropertyMap::updateMapFromString()
    */
-  bool updatePropertiesFromString(const std::string &propString);
+  bool updatePropertiesFromString(const std::string& propString);
 
   /**
    * print the properties to a stream in a human readable fashion
    */
-  void printProperties(std::ostream &os) const;
+  void printProperties(std::ostream& os) const;
 
 protected:
-  SparseOptimizer *_optimizer; ///< the optimizer the solver is working on
+  SparseOptimizer* _optimizer; ///< the optimizer the solver is working on
   PropertyMap _properties; ///< the properties of your solver, use this to store
                            ///< the parameters of your solver
 
 private:
   // Disable the copy constructor and assignment operator
-  OptimizationAlgorithm(const OptimizationAlgorithm &) {}
-  OptimizationAlgorithm &operator=(const OptimizationAlgorithm &) {
-    return *this;
-  }
+  OptimizationAlgorithm(const OptimizationAlgorithm&) { }
+  OptimizationAlgorithm& operator=(const OptimizationAlgorithm&) { return *this; }
 };
 
 } // namespace g2o

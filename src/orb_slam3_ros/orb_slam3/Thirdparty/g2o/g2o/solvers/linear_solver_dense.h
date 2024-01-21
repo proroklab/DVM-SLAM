@@ -41,23 +41,24 @@ namespace g2o {
 /**
  * \brief linear solver using dense cholesky decomposition
  */
-template <typename MatrixType>
-class LinearSolverDense : public LinearSolver<MatrixType> {
+template <typename MatrixType> class LinearSolverDense : public LinearSolver<MatrixType> {
 public:
-  LinearSolverDense() : LinearSolver<MatrixType>(), _reset(true) {}
+  LinearSolverDense()
+    : LinearSolver<MatrixType>()
+    , _reset(true) { }
 
-  virtual ~LinearSolverDense() {}
+  virtual ~LinearSolverDense() { }
 
   virtual bool init() {
     _reset = true;
     return true;
   }
 
-  bool solve(const SparseBlockMatrix<MatrixType> &A, double *x, double *b) {
+  bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b) {
     int n = A.cols();
     int m = A.cols();
 
-    Eigen::MatrixXd &H = _H;
+    Eigen::MatrixXd& H = _H;
     if (H.cols() != n) {
       H.resize(n, m);
       _reset = true;
@@ -73,8 +74,7 @@ public:
       int c_size = A.colsOfBlock(i);
       assert(c_idx == A.colBaseOfBlock(i) && "mismatch in block indices");
 
-      const typename SparseBlockMatrix<MatrixType>::IntBlockMap &col =
-          A.blockCols()[i];
+      const typename SparseBlockMatrix<MatrixType>::IntBlockMap& col = A.blockCols()[i];
       if (col.size() > 0) {
         typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it;
         for (it = col.begin(); it != col.end(); ++it) {

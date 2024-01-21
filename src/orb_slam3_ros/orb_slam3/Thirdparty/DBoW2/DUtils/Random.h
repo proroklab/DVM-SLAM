@@ -59,9 +59,7 @@ public:
    * @param max
    * @return random T number in [min..max]
    */
-  template <class T> static T RandomValue(T min, T max) {
-    return Random::RandomValue<T>() * (max - min) + min;
-  }
+  template <class T> static T RandomValue(T min, T max) { return Random::RandomValue<T>() * (max - min) + min; }
 
   /**
    * Returns a random int in the range [min..max]
@@ -108,19 +106,19 @@ public:
    * @param max
    */
   UnrepeatedRandomizer(int min, int max);
-  ~UnrepeatedRandomizer() {}
+  ~UnrepeatedRandomizer() { }
 
   /**
    * Copies a randomizer
    * @param rnd
    */
-  UnrepeatedRandomizer(const UnrepeatedRandomizer &rnd);
+  UnrepeatedRandomizer(const UnrepeatedRandomizer& rnd);
 
   /**
    * Copies a randomizer
    * @param rnd
    */
-  UnrepeatedRandomizer &operator=(const UnrepeatedRandomizer &rnd);
+  UnrepeatedRandomizer& operator=(const UnrepeatedRandomizer& rnd);
 
   /**
    * Returns a random number not given before. If all the possible values

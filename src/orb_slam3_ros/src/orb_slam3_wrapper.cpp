@@ -2,12 +2,11 @@
 
 using namespace std;
 
-OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file,
-                                 string settings_file,
-                                 ORB_SLAM3::System::eSensor sensor_type)
-    : Node(node_name),
-      node_handle_(std::shared_ptr<OrbSlam3Wrapper>(this, [](auto *) {})),
-      image_transport(node_handle_) {
+OrbSlam3Wrapper::OrbSlam3Wrapper(
+  string node_name, string voc_file, string settings_file, ORB_SLAM3::System::eSensor sensor_type)
+  : Node(node_name)
+  , node_handle_(std::shared_ptr<OrbSlam3Wrapper>(this, [](auto*) {}))
+  , image_transport(node_handle_) {
   // Create parameters
   this->declare_parameter("robot_name", "robot1");
   robot_name = this->get_parameter("robot_name").as_string();
@@ -18,57 +17,40 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file,
   pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, true);
 
   // Create publishers
-  pose_pub = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-      node_name + "/camera_pose", 1);
-  tracked_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      node_name + "/tracked_points", 1);
-  all_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      node_name + "/all_points", 1);
-  tracking_img_pub =
-      image_transport.advertise(node_name + "/tracking_image", 1);
-  kf_markers_pub = this->create_publisher<visualization_msgs::msg::Marker>(
-      node_name + "/kf_markers", 1000);
-  if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR ||
-      sensor_type == ORB_SLAM3::System::IMU_STEREO ||
-      sensor_type == ORB_SLAM3::System::IMU_RGBD) {
-    odom_pub = this->create_publisher<nav_msgs::msg::Odometry>(
-        node_name + "/body_odom", 1);
+  pose_pub = this->create_publisher<geometry_msgs::msg::PoseStamped>(node_name + "/camera_pose", 1);
+  tracked_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/tracked_points", 1);
+  all_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/all_points", 1);
+  tracking_img_pub = image_transport.advertise(node_name + "/tracking_image", 1);
+  kf_markers_pub = this->create_publisher<visualization_msgs::msg::Marker>(node_name + "/kf_markers", 1000);
+  if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR || sensor_type == ORB_SLAM3::System::IMU_STEREO
+    || sensor_type == ORB_SLAM3::System::IMU_RGBD) {
+    odom_pub = this->create_publisher<nav_msgs::msg::Odometry>(node_name + "/body_odom", 1);
   }
 
   // Create services
-  get_current_map_service =
-      this->create_service<interfaces::srv::GetCurrentMap>(
-          node_name + "/get_current_map",
-          std::bind(&OrbSlam3Wrapper::getCurrentMap, this,
-                    std::placeholders::_1, std::placeholders::_2));
+  get_current_map_service = this->create_service<interfaces::srv::GetCurrentMap>(node_name + "/get_current_map",
+    std::bind(&OrbSlam3Wrapper::getCurrentMap, this, std::placeholders::_1, std::placeholders::_2));
   add_map_service = this->create_service<interfaces::srv::AddMap>(
-      node_name + "/add_map",
-      std::bind(&OrbSlam3Wrapper::addMap, this, std::placeholders::_1,
-                std::placeholders::_2));
+    node_name + "/add_map", std::bind(&OrbSlam3Wrapper::addMap, this, std::placeholders::_1, std::placeholders::_2));
 };
 
-void OrbSlam3Wrapper::getCurrentMap(
-    const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
-    std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
+void OrbSlam3Wrapper::getCurrentMap(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
+  std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
   response->serialized_map = pSLAM->GetSerializedCurrentMap();
 }
 
-void OrbSlam3Wrapper::addMap(
-    const std::shared_ptr<interfaces::srv::AddMap::Request> request,
-    std::shared_ptr<interfaces::srv::AddMap::Response> response) {
+void OrbSlam3Wrapper::addMap(const std::shared_ptr<interfaces::srv::AddMap::Request> request,
+  std::shared_ptr<interfaces::srv::AddMap::Response> response) {
 
-  RCLCPP_INFO(this->get_logger(), "Received serialized map. Size: %d",
-              request->serialized_map.size());
+  RCLCPP_INFO(this->get_logger(), "Received serialized map. Size: %d", request->serialized_map.size());
 
   pSLAM->AddSerializedMap(request->serialized_map);
 }
 
-void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time,
-                                     Eigen::Vector3f Wbb) {
+void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb) {
   Sophus::SE3f Twc = pSLAM->GetCamTwc();
 
-  if (Twc.translation().array().isNaN()[0] ||
-      Twc.rotationMatrix().array().isNaN()(0, 0)) // avoid publishing NaN
+  if (Twc.translation().array().isNaN()[0] || Twc.rotationMatrix().array().isNaN()(0, 0)) // avoid publishing NaN
     return;
 
   // Common topics
@@ -81,9 +63,8 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time,
   publish_kf_markers(pSLAM->GetAllKeyframePoses(), msg_time);
 
   // IMU-specific topics
-  if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR ||
-      sensor_type == ORB_SLAM3::System::IMU_STEREO ||
-      sensor_type == ORB_SLAM3::System::IMU_RGBD) {
+  if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR || sensor_type == ORB_SLAM3::System::IMU_STEREO
+    || sensor_type == ORB_SLAM3::System::IMU_RGBD) {
     // Body pose and translational velocity can be obtained from ORB-SLAM3
     Sophus::SE3f Twb = pSLAM->GetImuTwb();
     Eigen::Vector3f Vwb = pSLAM->GetImuVwb();
@@ -98,8 +79,7 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time,
   }
 }
 
-void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f,
-                                          rclcpp::Time msg_time) {
+void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Time msg_time) {
   geometry_msgs::msg::PoseStamped pose_msg;
   pose_msg.header.frame_id = world_frame_id;
   pose_msg.header.stamp = msg_time;
@@ -116,10 +96,8 @@ void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f,
   pose_pub->publish(pose_msg);
 }
 
-void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f &T_SE3f,
-                                           const std::string &frame_id,
-                                           const std::string &child_frame_id,
-                                           const rclcpp::Time &msg_time) {
+void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f& T_SE3f, const std::string& frame_id,
+  const std::string& child_frame_id, const rclcpp::Time& msg_time) {
   static tf2_ros::TransformBroadcaster tf_broadcaster(*this);
 
   geometry_msgs::msg::TransformStamped transform_stamped;
@@ -141,36 +119,29 @@ void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f &T_SE3f,
   tf_broadcaster.sendTransform(transform_stamped);
 }
 
-void OrbSlam3Wrapper::publish_tracking_img(cv::Mat image,
-                                           rclcpp::Time msg_time) {
+void OrbSlam3Wrapper::publish_tracking_img(cv::Mat image, rclcpp::Time msg_time) {
   std_msgs::msg::Header header;
   header.stamp = msg_time;
   header.frame_id = world_frame_id;
 
-  const sensor_msgs::msg::Image::SharedPtr rendered_image_msg =
-      cv_bridge::CvImage(header, "bgr8", image).toImageMsg();
+  const sensor_msgs::msg::Image::SharedPtr rendered_image_msg = cv_bridge::CvImage(header, "bgr8", image).toImageMsg();
 
   tracking_img_pub.publish(rendered_image_msg);
 }
 
-void OrbSlam3Wrapper::publish_tracked_points(
-    std::vector<ORB_SLAM3::MapPoint *> tracked_points, rclcpp::Time msg_time) {
-  sensor_msgs::msg::PointCloud2 cloud =
-      mappoint_to_pointcloud(tracked_points, msg_time);
+void OrbSlam3Wrapper::publish_tracked_points(std::vector<ORB_SLAM3::MapPoint*> tracked_points, rclcpp::Time msg_time) {
+  sensor_msgs::msg::PointCloud2 cloud = mappoint_to_pointcloud(tracked_points, msg_time);
 
   tracked_mappoints_pub->publish(cloud);
 }
 
-void OrbSlam3Wrapper::publish_all_points(
-    std::vector<ORB_SLAM3::MapPoint *> map_points, rclcpp::Time msg_time) {
-  sensor_msgs::msg::PointCloud2 cloud =
-      mappoint_to_pointcloud(map_points, msg_time);
+void OrbSlam3Wrapper::publish_all_points(std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time) {
+  sensor_msgs::msg::PointCloud2 cloud = mappoint_to_pointcloud(map_points, msg_time);
 
   all_mappoints_pub->publish(cloud);
 }
 
-void OrbSlam3Wrapper::publish_kf_markers(std::vector<Sophus::SE3f> vKFposes,
-                                         rclcpp::Time msg_time) {
+void OrbSlam3Wrapper::publish_kf_markers(std::vector<Sophus::SE3f> vKFposes, rclcpp::Time msg_time) {
   int numKFs = vKFposes.size();
   if (numKFs == 0)
     return;
@@ -201,10 +172,8 @@ void OrbSlam3Wrapper::publish_kf_markers(std::vector<Sophus::SE3f> vKFposes,
   kf_markers_pub->publish(kf_markers);
 }
 
-void OrbSlam3Wrapper::publish_body_odom(Sophus::SE3f Twb_SE3f,
-                                        Eigen::Vector3f Vwb_E3f,
-                                        Eigen::Vector3f ang_vel_body,
-                                        rclcpp::Time msg_time) {
+void OrbSlam3Wrapper::publish_body_odom(
+  Sophus::SE3f Twb_SE3f, Eigen::Vector3f Vwb_E3f, Eigen::Vector3f ang_vel_body, rclcpp::Time msg_time) {
   nav_msgs::msg::Odometry odom_msg;
   odom_msg.child_frame_id = imu_frame_id;
   odom_msg.header.frame_id = world_frame_id;
@@ -231,7 +200,7 @@ void OrbSlam3Wrapper::publish_body_odom(Sophus::SE3f Twb_SE3f,
 }
 
 sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
-    std::vector<ORB_SLAM3::MapPoint *> map_points, rclcpp::Time msg_time) {
+  std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time) {
   const int num_channels = 3; // x y z
 
   if (map_points.size() == 0) {
@@ -250,7 +219,7 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
   cloud.row_step = cloud.point_step * cloud.width;
   cloud.fields.resize(num_channels);
 
-  std::string channel_id[] = {"x", "y", "z"};
+  std::string channel_id[] = { "x", "y", "z" };
 
   for (int i = 0; i < num_channels; i++) {
     cloud.fields[i].name = channel_id[i];
@@ -261,7 +230,7 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
 
   cloud.data.resize(cloud.row_step * cloud.height);
 
-  unsigned char *cloud_data_ptr = &(cloud.data[0]);
+  unsigned char* cloud_data_ptr = &(cloud.data[0]);
 
   for (unsigned int i = 0; i < cloud.width; i++) {
     if (map_points[i]) {
@@ -269,13 +238,10 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
 
       tf2::Vector3 point_translation(P3Dw.x(), P3Dw.y(), P3Dw.z());
 
-      float data_array[num_channels] = {
-          static_cast<float>(point_translation.x()),
-          static_cast<float>(point_translation.y()),
-          static_cast<float>(point_translation.z())};
+      float data_array[num_channels] = { static_cast<float>(point_translation.x()),
+        static_cast<float>(point_translation.y()), static_cast<float>(point_translation.z()) };
 
-      memcpy(cloud_data_ptr + (i * cloud.point_step), data_array,
-             num_channels * sizeof(float));
+      memcpy(cloud_data_ptr + (i * cloud.point_step), data_array, num_channels * sizeof(float));
     }
   }
   return cloud;

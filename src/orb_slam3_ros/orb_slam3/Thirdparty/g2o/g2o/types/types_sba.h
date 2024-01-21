@@ -41,12 +41,12 @@ class VertexSBAPointXYZ : public BaseVertex<3, Vector3d> {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   VertexSBAPointXYZ();
-  virtual bool read(std::istream &is);
-  virtual bool write(std::ostream &os) const;
+  virtual bool read(std::istream& is);
+  virtual bool write(std::ostream& os) const;
 
   virtual void setToOriginImpl() { _estimate.fill(0.); }
 
-  virtual void oplusImpl(const double *update) {
+  virtual void oplusImpl(const double* update) {
     Eigen::Map<const Vector3d> v(update);
     _estimate += v;
   }

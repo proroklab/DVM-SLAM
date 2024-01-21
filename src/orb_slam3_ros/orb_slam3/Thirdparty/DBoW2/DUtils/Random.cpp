@@ -49,7 +49,8 @@ DUtils::Random::UnrepeatedRandomizer::UnrepeatedRandomizer(int min, int max) {
   if (min <= max) {
     m_min = min;
     m_max = max;
-  } else {
+  }
+  else {
     m_min = max;
     m_max = min;
   }
@@ -59,8 +60,7 @@ DUtils::Random::UnrepeatedRandomizer::UnrepeatedRandomizer(int min, int max) {
 
 // ---------------------------------------------------------------------------
 
-DUtils::Random::UnrepeatedRandomizer::UnrepeatedRandomizer(
-    const DUtils::Random::UnrepeatedRandomizer &rnd) {
+DUtils::Random::UnrepeatedRandomizer::UnrepeatedRandomizer(const DUtils::Random::UnrepeatedRandomizer& rnd) {
   *this = rnd;
 }
 
@@ -99,9 +99,8 @@ void DUtils::Random::UnrepeatedRandomizer::reset() {
 
 // ---------------------------------------------------------------------------
 
-DUtils::Random::UnrepeatedRandomizer &
-DUtils::Random::UnrepeatedRandomizer::operator=(
-    const DUtils::Random::UnrepeatedRandomizer &rnd) {
+DUtils::Random::UnrepeatedRandomizer& DUtils::Random::UnrepeatedRandomizer::operator=(
+  const DUtils::Random::UnrepeatedRandomizer& rnd) {
   if (this != &rnd) {
     this->m_min = rnd.m_min;
     this->m_max = rnd.m_max;

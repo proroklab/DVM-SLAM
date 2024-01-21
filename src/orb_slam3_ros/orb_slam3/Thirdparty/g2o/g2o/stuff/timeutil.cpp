@@ -47,10 +47,10 @@ namespace g2o {
 
 struct timezone {
   int tz_minuteswest; /* minutes W of Greenwich */
-  int tz_dsttime;     /* type of dst correction */
+  int tz_dsttime; /* type of dst correction */
 };
 
-int gettimeofday(struct timeval *tv, struct timezone *tz) {
+int gettimeofday(struct timeval* tv, struct timezone* tz) {
   // Define a structure to receive the current Windows filetime
   FILETIME ft;
 
@@ -101,17 +101,14 @@ int gettimeofday(struct timeval *tv, struct timezone *tz) {
 }
 #endif
 
-ScopeTime::ScopeTime(const char *title)
-    : _title(title), _startTime(get_monotonic_time()) {}
+ScopeTime::ScopeTime(const char* title)
+  : _title(title)
+  , _startTime(get_monotonic_time()) { }
 
-ScopeTime::~ScopeTime() {
-  std::cerr << _title << " took " << 1000 * (get_monotonic_time() - _startTime)
-            << "ms.\n";
-}
+ScopeTime::~ScopeTime() { std::cerr << _title << " took " << 1000 * (get_monotonic_time() - _startTime) << "ms.\n"; }
 
 double get_monotonic_time() {
-#if (defined(_POSIX_TIMERS) && (_POSIX_TIMERS + 0 >= 0) &&                     \
-     defined(_POSIX_MONOTONIC_CLOCK))
+#if (defined(_POSIX_TIMERS) && (_POSIX_TIMERS + 0 >= 0) && defined(_POSIX_MONOTONIC_CLOCK))
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return ts.tv_sec + ts.tv_nsec * 1e-9;

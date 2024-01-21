@@ -51,7 +51,7 @@ class RobustKernel {
 public:
   RobustKernel();
   explicit RobustKernel(double delta);
-  virtual ~RobustKernel() {}
+  virtual ~RobustKernel() { }
   /**
    * compute the scaling factor for a error:
    * The error is e^T Omega e
@@ -60,7 +60,7 @@ public:
    * rho[1]: First derivative of the scaling function
    * rho[2]: Second derivative of the scaling function
    */
-  virtual void robustify(double squaredError, Eigen::Vector3d &rho) const = 0;
+  virtual void robustify(double squaredError, Eigen::Vector3d& rho) const = 0;
 
   /**
    * set the window size of the error. A squared error above delta^2 is
