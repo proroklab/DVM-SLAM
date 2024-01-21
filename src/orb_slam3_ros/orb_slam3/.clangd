@@ -1,0 +1,4 @@
+CompileFlags:
+    Compiler: "/usr/bin/gcc"
+    Add: [-std=c++14]
+    CompilationDatabase: ../../../build/
