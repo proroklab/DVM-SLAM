@@ -171,6 +171,18 @@ void LoopClosing::Run() {
 
             Verbose::PrintMess("*Merge detected", Verbose::VERBOSITY_QUIET);
 
+            // Remove all KFs in queue which were part of the map we are merging
+            // into the active map This prevents them from causing issues later,
+            // after the merge has occured
+            mlpLoopKeyFrameQueue.erase(
+                std::remove_if(mlpLoopKeyFrameQueue.begin(),
+                               mlpLoopKeyFrameQueue.end(),
+                               [this](KeyFrame *element) {
+                                 return element->GetMap()->GetId() ==
+                                        mpMergeLastCurrentKF->GetMap()->GetId();
+                               }),
+                mlpLoopKeyFrameQueue.end());
+
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartMerge =
                 std::chrono::steady_clock::now();

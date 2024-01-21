@@ -1464,7 +1464,12 @@ void System::AddSerializedMap(vector<unsigned char> serialized_map) {
 
   // Insert KFs from new map into loop closer queue to try merge with existing
   // maps
-  for (KeyFrame *pKF : mpAtlas->GetCurrentMap()->GetAllKeyFrames()) {
+  vector<KeyFrame *> currentMapKeyFrames =
+      mpAtlas->GetCurrentMap()->GetAllKeyFrames();
+  std::sort(
+      currentMapKeyFrames.begin(), currentMapKeyFrames.end(),
+      [](const KeyFrame *a, const KeyFrame *b) { return a->mnId < b->mnId; });
+  for (KeyFrame *pKF : currentMapKeyFrames) {
     mpLoopCloser->InsertKeyFrame(pKF);
   }
 }
