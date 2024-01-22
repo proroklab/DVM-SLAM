@@ -43,17 +43,6 @@ private:
       RCLCPP_ERROR(this->get_logger(), "Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
     }
   }
-
-  void share_map() {
-    // Create the request
-    auto request = std::make_shared<interfaces::srv::AddMap::Request>();
-    std::vector<unsigned char> serializedMap = pSLAM->GetSerializedCurrentMap();
-    request->serialized_map = serializedMap;
-
-    auto future = add_map_client->async_send_request(request);
-
-    cout << "Sent serialized map. Size:" << request->serialized_map.size();
-  }
 };
 
 int main(int argc, char** argv) {
