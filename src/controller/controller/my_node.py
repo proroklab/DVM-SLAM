@@ -114,11 +114,11 @@ class MainWindow(QMainWindow):
         for robot_name in self.robot_names:
             self.get_current_map_clients.append(
                 self.node.create_client(
-                    GetCurrentMap, f'orb_slam3_mono_{robot_name}/get_current_map')
+                    GetCurrentMap, f'{robot_name}/get_current_map')
             )
             self.add_map_clients.append(
                 self.node.create_client(
-                    AddMap, f'orb_slam3_mono_{robot_name}/add_map')
+                    AddMap, f'{robot_name}/add_map')
             )
 
         layout = QHBoxLayout()

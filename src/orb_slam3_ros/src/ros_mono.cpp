@@ -12,11 +12,9 @@ public:
   OrbSlam3Mono(string voc_file, string settings_file)
     : OrbSlam3Wrapper("orb_slam3_mono", voc_file, settings_file, ORB_SLAM3::System::MONOCULAR) {
 
-    image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
-      robot_name + "/camera/image_color", 1, std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
-
-    add_map_client = this->create_client<interfaces::srv::AddMap>(
-      robot_name == "robot1" ? "orb_slam3_mono_robot2/add_map" : "orb_slam3_mono_robot1/add_map");
+    image_subscriber
+      = this->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color", 1,
+        std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
   };
 
 private:

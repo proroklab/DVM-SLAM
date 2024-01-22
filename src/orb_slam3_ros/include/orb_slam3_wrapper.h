@@ -28,7 +28,11 @@ public:
   OrbSlam3Wrapper(string node_name, string voc_file, string settings_file, ORB_SLAM3::System::eSensor sensor_type);
 
 protected:
-  string robot_name;
+  uint agentId;
+
+  vector<uint> connectedAgentIds;
+  vector<ORB_SLAM3::KeyFrame*> keyFrames;
+  map<uint, set<boost::uuids::uuid>> sentKeyFrameUuids; // Map from agentId to sent keyframe uuids
 
   ORB_SLAM3::System* pSLAM;
   ORB_SLAM3::System::eSensor sensor_type;

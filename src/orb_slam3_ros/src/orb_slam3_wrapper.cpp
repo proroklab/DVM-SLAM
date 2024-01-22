@@ -4,14 +4,15 @@ using namespace std;
 
 OrbSlam3Wrapper::OrbSlam3Wrapper(
   string node_name, string voc_file, string settings_file, ORB_SLAM3::System::eSensor sensor_type)
-  : Node(node_name)
+  : Node("robot" + to_string(agentId))
   , node_handle_(std::shared_ptr<OrbSlam3Wrapper>(this, [](auto*) {}))
   , image_transport(node_handle_) {
   // Create parameters
-  this->declare_parameter("robot_name", "robot1");
-  robot_name = this->get_parameter("robot_name").as_string();
+  this->declare_parameter("agentId", 1);
+  agentId = this->get_parameter("agentId").as_int();
 
-  node_name += "_" + robot_name;
+  node_name = "robot" + to_string(agentId);
+  cout << node_name << endl;
 
   this->sensor_type = sensor_type;
   pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, true);
