@@ -10,8 +10,12 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Uuid.msg"
+  "msg/KeyFrameBowVector.msg"
+  "msg/NewKeyFrames.msg"
   "srv/GetCurrentMap.srv"
   "srv/AddMap.srv"
+  "srv/RequestMap.srv"
 )
 
 if(BUILD_TESTING)
