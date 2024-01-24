@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <boost/uuid/uuid.hpp>
 #include <opencv2/core/core.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +32,7 @@
 #include "Atlas.h"
 #include "FrameDrawer.h"
 #include "ImuTypes.h"
+#include "KeyFrame.h"
 #include "KeyFrameDatabase.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"
@@ -94,8 +96,8 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and
   // Viewer threads.
-  System(const string& strVocFile, const string& strSettingsFile, const eSensor sensor, const bool bUseViewer = true,
-    const int initFr = 0, const string& strSequence = std::string());
+  System(const string& strVocFile, const string& strSettingsFile, const eSensor sensor, unsigned int agentId,
+    const bool bUseViewer = true, const int initFr = 0, const string& strSequence = std::string());
 
   // Proccess the given stereo frame. Images must be synchronized and rectified.
   // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to
@@ -175,6 +177,7 @@ public:
   std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
   // Added for ROS wrapper
   std::vector<MapPoint*> GetAllMapPoints();
+  std::vector<KeyFrame*> GetAllKeyFrames();
   std::vector<Sophus::SE3f> GetAllKeyframePoses();
   cv::Mat GetCurrentFrame();
   Sophus::SE3f GetCamTwc();
@@ -198,11 +201,21 @@ public:
 #endif
 
   vector<unsigned char> GetSerializedCurrentMap();
+  vector<unsigned char> SerializeMap(Map* map);
   void AddSerializedMap(vector<unsigned char> serialized_map);
+
+  bool DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid);
+
+  Atlas* GetAtlas();
+  ORBVocabulary* GetORBVocabulary();
+
+  unsigned int GetAgentId();
 
 private:
   void SaveAtlas(int type);
   bool LoadAtlas(int type);
+
+  unsigned int agentId;
 
   string CalculateCheckSum(string filename, int type);
 

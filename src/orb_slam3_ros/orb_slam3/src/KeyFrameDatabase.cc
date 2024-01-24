@@ -22,7 +22,10 @@
 #include "KeyFrameDatabase.h"
 
 #include "KeyFrame.h"
+#include "Map.h"
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
+#include <boost/functional/hash.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <mutex>
 
@@ -644,6 +647,124 @@ void KeyFrameDatabase::DetectNBestCandidates(
     i++;
     it++;
   }
+}
+
+/**
+ * @brief Score of merging KF with a given BOW vector into map
+ *
+ * @param bowVector
+ * @param keyFrameId
+ * @param map
+ * @param[out] score
+ * @param[out] bestKeyFrame
+ */
+void KeyFrameDatabase::CalculateMergeScore(
+  DBoW2::BowVector bowVector, unsigned long keyFrameId, Map* map, float& score, KeyFrame*& bestKeyFrame) {
+  list<KeyFrame*> lKFsSharingWords;
+
+  // Search all keyframes that share a word with current frame
+  {
+    unique_lock<mutex> lock(mMutex);
+
+    for (DBoW2::BowVector::const_iterator vit = bowVector.begin(), vend = bowVector.end(); vit != vend; vit++) {
+      list<KeyFrame*>& lKFs = mvInvertedFile[vit->first];
+
+      for (list<KeyFrame*>::iterator lit = lKFs.begin(), lend = lKFs.end(); lit != lend; lit++) {
+        KeyFrame* pKFi = *lit;
+        if (pKFi->GetMap() == map && pKFi->mnId != keyFrameId && !pKFi->isBad()) {
+          if (pKFi->mnPlaceRecognitionQuery != keyFrameId) {
+            pKFi->mnPlaceRecognitionWords = 0;
+            pKFi->mPlaceRecognitionScore = 0;
+            pKFi->mnPlaceRecognitionQuery = keyFrameId;
+            lKFsSharingWords.push_back(pKFi);
+          }
+          pKFi->mnPlaceRecognitionWords++;
+        }
+      }
+    }
+  }
+  if (lKFsSharingWords.empty())
+    return;
+
+  // Only compare against those keyframes that share enough words
+  int maxCommonWords = 0;
+  for (list<KeyFrame*>::iterator lit = lKFsSharingWords.begin(), lend = lKFsSharingWords.end(); lit != lend; lit++) {
+    if ((*lit)->mnPlaceRecognitionWords > maxCommonWords)
+      maxCommonWords = (*lit)->mnPlaceRecognitionWords;
+  }
+
+  int minCommonWords = maxCommonWords * 0.8f;
+
+  list<pair<float, KeyFrame*>> lScoreAndMatch;
+
+  int nscores = 0;
+
+  // Compute similarity score.
+  for (list<KeyFrame*>::iterator lit = lKFsSharingWords.begin(), lend = lKFsSharingWords.end(); lit != lend; lit++) {
+    KeyFrame* pKFi = *lit;
+
+    if (pKFi->mnPlaceRecognitionWords > minCommonWords) {
+      nscores++;
+      float si = mpVoc->score(bowVector, pKFi->mBowVec);
+      pKFi->mPlaceRecognitionScore = si;
+      lScoreAndMatch.push_back(make_pair(si, pKFi));
+    }
+  }
+
+  if (lScoreAndMatch.empty())
+    return;
+
+  // Lets now accumulate score by covisibility
+  for (list<pair<float, KeyFrame*>>::iterator it = lScoreAndMatch.begin(), itend = lScoreAndMatch.end(); it != itend;
+       it++) // Loop through keyframes sharing words with target KF
+  {
+    KeyFrame* pKFi = it->second;
+    vector<KeyFrame*> vpNeighs = pKFi->GetBestCovisibilityKeyFrames(10);
+
+    float bestScore = it->first;
+    float accScore = bestScore;
+
+    KeyFrame* pBestKF = pKFi;
+    for (vector<KeyFrame*>::iterator vit = vpNeighs.begin(), vend = vpNeighs.end(); vit != vend;
+         vit++) // Loop through neighbours
+    {
+      KeyFrame* pKF2 = *vit;
+      if (pKF2->mnPlaceRecognitionQuery != keyFrameId)
+        continue;
+
+      accScore += pKF2->mPlaceRecognitionScore;
+      if (pKF2->mPlaceRecognitionScore > bestScore) {
+        pBestKF = pKF2;
+        bestScore = pKF2->mPlaceRecognitionScore;
+      }
+    }
+
+    if (accScore > score) {
+      score = accScore;
+      bestKeyFrame = pBestKF;
+    }
+  }
+}
+
+// Returns true if a merge is possible based on BOW vector. Used for determing if a merge with a peers map is possible
+bool KeyFrameDatabase::DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid, Map* map) {
+
+  float score = 0;
+  KeyFrame* bestKeyFrame;
+  unsigned long keyFrameId = boost::hash<boost::uuids::uuid>()(uuid); // Hacky to convert uuid to ulong, but will work
+  CalculateMergeScore(bowVector, keyFrameId, map, score, bestKeyFrame);
+
+  if (score == 0)
+    return false;
+
+  // Get baseline score by calcuating the score of bestKeyFrame with this map
+  float baselineScore = 0;
+  KeyFrame* baselineBestKeyFrame;
+  CalculateMergeScore(bestKeyFrame->mBowVec, bestKeyFrame->mnId, map, baselineScore, baselineBestKeyFrame);
+
+  cout << " best match score: " << score << "    baseline score: " << baselineScore << endl;
+
+  return score > baselineScore;
 }
 
 vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame* F, Map* pMap) {

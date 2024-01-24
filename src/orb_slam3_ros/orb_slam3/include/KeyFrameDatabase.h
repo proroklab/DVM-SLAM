@@ -33,6 +33,7 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/uuid/uuid.hpp>
 
 #include <mutex>
 
@@ -59,6 +60,10 @@ public:
 
   void clear();
   void clearMap(Map* pMap);
+
+  void CalculateMergeScore(
+    DBoW2::BowVector bowVector, unsigned long keyFrameId, Map* map, float& score, KeyFrame*& bestKeyFrame);
+  bool DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid, Map* map);
 
   // Loop Detection(DEPRECATED)
   std::vector<KeyFrame*> DetectLoopCandidates(KeyFrame* pKF, float minScore);

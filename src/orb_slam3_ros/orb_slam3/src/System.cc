@@ -22,6 +22,7 @@
 #include "System.h"
 #include "Converter.h"
 #include "KeyFrameDatabase.h"
+#include "ORBVocabulary.h"
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -39,15 +40,16 @@ namespace ORB_SLAM3 {
 
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
-System::System(const string& strVocFile, const string& strSettingsFile, const eSensor sensor, const bool bUseViewer,
-  const int initFr, const string& strSequence)
+System::System(const string& strVocFile, const string& strSettingsFile, const eSensor sensor, unsigned int agentId,
+  const bool bUseViewer, const int initFr, const string& strSequence)
   : mSensor(sensor)
   , mpViewer(static_cast<Viewer*>(NULL))
   , mbReset(false)
   , mbResetActiveMap(false)
   , mbActivateLocalizationMode(false)
   , mbDeactivateLocalizationMode(false)
-  , mbShutDown(false) {
+  , mbShutDown(false)
+  , agentId(agentId) {
   // Output welcome message
   cout << endl
        << "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, "
@@ -1317,6 +1319,8 @@ vector<MapPoint*> System::GetAllMapPoints() {
   return pActiveMap->GetAllMapPoints();
 }
 
+vector<KeyFrame*> System::GetAllKeyFrames() { return mpAtlas->GetAllKeyFrames(); }
+
 vector<Sophus::SE3f> System::GetAllKeyframePoses() {
   vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
@@ -1397,6 +1401,8 @@ void System::InsertTrackTime(double& time) { mpTracker->vdTrackTotal_ms.push_bac
 
 vector<unsigned char> System::GetSerializedCurrentMap() { return mpAtlas->SerializeMap(mpAtlas->GetCurrentMap()); }
 
+vector<unsigned char> System::SerializeMap(Map* map) { return mpAtlas->SerializeMap(map); }
+
 void System::AddSerializedMap(vector<unsigned char> serialized_map) {
   mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
   mpAtlas->SetORBVocabulary(mpVocabulary);
@@ -1411,6 +1417,16 @@ void System::AddSerializedMap(vector<unsigned char> serialized_map) {
     mpLoopCloser->InsertKeyFrame(pKF);
   }
 }
+
+bool System::DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid) {
+  return mpKeyFrameDatabase->DetectMergePossibility(bowVector, uuid, mpAtlas->GetCurrentMap());
+}
+
+Atlas* System::GetAtlas() { return mpAtlas; }
+
+ORBVocabulary* System::GetORBVocabulary() { return mpVocabulary; }
+
+unsigned int System::GetAgentId() { return agentId; }
 
 void System::SaveAtlas(int type) {
   if (!mStrSaveAtlasToFile.empty()) {
