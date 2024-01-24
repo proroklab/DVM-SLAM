@@ -91,7 +91,7 @@ KeyFrame::KeyFrame()
   , mnNumberOfOpt(0)
   , mbHasVelocity(false) { }
 
-KeyFrame::KeyFrame(Frame& F, Map* pMap, KeyFrameDatabase* pKFDB)
+KeyFrame::KeyFrame(Frame& F, Map* pMap, KeyFrameDatabase* pKFDB, unsigned int creatorAgentId)
   : bImu(pMap->isImuInitialized())
   , mnFrameId(F.mnId)
   , mTimeStamp(F.mTimeStamp)
@@ -169,7 +169,8 @@ KeyFrame::KeyFrame(Frame& F, Map* pMap, KeyFrameDatabase* pKFDB)
   , NRight(F.Nright)
   , mTrl(F.GetRelativePoseTrl())
   , mnNumberOfOpt(0)
-  , mbHasVelocity(false) {
+  , mbHasVelocity(false)
+  , creatorAgentId(creatorAgentId) {
   mnId = nNextId++;
   uuid = boost::uuids::random_generator()();
 

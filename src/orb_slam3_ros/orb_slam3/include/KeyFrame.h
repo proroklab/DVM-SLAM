@@ -56,6 +56,7 @@ class KeyFrame {
   template <class Archive> void serialize(Archive& ar, const unsigned int version) {
     ar& mnId;
     ar& uuid.data;
+    ar& creatorAgentId;
     ar& const_cast<long unsigned int&>(mnFrameId);
     ar& const_cast<double&>(mTimeStamp);
     // Grid
@@ -194,7 +195,7 @@ class KeyFrame {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   KeyFrame();
-  KeyFrame(Frame& F, Map* pMap, KeyFrameDatabase* pKFDB);
+  KeyFrame(Frame& F, Map* pMap, KeyFrameDatabase* pKFDB, unsigned int creatorAgentId);
 
   // Pose functions
   void SetPose(const Sophus::SE3f& Tcw);
@@ -307,6 +308,7 @@ public:
   static long unsigned int nNextId;
   long unsigned int mnId;
   boost::uuids::uuid uuid;
+  unsigned int creatorAgentId;
   const long unsigned int mnFrameId;
 
   const double mTimeStamp;

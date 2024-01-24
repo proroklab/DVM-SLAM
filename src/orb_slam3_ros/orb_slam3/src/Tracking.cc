@@ -2136,7 +2136,7 @@ void Tracking::StereoInitialization() {
       mCurrentFrame.SetPose(Sophus::SE3f());
 
     // Create KeyFrame
-    KeyFrame* pKFini = new KeyFrame(mCurrentFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB);
+    KeyFrame* pKFini = new KeyFrame(mCurrentFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB, mpSystem->GetAgentId());
 
     // Insert KeyFrame in the map
     mpAtlas->AddKeyFrame(pKFini);
@@ -2278,8 +2278,8 @@ void Tracking::MonocularInitialization() {
 
 void Tracking::CreateInitialMapMonocular() {
   // Create KeyFrames
-  KeyFrame* pKFini = new KeyFrame(mInitialFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB);
-  KeyFrame* pKFcur = new KeyFrame(mCurrentFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB);
+  KeyFrame* pKFini = new KeyFrame(mInitialFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB, mpSystem->GetAgentId());
+  KeyFrame* pKFcur = new KeyFrame(mCurrentFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB, mpSystem->GetAgentId());
 
   if (mSensor == System::IMU_MONOCULAR)
     pKFini->mpImuPreintegrated = (IMU::Preintegrated*)(NULL);
@@ -2929,7 +2929,7 @@ void Tracking::CreateNewKeyFrame() {
   if (!mpLocalMapper->SetNotStop(true))
     return;
 
-  KeyFrame* pKF = new KeyFrame(mCurrentFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB);
+  KeyFrame* pKF = new KeyFrame(mCurrentFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB, mpSystem->GetAgentId());
 
   if (mpAtlas->isImuInitialized()) //  || mpLocalMapper->IsInitializing())
     pKF->bImu = true;
