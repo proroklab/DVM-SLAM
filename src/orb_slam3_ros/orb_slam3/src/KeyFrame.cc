@@ -857,6 +857,11 @@ void KeyFrame::UpdateMap(Map* pMap) {
 }
 
 void KeyFrame::PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP, set<GeometricCamera*>& spCam) {
+  unique_lock<mutex> lock(mMutexPose);
+  unique_lock<mutex> lock1(mMutexConnections);
+  unique_lock<mutex> lock2(mMutexFeatures);
+  unique_lock<mutex> lock3(mMutexMap);
+
   // Save the id of each MapPoint in this KF, there can be null pointer in the
   // vector
   mvBackupMapPointsId.clear();

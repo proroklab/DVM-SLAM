@@ -295,6 +295,8 @@ bool Atlas::isImuInitialized() {
 }
 
 vector<unsigned char> Atlas::SerializeMap(Map* mapToSerialize) {
+  unique_lock<mutex> lock(mMutexAtlas);
+
   set<GeometricCamera*> spCams(mvpCameras.begin(), mvpCameras.end());
   mapToSerialize->PreSave(spCams);
   std::stringstream stream;
