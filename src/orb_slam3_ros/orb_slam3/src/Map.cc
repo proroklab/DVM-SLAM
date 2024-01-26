@@ -131,6 +131,27 @@ void Map::EraseKeyFrame(KeyFrame* pKF) {
       sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
       mpKFlowerID = vpKFs[0];
     }
+    if (pKF->mnId == mnMaxKFid) {
+      vector<KeyFrame*> vpKFs = vector<KeyFrame*>(mspKeyFrames.begin(), mspKeyFrames.end());
+      sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
+      reverse(vpKFs.begin(), vpKFs.end());
+      mnMaxKFid = vpKFs[0]->mnId;
+    }
+    if (pKF == mpKFinitial) {
+      // Arbritarily set inital KF as the KF with the lowest id??
+      // TODO: think about if this is ok and improve this code
+      vector<KeyFrame*> vpKFs = vector<KeyFrame*>(mspKeyFrames.begin(), mspKeyFrames.end());
+      sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
+      mpKFinitial = vpKFs[0];
+      mnInitKFid = vpKFs[0]->mnId;
+    }
+    // what even is mvpKeyFrameOrigins used for? who populates it??
+    // Is this necessary??
+    if (find(mvpKeyFrameOrigins.begin(), mvpKeyFrameOrigins.end(), pKF) != mvpKeyFrameOrigins.end()) {
+      mvpKeyFrameOrigins.erase(
+        remove(mvpKeyFrameOrigins.begin(), mvpKeyFrameOrigins.end(), pKF), mvpKeyFrameOrigins.end());
+      // TODO: replace with something?
+    }
   }
   else {
     mpKFlowerID = 0;
@@ -340,6 +361,8 @@ void Map::PreSave(std::set<GeometricCamera*>& spCams) {
     }
   }
 
+  unique_lock<mutex> lock(mMutexMap);
+
   // Saves the id of KF origins
   mvBackupKeyFrameOriginsId.clear();
   mvBackupKeyFrameOriginsId.reserve(mvpKeyFrameOrigins.size());
@@ -385,6 +408,8 @@ void Map::PreSave(std::set<GeometricCamera*>& spCams) {
 void Map::PostLoad(KeyFrameDatabase* pKFDB,
   ORBVocabulary* pORBVoc /*, map<long unsigned int, KeyFrame*>& mpKeyFrameId*/,
   map<unsigned int, GeometricCamera*>& mpCams) {
+  unique_lock<mutex> lock(mMutexMap);
+
   std::copy(mvpBackupMapPoints.begin(), mvpBackupMapPoints.end(), std::inserter(mspMapPoints, mspMapPoints.begin()));
   std::copy(mvpBackupKeyFrames.begin(), mvpBackupKeyFrames.end(), std::inserter(mspKeyFrames, mspKeyFrames.begin()));
 
