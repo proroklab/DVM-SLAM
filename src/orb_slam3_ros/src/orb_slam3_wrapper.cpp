@@ -8,6 +8,8 @@
 #include <interfaces/msg/detail/new_key_frames__struct.hpp>
 #include <interfaces/msg/detail/uuid__struct.hpp>
 #include <interfaces/srv/detail/request_map__struct.hpp>
+#include <mutex>
+#include <shared_mutex>
 
 using namespace std;
 
@@ -67,11 +69,14 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
 
 void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
   std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
+  unique_lock<mutex> lock(mutexWrapper);
+
   response->serialized_map = pSLAM->GetSerializedCurrentMap();
 }
 
 void OrbSlam3Wrapper::handleAddMapRequest(const std::shared_ptr<interfaces::srv::AddMap::Request> request,
   std::shared_ptr<interfaces::srv::AddMap::Response> response) {
+  unique_lock<mutex> lock(mutexWrapper);
 
   RCLCPP_INFO(this->get_logger(), "Received serialized map. Size: %d", request->serialized_map.size());
 
@@ -80,6 +85,7 @@ void OrbSlam3Wrapper::handleAddMapRequest(const std::shared_ptr<interfaces::srv:
 
 void OrbSlam3Wrapper::handleRequestMapRequest(const std::shared_ptr<interfaces::srv::RequestMap::Request> request,
   std::shared_ptr<interfaces::srv::RequestMap::Response> response) {
+  unique_lock<mutex> lock(mutexWrapper);
 
   cout << "Handeling Request Map Request" << endl;
 
@@ -132,6 +138,8 @@ void OrbSlam3Wrapper::handleRequestMapRequest(const std::shared_ptr<interfaces::
 }
 
 void OrbSlam3Wrapper::shareNewKeyFrames() {
+  unique_lock<mutex> lock(mutexWrapper);
+
   keyFrames = pSLAM->GetAllKeyFrames();
 
   // Send new key frames to all peers
@@ -180,6 +188,8 @@ void OrbSlam3Wrapper::shareNewKeyFrames() {
 }
 
 void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::SharedPtr msg) {
+  unique_lock<mutex> lock(mutexWrapper);
+
   vector<interfaces::msg::KeyFrameBowVector> newKeyFramesBowVectors = msg->key_frame_bow_vectors;
   cout << "received new key frame bow vectors";
 
@@ -219,6 +229,8 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
 }
 
 void OrbSlam3Wrapper::handleRequestMapResponse(rclcpp::Client<interfaces::srv::RequestMap>::SharedFuture future) {
+  unique_lock<mutex> lock(mutexWrapper);
+
   interfaces::srv::RequestMap::Response::SharedPtr response = future.get();
 
   RCLCPP_INFO(this->get_logger(), "Handling request map response. Received serialized map. Size: %d",

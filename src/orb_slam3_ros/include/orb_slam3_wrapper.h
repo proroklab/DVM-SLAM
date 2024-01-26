@@ -46,6 +46,8 @@ protected:
 
   image_transport::ImageTransport image_transport;
 
+  std::mutex mutexWrapper;
+
   // ROS publishers
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr tracked_mappoints_pub;
