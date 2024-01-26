@@ -3391,7 +3391,9 @@ void Optimizer::LocalBundleAdjustment(
     // SET EDGES
     for (map<KeyFrame*, tuple<int, int>>::const_iterator mit = observations.begin(); mit != observations.end(); mit++) {
       KeyFrame* pKF = mit->first;
-      if (pKF->isBad() || pKF->mnId > maxKFid || pKF->mnBALocalForMerge != pMainKF->mnId
+      if (pKF->isBad() || pKF->mnId > maxKFid
+        || (find(vpFixedKF.begin(), vpFixedKF.end(), pKF) == vpFixedKF.end()
+          && find(vpAdjustKF.begin(), vpAdjustKF.end(), pKF) == vpAdjustKF.end())
         || !pKF->GetMapPoint(get<0>(mit->second)))
         continue;
 
