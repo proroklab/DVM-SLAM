@@ -11,6 +11,8 @@
 #include <mutex>
 #include <shared_mutex>
 
+#define MIN_MAP_SHARE_SIZE 5
+
 using namespace std;
 
 OrbSlam3Wrapper::OrbSlam3Wrapper(
@@ -147,8 +149,6 @@ void OrbSlam3Wrapper::shareNewKeyFrames() {
     set<boost::uuids::uuid> newKeyFrameUuids;
     vector<interfaces::msg::KeyFrameBowVector> keyFrameBowVectorMsgs;
 
-    cout << "sent new key frame bows: ";
-
     for (ORB_SLAM3::KeyFrame* keyFrame : keyFrames) {
       if (keyFrame->creatorAgentId == agentId && sentKeyFrameUuids[connectedAgentId].count(keyFrame->uuid) == 0) {
         interfaces::msg::KeyFrameBowVector keyFrameBowVectorMsg;
@@ -174,16 +174,17 @@ void OrbSlam3Wrapper::shareNewKeyFrames() {
       }
     }
 
-    cout << endl;
+    if (keyFrameBowVectorMsgs.size() > MIN_MAP_SHARE_SIZE) {
+      // Send new keyframes message to agent
+      cout << "sent new key frame bows" << endl;
+      interfaces::msg::NewKeyFrames msg;
+      msg.key_frame_bow_vectors = keyFrameBowVectorMsgs;
+      msg.sender_agent_id = agentId;
+      newKeyFramesPubs[connectedAgentId]->publish(msg);
 
-    // Send new keyframes message to agent
-    interfaces::msg::NewKeyFrames msg;
-    msg.key_frame_bow_vectors = keyFrameBowVectorMsgs;
-    msg.sender_agent_id = agentId;
-    newKeyFramesPubs[connectedAgentId]->publish(msg);
-
-    // Add to sent key frames map
-    sentKeyFrameUuids[connectedAgentId].insert(newKeyFrameUuids.begin(), newKeyFrameUuids.end());
+      // Add to sent key frames map
+      sentKeyFrameUuids[connectedAgentId].insert(newKeyFrameUuids.begin(), newKeyFrameUuids.end());
+    }
   }
 }
 
