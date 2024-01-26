@@ -613,8 +613,10 @@ void KeyFrame::SetErase() {
   }
 }
 
-void KeyFrame::SetBadFlag() {
-  {
+void KeyFrame::SetBadFlag(bool forceErase) {
+  // Force erase still erases the keyframe even if it si the initKF or marked as do not erase
+  // This is used for erasing keyframes before sending them to another agent
+  if (forceErase) {
     unique_lock<mutex> lock(mMutexConnections);
     if (mnId == mpMap->GetInitKFid()) {
       return;
@@ -693,8 +695,13 @@ void KeyFrame::SetBadFlag() {
     // If a children has no covisibility links with any parent candidate, assign
     // to the original parent of this KF
     if (!mspChildrens.empty()) {
-      for (set<KeyFrame*>::iterator sit = mspChildrens.begin(); sit != mspChildrens.end(); sit++) {
-        (*sit)->ChangeParent(mpParent);
+      if (mpParent) {
+        for (set<KeyFrame*>::iterator sit = mspChildrens.begin(); sit != mspChildrens.end(); sit++) {
+          if ((*sit) != mpParent)
+            (*sit)->ChangeParent(mpParent);
+        }
+      }
+      else { // If the KF has no parent, do nothing? idk. TODO: figure out what to do here
       }
     }
 

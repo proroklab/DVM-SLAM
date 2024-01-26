@@ -270,7 +270,7 @@ public:
   void SetErase();
 
   // Set/check bad flag
-  void SetBadFlag();
+  void SetBadFlag(bool forceErase = false);
   bool isBad();
 
   // Compute Scene Depth (q=2 median). Used in monocular.

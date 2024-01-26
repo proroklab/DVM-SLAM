@@ -130,7 +130,7 @@ void OrbSlam3Wrapper::handleRequestMapRequest(const std::shared_ptr<interfaces::
   }
   for (ORB_SLAM3::KeyFrame* keyFrame : targetMapCopy->GetAllKeyFrames()) {
     if (dontIncludeUuids.count(keyFrame->uuid) > 0) {
-      targetMapCopy->EraseKeyFrame(keyFrame);
+      keyFrame->SetBadFlag(true);
     }
   }
 
