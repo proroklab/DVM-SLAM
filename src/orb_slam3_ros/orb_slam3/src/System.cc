@@ -174,6 +174,8 @@ System::System(const string& strVocFile, const string& strSettingsFile, const eS
 
     loadedAtlas = true;
 
+    mpAtlas->SetAgentId(agentId);
+
     mpAtlas->CreateNewMap();
 
     // clock_t timeElapsed = clock() - start;
@@ -1410,10 +1412,10 @@ void System::AddSerializedMap(vector<unsigned char> serialized_map) {
 
   // Insert KFs from new map into loop closer queue to try merge with existing
   // maps
-  vector<KeyFrame*> currentMapKeyFrames = newMap->GetAllKeyFrames();
-  std::sort(currentMapKeyFrames.begin(), currentMapKeyFrames.end(),
+  vector<KeyFrame*> newMapKeyFrames = newMap->GetAllKeyFrames();
+  std::sort(newMapKeyFrames.begin(), newMapKeyFrames.end(),
     [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
-  for (KeyFrame* pKF : currentMapKeyFrames) {
+  for (KeyFrame* pKF : newMapKeyFrames) {
     mpLoopCloser->InsertKeyFrame(pKF);
   }
 }

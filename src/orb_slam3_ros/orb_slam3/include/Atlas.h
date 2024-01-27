@@ -76,6 +76,9 @@ public:
   Atlas(int initKFid); // When its initialization the first map is created
   ~Atlas();
 
+  void SetAgentId(unsigned int agentId);
+  unsigned int GetAgentId();
+
   void CreateNewMap();
   Map* CreateNewMap(vector<unsigned char> serializedMap);
   void ChangeMap(Map* pMap);
@@ -143,6 +146,8 @@ public:
   long unsigned int GetNumLivedMP();
 
 protected:
+  unsigned int agentId;
+
   std::set<Map*> mspMaps;
   std::set<Map*> mspBadMaps;
   // Its necessary change the container from set to vector because libboost 1.58

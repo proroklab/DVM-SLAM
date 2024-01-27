@@ -54,6 +54,10 @@ Atlas::~Atlas() {
   }
 }
 
+void Atlas::SetAgentId(unsigned int agentId) { this->agentId = agentId; }
+
+unsigned int Atlas::GetAgentId() { return agentId; }
+
 void Atlas::CreateNewMap() {
   unique_lock<mutex> lock(mMutexAtlas);
   cout << "Creation of new map with id: " << Map::nNextId << endl;
@@ -69,7 +73,7 @@ void Atlas::CreateNewMap() {
   }
   cout << "Creation of new map with last KF id: " << mnLastInitKFidMap << endl;
 
-  mpCurrentMap = new Map(mnLastInitKFidMap);
+  mpCurrentMap = new Map(mnLastInitKFidMap, agentId);
   mpCurrentMap->SetCurrentMap();
   mspMaps.insert(mpCurrentMap);
 }
@@ -95,7 +99,7 @@ Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
   }
   cout << "Creation of new map with init KF id: " << mnLastInitKFidMap << endl;
 
-  Map* newMap = new Map(mnLastInitKFidMap);
+  Map* newMap = new Map(mnLastInitKFidMap, agentId);
   ia >> newMap;
 
   mspMaps.insert(newMap);

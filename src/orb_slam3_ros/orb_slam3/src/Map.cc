@@ -31,6 +31,7 @@ long unsigned int Map::nNextId = 0;
 
 Map::Map()
   : mnMaxKFid(0)
+  , creatorAgentId(0)
   , mnBigChangeIdx(0)
   , mbImuInitialized(false)
   , mnMapChange(0)
@@ -47,9 +48,10 @@ Map::Map()
   mThumbnail = static_cast<GLubyte*>(NULL);
 }
 
-Map::Map(int initKFid)
+Map::Map(int initKFid, unsigned int creatorAgentId)
   : mnInitKFid(initKFid)
   , mnMaxKFid(initKFid)
+  , creatorAgentId(creatorAgentId)
   ,
   /*mnLastLoopKFid(initKFid),*/ mnBigChangeIdx(0)
   , mIsInUse(false)

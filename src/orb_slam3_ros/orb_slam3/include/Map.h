@@ -43,6 +43,7 @@ class Map {
 
   template <class Archive> void serialize(Archive& ar, const unsigned int version) {
     ar& mnId;
+    ar& creatorAgentId;
     ar& mnInitKFid;
     ar& mnMaxKFid;
     ar& mnBigChangeIdx;
@@ -68,7 +69,7 @@ class Map {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Map();
-  Map(int initKFid);
+  Map(int initKFid, unsigned int creatorAgentId);
   ~Map();
 
   void AddKeyFrame(KeyFrame* pKF);
@@ -155,6 +156,8 @@ public:
   // DEBUG: show KFs which are used in LBA
   std::set<long unsigned int> msOptKFs;
   std::set<long unsigned int> msFixedKFs;
+
+  unsigned int creatorAgentId;
 
 protected:
   long unsigned int mnId;
