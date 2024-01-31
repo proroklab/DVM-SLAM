@@ -208,8 +208,8 @@ void Tracking::TrackStats2File() {
   ofstream f;
   f.open("SessionInfo.txt");
   f << fixed;
-  f << "Number of KFs: " << mpAtlas->GetAllKeyFrames().size() << endl;
-  f << "Number of MPs: " << mpAtlas->GetAllMapPoints().size() << endl;
+  f << "Number of KFs: " << mpAtlas->GetCurrentMap()->GetAllKeyFrames().size() << endl;
+  f << "Number of MPs: " << mpAtlas->GetCurrentMap()->GetAllMapPoints().size() << endl;
 
   f << "OpenCV version: " << CV_VERSION << endl;
 
@@ -390,8 +390,8 @@ void Tracking::PrintTimeStats() {
   // Map complexity
   std::cout << "---------------------------" << std::endl;
   std::cout << std::endl << "Map complexity" << std::endl;
-  std::cout << "KFs in map: " << mpAtlas->GetAllKeyFrames().size() << std::endl;
-  std::cout << "MPs in map: " << mpAtlas->GetAllMapPoints().size() << std::endl;
+  std::cout << "KFs in map: " << mpAtlas->GetCurrentMap()->GetAllKeyFrames().size() << std::endl;
+  std::cout << "MPs in map: " << mpAtlas->GetCurrentMap()->GetAllMapPoints().size() << std::endl;
   f << "---------------------------" << std::endl;
   f << std::endl << "Map complexity" << std::endl;
   vector<Map*> vpMaps = mpAtlas->GetAllMaps();
@@ -2196,7 +2196,7 @@ void Tracking::StereoInitialization() {
     // mnLastRelocFrameId = mCurrentFrame.mnId;
 
     mvpLocalKeyFrames.push_back(pKFini);
-    mvpLocalMapPoints = mpAtlas->GetAllMapPoints();
+    mvpLocalMapPoints = mpAtlas->GetCurrentMap()->GetAllMapPoints();
     mpReferenceKF = pKFini;
     mCurrentFrame.mpReferenceKF = pKFini;
 
@@ -2378,12 +2378,12 @@ void Tracking::CreateInitialMapMonocular() {
 
   mvpLocalKeyFrames.push_back(pKFcur);
   mvpLocalKeyFrames.push_back(pKFini);
-  mvpLocalMapPoints = mpAtlas->GetAllMapPoints();
+  mvpLocalMapPoints = mpAtlas->GetCurrentMap()->GetAllMapPoints();
   mpReferenceKF = pKFcur;
   mCurrentFrame.mpReferenceKF = pKFcur;
 
   // Compute here initial velocity
-  vector<KeyFrame*> vKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vKFs = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
 
   Sophus::SE3f deltaT = vKFs.back()->GetPose() * vKFs.front()->GetPoseInverse();
   mbVelocity = false;

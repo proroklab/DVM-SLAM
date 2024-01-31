@@ -202,7 +202,7 @@ public:
 
   vector<unsigned char> GetSerializedCurrentMap();
   vector<unsigned char> SerializeMap(Map* map);
-  void AddSerializedMap(vector<unsigned char> serialized_map);
+  Map* AddSerializedMap(vector<unsigned char> serialized_map);
 
   bool DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid);
 
@@ -210,6 +210,8 @@ public:
   ORBVocabulary* GetORBVocabulary();
 
   unsigned int GetAgentId();
+
+  KeyFrameDatabase* GetKeyFrameDatabase();
 
 private:
   void SaveAtlas(int type);

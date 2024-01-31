@@ -555,7 +555,7 @@ void System::SaveTrajectoryTUM(const string& filename) {
     return;
   }
 
-  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -611,7 +611,7 @@ void System::SaveTrajectoryTUM(const string& filename) {
 void System::SaveKeyFrameTrajectoryTUM(const string& filename) {
   cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
 
-  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -1141,7 +1141,7 @@ endl; if(mSensor==MONOCULAR)
 endl; return;
     }
 
-    vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+    vector<KeyFrame*> vpKFs = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
     sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
 
     // Transform all keyframes so that the first keyframe is at the origin.
@@ -1200,7 +1200,7 @@ void System::SaveTrajectoryKITTI(const string& filename) {
     return;
   }
 
-  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   // Transform all keyframes so that the first keyframe is at the origin.
@@ -1321,10 +1321,10 @@ vector<MapPoint*> System::GetAllMapPoints() {
   return pActiveMap->GetAllMapPoints();
 }
 
-vector<KeyFrame*> System::GetAllKeyFrames() { return mpAtlas->GetAllKeyFrames(); }
+vector<KeyFrame*> System::GetAllKeyFrames() { return mpAtlas->GetCurrentMap()->GetAllKeyFrames(); }
 
 vector<Sophus::SE3f> System::GetAllKeyframePoses() {
-  vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+  vector<KeyFrame*> vpKFs = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
   sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
   vector<Sophus::SE3f> vKFposes;
@@ -1405,7 +1405,7 @@ vector<unsigned char> System::GetSerializedCurrentMap() { return mpAtlas->Serial
 
 vector<unsigned char> System::SerializeMap(Map* map) { return mpAtlas->SerializeMap(map); }
 
-void System::AddSerializedMap(vector<unsigned char> serialized_map) {
+Map* System::AddSerializedMap(vector<unsigned char> serialized_map) {
   mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
   mpAtlas->SetORBVocabulary(mpVocabulary);
   Map* newMap = mpAtlas->CreateNewMap(serialized_map);
@@ -1418,6 +1418,8 @@ void System::AddSerializedMap(vector<unsigned char> serialized_map) {
   for (KeyFrame* pKF : newMapKeyFrames) {
     mpLoopCloser->InsertKeyFrame(pKF);
   }
+
+  return newMap;
 }
 
 bool System::DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid) {
@@ -1429,6 +1431,8 @@ Atlas* System::GetAtlas() { return mpAtlas; }
 ORBVocabulary* System::GetORBVocabulary() { return mpVocabulary; }
 
 unsigned int System::GetAgentId() { return agentId; }
+
+KeyFrameDatabase* System::GetKeyFrameDatabase() { return mpKeyFrameDatabase; }
 
 void System::SaveAtlas(int type) {
   if (!mStrSaveAtlasToFile.empty()) {

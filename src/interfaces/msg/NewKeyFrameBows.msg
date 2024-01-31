@@ -1,0 +1,2 @@
+uint32 sender_agent_id
+KeyFrameBowVector[] key_frame_bow_vectors

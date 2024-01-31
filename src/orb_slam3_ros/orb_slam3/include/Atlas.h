@@ -81,6 +81,7 @@ public:
 
   void CreateNewMap();
   Map* CreateNewMap(vector<unsigned char> serializedMap);
+  Map* DeserializeMap(vector<unsigned char> serializedMap);
   void ChangeMap(Map* pMap);
 
   unsigned long int GetLastInitKFid();
@@ -105,9 +106,11 @@ public:
   long unsigned KeyFramesInMap();
 
   // Method for get data in current map
+  std::vector<MapPoint*> GetReferenceMapPoints();
+
+  // Method for get data in all maps
   std::vector<KeyFrame*> GetAllKeyFrames();
   std::vector<MapPoint*> GetAllMapPoints();
-  std::vector<MapPoint*> GetReferenceMapPoints();
 
   vector<Map*> GetAllMaps();
 

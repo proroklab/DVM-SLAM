@@ -20,6 +20,8 @@
  */
 
 #include "Atlas.h"
+#include "Frame.h"
+#include "MapPoint.h"
 #include "Viewer.h"
 
 #include "GeometricCamera.h"
@@ -79,14 +81,7 @@ void Atlas::CreateNewMap() {
 }
 
 Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
-  std::string serializedMapString(serializedMap.begin(), serializedMap.end());
-  std::istringstream stream(serializedMapString);
-  boost::archive::binary_iarchive ia(stream);
-
-  map<unsigned int, GeometricCamera*> mpCams;
-  for (GeometricCamera* pCam : mvpCameras) {
-    mpCams[pCam->GetId()] = pCam;
-  }
+  Map* newMap = DeserializeMap(serializedMap);
 
   unique_lock<mutex> lock(mMutexAtlas);
   cout << "Creation of new map from serialized data with id: " << Map::nNextId << endl;
@@ -99,13 +94,27 @@ Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
   }
   cout << "Creation of new map with init KF id: " << mnLastInitKFidMap << endl;
 
+  mspMaps.insert(newMap);
+
+  cout << "Successful creation of new map from serialized data with id: " << Map::nNextId << endl;
+
+  return newMap;
+}
+
+Map* Atlas::DeserializeMap(vector<unsigned char> serializedMap) {
+  std::string serializedMapString(serializedMap.begin(), serializedMap.end());
+  std::istringstream stream(serializedMapString);
+  boost::archive::binary_iarchive ia(stream);
+
+  map<unsigned int, GeometricCamera*> mpCams;
+  for (GeometricCamera* pCam : mvpCameras) {
+    mpCams[pCam->GetId()] = pCam;
+  }
+
   Map* newMap = new Map(mnLastInitKFidMap, agentId);
   ia >> newMap;
 
-  mspMaps.insert(newMap);
-  newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
-
-  cout << "Successful creation of new map from serialized data with id: " << Map::nNextId << endl;
+  newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams, GetAllKeyFrames(), GetAllMapPoints());
 
   return newMap;
 }
@@ -205,13 +214,23 @@ long unsigned Atlas::KeyFramesInMap() {
 }
 
 std::vector<KeyFrame*> Atlas::GetAllKeyFrames() {
-  unique_lock<mutex> lock(mMutexAtlas);
-  return mpCurrentMap->GetAllKeyFrames();
+  vector<KeyFrame*> allKeyFrames;
+  for (Map* map : GetAllMaps()) {
+    vector<KeyFrame*> allMapsKeyFrames = map->GetAllKeyFrames();
+    allKeyFrames.insert(allKeyFrames.end(), allMapsKeyFrames.begin(), allMapsKeyFrames.end());
+  }
+
+  return allKeyFrames;
 }
 
 std::vector<MapPoint*> Atlas::GetAllMapPoints() {
-  unique_lock<mutex> lock(mMutexAtlas);
-  return mpCurrentMap->GetAllMapPoints();
+  vector<MapPoint*> allMapPoints;
+  for (Map* map : GetAllMaps()) {
+    vector<MapPoint*> allMapsMapPoints = map->GetAllMapPoints();
+    allMapPoints.insert(allMapPoints.end(), allMapsMapPoints.begin(), allMapsMapPoints.end());
+  }
+
+  return allMapPoints;
 }
 
 std::vector<MapPoint*> Atlas::GetReferenceMapPoints() {

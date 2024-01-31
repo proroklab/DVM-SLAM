@@ -28,6 +28,9 @@
 
 #include "SerializationUtils.h"
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_serialize.hpp>
 #include <mutex>
 #include <opencv2/core/core.hpp>
 
@@ -46,6 +49,7 @@ class MapPoint {
   friend class boost::serialization::access;
   template <class Archive> void serialize(Archive& ar, const unsigned int version) {
     ar& mnId;
+    ar& uuid;
     ar& mnFirstKFid;
     ar& mnFirstFrame;
     ar& nObs;
@@ -84,15 +88,15 @@ class MapPoint {
     ar& boost::serialization::make_array(mNormalVector.data(), mNormalVector.size());
     // ar & BOOST_SERIALIZATION_NVP(mBackupObservationsId);
     // ar & mObservations;
-    ar& mBackupObservationsId1;
-    ar& mBackupObservationsId2;
+    ar& mBackupObservationsUuid1;
+    ar& mBackupObservationsUuid2;
     serializeMatrix(ar, mDescriptor, version);
-    ar& mBackupRefKFId;
+    ar& mBackupRefKFUuid;
     // ar & mnVisible;
     // ar & mnFound;
 
     ar& mbBad;
-    ar& mBackupReplacedId;
+    ar& mBackupReplacedUuid;
 
     ar& mfMinDistance;
     ar& mfMaxDistance;
@@ -118,7 +122,7 @@ public:
   int Observations();
 
   void AddObservation(KeyFrame* pKF, int idx);
-  void EraseObservation(KeyFrame* pKF);
+  void EraseObservation(KeyFrame* pKF, int minObservationsBeforeDeletion = 3);
 
   std::tuple<int, int> GetIndexInKeyFrame(KeyFrame* pKF);
   bool IsInKeyFrame(KeyFrame* pKF);
@@ -151,10 +155,11 @@ public:
   void PrintObservations();
 
   void PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP);
-  void PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsigned int, MapPoint*>& mpMPid);
+  void PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::uuids::uuid, MapPoint*>& mpMPid);
 
 public:
   long unsigned int mnId;
+  boost::uuids::uuid uuid;
   static long unsigned int nNextId;
   long int mnFirstKFid;
   long int mnFirstFrame;
@@ -206,8 +211,8 @@ protected:
   // Keyframes observing the point and associated index in keyframe
   std::map<KeyFrame*, std::tuple<int, int>> mObservations;
   // For save relation without pointer, this is necessary for save/load function
-  std::map<long unsigned int, int> mBackupObservationsId1;
-  std::map<long unsigned int, int> mBackupObservationsId2;
+  std::map<boost::uuids::uuid, int> mBackupObservationsUuid1;
+  std::map<boost::uuids::uuid, int> mBackupObservationsUuid2;
 
   // Mean viewing direction
   Eigen::Vector3f mNormalVector;
@@ -217,7 +222,7 @@ protected:
 
   // Reference KeyFrame
   KeyFrame* mpRefKF;
-  long unsigned int mBackupRefKFId;
+  boost::uuids::uuid mBackupRefKFUuid;
 
   // Tracking counters
   int mnVisible;
@@ -227,7 +232,7 @@ protected:
   bool mbBad;
   MapPoint* mpReplaced;
   // For save relation without pointer, this is necessary for save/load function
-  long long int mBackupReplacedId;
+  boost::uuids::uuid mBackupReplacedUuid;
 
   // Scale invariance distances
   float mfMinDistance;

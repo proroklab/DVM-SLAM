@@ -22,8 +22,11 @@
 #include "KeyFrame.h"
 #include "Converter.h"
 #include "ImuTypes.h"
+#include <boost/uuid/nil_generator.hpp>
 #include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
+#include <cstddef>
 #include <mutex>
 
 namespace ORB_SLAM3 {
@@ -616,7 +619,7 @@ void KeyFrame::SetErase() {
 void KeyFrame::SetBadFlag(bool forceErase) {
   // Force erase still erases the keyframe even if it si the initKF or marked as do not erase
   // This is used for erasing keyframes before sending them to another agent
-  if (forceErase) {
+  if (!forceErase) {
     unique_lock<mutex> lock(mMutexConnections);
     if (mnId == mpMap->GetInitKFid()) {
       return;
@@ -638,82 +641,85 @@ void KeyFrame::SetBadFlag(bool forceErase) {
     }
   }
 
-  {
-    unique_lock<mutex> lock(mMutexConnections);
-    unique_lock<mutex> lock1(mMutexFeatures);
+  RemoveFromSpanningTree();
 
-    mConnectedKeyFrameWeights.clear();
-    mvpOrderedConnectedKeyFrames.clear();
+  mbBad = true;
 
-    // Update Spanning Tree
-    set<KeyFrame*> sParentCandidates;
-    if (mpParent)
-      sParentCandidates.insert(mpParent);
+  mpMap->EraseKeyFrame(this);
+  mpKeyFrameDB->erase(this);
+}
 
-    // Assign at each iteration one children with a parent (the pair with
-    // highest covisibility weight) Include that children as new parent
-    // candidate for the rest
-    while (!mspChildrens.empty()) {
-      bool bContinue = false;
+void KeyFrame::RemoveFromSpanningTree() {
+  unique_lock<mutex> lock(mMutexConnections);
+  unique_lock<mutex> lock1(mMutexFeatures);
 
-      int max = -1;
-      KeyFrame* pC;
-      KeyFrame* pP;
+  mConnectedKeyFrameWeights.clear();
+  mvpOrderedConnectedKeyFrames.clear();
 
-      for (set<KeyFrame*>::iterator sit = mspChildrens.begin(), send = mspChildrens.end(); sit != send; sit++) {
-        KeyFrame* pKF = *sit;
-        if (pKF->isBad())
-          continue;
+  // Update Spanning Tree
+  set<KeyFrame*> sParentCandidates;
+  if (mpParent)
+    sParentCandidates.insert(mpParent);
 
-        // Check if a parent candidate is connected to the keyframe
-        vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();
-        for (size_t i = 0, iend = vpConnected.size(); i < iend; i++) {
-          for (set<KeyFrame*>::iterator spcit = sParentCandidates.begin(), spcend = sParentCandidates.end();
-               spcit != spcend; spcit++) {
-            if (vpConnected[i]->mnId == (*spcit)->mnId) {
-              int w = pKF->GetWeight(vpConnected[i]);
-              if (w > max) {
-                pC = pKF;
-                pP = vpConnected[i];
-                max = w;
-                bContinue = true;
-              }
+  // Assign at each iteration one children with a parent (the pair with
+  // highest covisibility weight) Include that children as new parent
+  // candidate for the rest
+  while (!mspChildrens.empty()) {
+    bool bContinue = false;
+
+    int max = -1;
+    KeyFrame* pC;
+    KeyFrame* pP;
+
+    for (set<KeyFrame*>::iterator sit = mspChildrens.begin(), send = mspChildrens.end(); sit != send; sit++) {
+      KeyFrame* pKF = *sit;
+      if (pKF->isBad())
+        continue;
+
+      // Check if a parent candidate is connected to the keyframe
+      vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();
+      for (size_t i = 0, iend = vpConnected.size(); i < iend; i++) {
+        for (set<KeyFrame*>::iterator spcit = sParentCandidates.begin(), spcend = sParentCandidates.end();
+             spcit != spcend; spcit++) {
+          if (vpConnected[i]->mnId == (*spcit)->mnId) {
+            int w = pKF->GetWeight(vpConnected[i]);
+            if (w > max) {
+              pC = pKF;
+              pP = vpConnected[i];
+              max = w;
+              bContinue = true;
             }
           }
         }
       }
-
-      if (bContinue) {
-        pC->ChangeParent(pP);
-        sParentCandidates.insert(pC);
-        mspChildrens.erase(pC);
-      }
-      else
-        break;
     }
 
-    // If a children has no covisibility links with any parent candidate, assign
-    // to the original parent of this KF
-    if (!mspChildrens.empty()) {
-      if (mpParent) {
-        for (set<KeyFrame*>::iterator sit = mspChildrens.begin(); sit != mspChildrens.end(); sit++) {
-          if ((*sit) != mpParent)
-            (*sit)->ChangeParent(mpParent);
-        }
-      }
-      else { // If the KF has no parent, do nothing? idk. TODO: figure out what to do here
-      }
+    if (bContinue) {
+      pC->ChangeParent(pP);
+      sParentCandidates.insert(pC);
+      mspChildrens.erase(pC);
     }
-
-    if (mpParent) {
-      mpParent->EraseChild(this);
-      mTcp = mTcw * mpParent->GetPoseInverse();
-    }
-    mbBad = true;
+    else
+      break;
   }
 
-  mpMap->EraseKeyFrame(this);
-  mpKeyFrameDB->erase(this);
+  // If a children has no covisibility links with any parent candidate, assign
+  // to the original parent of this KF
+  if (!mspChildrens.empty()) {
+    if (mpParent) {
+      for (set<KeyFrame*>::iterator sit = mspChildrens.begin(); sit != mspChildrens.end(); sit++) {
+        if ((*sit) != mpParent)
+          (*sit)->ChangeParent(mpParent);
+      }
+    }
+    else { // If the KF has no parent, do nothing? idk. TODO: figure out what to do here
+    }
+  }
+
+  if (mpParent) {
+    mpParent->EraseChild(this);
+    mTcp = mTcw * mpParent->GetPoseInverse();
+  }
 }
 
 bool KeyFrame::isBad() {
@@ -871,52 +877,48 @@ void KeyFrame::PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP, set<Geometric
 
   // Save the id of each MapPoint in this KF, there can be null pointer in the
   // vector
-  mvBackupMapPointsId.clear();
-  mvBackupMapPointsId.reserve(N);
+  mvBackupMapPointsUuid.clear();
+  mvBackupMapPointsUuid.reserve(N);
   for (int i = 0; i < N; ++i) {
 
-    if (mvpMapPoints[i] && spMP.find(mvpMapPoints[i]) != spMP.end()) // Checks if the element is not null
-      mvBackupMapPointsId.push_back(mvpMapPoints[i]->mnId);
+    if (mvpMapPoints[i]) // Checks if the element is not null
+      mvBackupMapPointsUuid.push_back(mvpMapPoints[i]->uuid);
     else // If the element is null his value is -1 because all the id are
          // positives
-      mvBackupMapPointsId.push_back(-1);
+      mvBackupMapPointsUuid.push_back(boost::uuids::nil_uuid());
   }
   // Save the id of each connected KF with it weight
-  mBackupConnectedKeyFrameIdWeights.clear();
+  mBackupConnectedKeyFrameUuidWeights.clear();
   for (std::map<KeyFrame*, int>::const_iterator it = mConnectedKeyFrameWeights.begin(),
                                                 end = mConnectedKeyFrameWeights.end();
        it != end; ++it) {
-    if (spKF.find(it->first) != spKF.end())
-      mBackupConnectedKeyFrameIdWeights[it->first->mnId] = it->second;
+    mBackupConnectedKeyFrameUuidWeights[it->first->uuid] = it->second;
   }
 
   // Save the parent id
-  mBackupParentId = -1;
-  if (mpParent && spKF.find(mpParent) != spKF.end())
-    mBackupParentId = mpParent->mnId;
+  mBackupParentUuid = boost::uuids::nil_uuid();
+  if (mpParent)
+    mBackupParentUuid = mpParent->uuid;
 
   // Save the id of the childrens KF
-  mvBackupChildrensId.clear();
-  mvBackupChildrensId.reserve(mspChildrens.size());
+  mvBackupChildrensUuid.clear();
+  mvBackupChildrensUuid.reserve(mspChildrens.size());
   for (KeyFrame* pKFi : mspChildrens) {
-    if (spKF.find(pKFi) != spKF.end())
-      mvBackupChildrensId.push_back(pKFi->mnId);
+    mvBackupChildrensUuid.push_back(pKFi->uuid);
   }
 
   // Save the id of the loop edge KF
-  mvBackupLoopEdgesId.clear();
-  mvBackupLoopEdgesId.reserve(mspLoopEdges.size());
+  mvBackupLoopEdgesUuid.clear();
+  mvBackupLoopEdgesUuid.reserve(mspLoopEdges.size());
   for (KeyFrame* pKFi : mspLoopEdges) {
-    if (spKF.find(pKFi) != spKF.end())
-      mvBackupLoopEdgesId.push_back(pKFi->mnId);
+    mvBackupLoopEdgesUuid.push_back(pKFi->uuid);
   }
 
   // Save the id of the merge edge KF
-  mvBackupMergeEdgesId.clear();
-  mvBackupMergeEdgesId.reserve(mspMergeEdges.size());
+  mvBackupMergeEdgesUuid.clear();
+  mvBackupMergeEdgesUuid.reserve(mspMergeEdges.size());
   for (KeyFrame* pKFi : mspMergeEdges) {
-    if (spKF.find(pKFi) != spKF.end())
-      mvBackupMergeEdgesId.push_back(pKFi->mnId);
+    mvBackupMergeEdgesUuid.push_back(pKFi->uuid);
   }
 
   // Camera data
@@ -929,19 +931,19 @@ void KeyFrame::PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP, set<Geometric
     mnBackupIdCamera2 = mpCamera2->GetId();
 
   // Inertial data
-  mBackupPrevKFId = -1;
-  if (mPrevKF && spKF.find(mPrevKF) != spKF.end())
-    mBackupPrevKFId = mPrevKF->mnId;
+  mBackupPrevKFUuid = boost::uuids::nil_uuid();
+  if (mPrevKF)
+    mBackupPrevKFUuid = mPrevKF->uuid;
 
-  mBackupNextKFId = -1;
-  if (mNextKF && spKF.find(mNextKF) != spKF.end())
-    mBackupNextKFId = mNextKF->mnId;
+  mBackupNextKFUuid = boost::uuids::nil_uuid();
+  if (mNextKF)
+    mBackupNextKFUuid = mNextKF->uuid;
 
   if (mpImuPreintegrated)
     mBackupImuPreintegrated.CopyFrom(mpImuPreintegrated);
 }
 
-void KeyFrame::PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsigned int, MapPoint*>& mpMPid,
+void KeyFrame::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::uuids::uuid, MapPoint*>& mpMPid,
   map<unsigned int, GeometricCamera*>& mpCamId) {
   // Rebuild the empty variables
 
@@ -955,42 +957,43 @@ void KeyFrame::PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsi
   mvpMapPoints.clear();
   mvpMapPoints.resize(N);
   for (int i = 0; i < N; ++i) {
-    if (mvBackupMapPointsId[i] != -1)
-      mvpMapPoints[i] = mpMPid[mvBackupMapPointsId[i]];
+    if (mvBackupMapPointsUuid[i] != boost::uuids::nil_uuid())
+      mvpMapPoints[i] = mpMPid[mvBackupMapPointsUuid[i]];
     else
       mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
   }
 
   // Conected KeyFrames with him weight
   mConnectedKeyFrameWeights.clear();
-  for (map<long unsigned int, int>::const_iterator it = mBackupConnectedKeyFrameIdWeights.begin(),
-                                                   end = mBackupConnectedKeyFrameIdWeights.end();
+  for (map<boost::uuids::uuid, int>::const_iterator it = mBackupConnectedKeyFrameUuidWeights.begin(),
+                                                    end = mBackupConnectedKeyFrameUuidWeights.end();
        it != end; ++it) {
     KeyFrame* pKFi = mpKFid[it->first];
     mConnectedKeyFrameWeights[pKFi] = it->second;
   }
 
   // Restore parent KeyFrame
-  if (mBackupParentId >= 0)
-    mpParent = mpKFid[mBackupParentId];
+  if (mBackupParentUuid != boost::uuids::nil_uuid())
+    mpParent = mpKFid[mBackupParentUuid];
 
   // KeyFrame childrens
   mspChildrens.clear();
-  for (vector<long unsigned int>::const_iterator it = mvBackupChildrensId.begin(), end = mvBackupChildrensId.end();
+  for (vector<boost::uuids::uuid>::const_iterator it = mvBackupChildrensUuid.begin(), end = mvBackupChildrensUuid.end();
        it != end; ++it) {
     mspChildrens.insert(mpKFid[*it]);
   }
 
   // Loop edge KeyFrame
   mspLoopEdges.clear();
-  for (vector<long unsigned int>::const_iterator it = mvBackupLoopEdgesId.begin(), end = mvBackupLoopEdgesId.end();
+  for (vector<boost::uuids::uuid>::const_iterator it = mvBackupLoopEdgesUuid.begin(), end = mvBackupLoopEdgesUuid.end();
        it != end; ++it) {
     mspLoopEdges.insert(mpKFid[*it]);
   }
 
   // Merge edge KeyFrame
   mspMergeEdges.clear();
-  for (vector<long unsigned int>::const_iterator it = mvBackupMergeEdgesId.begin(), end = mvBackupMergeEdgesId.end();
+  for (vector<boost::uuids::uuid>::const_iterator it = mvBackupMergeEdgesUuid.begin(),
+                                                  end = mvBackupMergeEdgesUuid.end();
        it != end; ++it) {
     mspMergeEdges.insert(mpKFid[*it]);
   }
@@ -1007,19 +1010,19 @@ void KeyFrame::PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsi
   }
 
   // Inertial data
-  if (mBackupPrevKFId != -1) {
-    mPrevKF = mpKFid[mBackupPrevKFId];
+  if (mBackupPrevKFUuid != boost::uuids::nil_uuid()) {
+    mPrevKF = mpKFid[mBackupPrevKFUuid];
   }
-  if (mBackupNextKFId != -1) {
-    mNextKF = mpKFid[mBackupNextKFId];
+  if (mBackupNextKFUuid != boost::uuids::nil_uuid()) {
+    mNextKF = mpKFid[mBackupNextKFUuid];
   }
   mpImuPreintegrated = &mBackupImuPreintegrated;
 
   // Remove all backup container
-  mvBackupMapPointsId.clear();
-  mBackupConnectedKeyFrameIdWeights.clear();
-  mvBackupChildrensId.clear();
-  mvBackupLoopEdgesId.clear();
+  mvBackupMapPointsUuid.clear();
+  mBackupConnectedKeyFrameUuidWeights.clear();
+  mvBackupChildrensUuid.clear();
+  mvBackupLoopEdgesUuid.clear();
 
   UpdateBestCovisibles();
 }

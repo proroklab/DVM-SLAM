@@ -13,9 +13,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Uuid.msg"
   "msg/KeyFrameBowVector.msg"
   "msg/NewKeyFrames.msg"
+  "msg/NewKeyFrameBows.msg"
+  "msg/SuccessfullyMerged.msg"
   "srv/GetCurrentMap.srv"
   "srv/AddMap.srv"
-  "srv/RequestMap.srv"
 )
 
 if(BUILD_TESTING)

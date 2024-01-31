@@ -22,6 +22,9 @@
 #include "MapPoint.h"
 #include "ORBmatcher.h"
 
+#include <boost/uuid/nil_generator.hpp>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <mutex>
 
 namespace ORB_SLAM3 {
@@ -80,6 +83,8 @@ MapPoint::MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap)
   // conflicts with id.
   unique_lock<mutex> lock(mpMap->mMutexPointCreation);
   mnId = nNextId++;
+
+  uuid = boost::uuids::random_generator()();
 }
 
 MapPoint::MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF, KeyFrame* pHostKF, Map* pMap)
@@ -115,6 +120,8 @@ MapPoint::MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF,
   // conflicts with id.
   unique_lock<mutex> lock(mpMap->mMutexPointCreation);
   mnId = nNextId++;
+
+  uuid = boost::uuids::random_generator()();
 }
 
 MapPoint::MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF)
@@ -169,6 +176,8 @@ MapPoint::MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const i
   // conflicts with id.
   unique_lock<mutex> lock(mpMap->mMutexPointCreation);
   mnId = nNextId++;
+
+  uuid = boost::uuids::random_generator()();
 }
 
 void MapPoint::SetWorldPos(const Eigen::Vector3f& Pos) {
@@ -218,7 +227,7 @@ void MapPoint::AddObservation(KeyFrame* pKF, int idx) {
     nObs++;
 }
 
-void MapPoint::EraseObservation(KeyFrame* pKF) {
+void MapPoint::EraseObservation(KeyFrame* pKF, int minObservationsBeforeDeletion) {
   bool bBad = false;
   {
     unique_lock<mutex> lock(mMutexFeatures);
@@ -241,8 +250,8 @@ void MapPoint::EraseObservation(KeyFrame* pKF) {
       if (mpRefKF == pKF)
         mpRefKF = mObservations.begin()->first;
 
-      // If only 2 observations or less, discard point
-      if (nObs <= 2)
+      // If number of observations is less than minObservationsBeforeDeletion, discard point
+      if (nObs < minObservationsBeforeDeletion)
         bBad = true;
     }
   }
@@ -590,12 +599,12 @@ void MapPoint::UpdateMap(Map* pMap) {
 }
 
 void MapPoint::PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP) {
-  mBackupReplacedId = -1;
-  if (mpReplaced && spMP.find(mpReplaced) != spMP.end())
-    mBackupReplacedId = mpReplaced->mnId;
+  mBackupReplacedUuid = boost::uuids::nil_uuid();
+  if (mpReplaced)
+    mBackupReplacedUuid = mpReplaced->uuid;
 
-  mBackupObservationsId1.clear();
-  mBackupObservationsId2.clear();
+  mBackupObservationsUuid1.clear();
+  mBackupObservationsUuid2.clear();
   // Save the id and position in each KF who view it
   std::map<KeyFrame*, std::tuple<int, int>> tmp_mObservations;
   tmp_mObservations.insert(mObservations.begin(), mObservations.end());
@@ -604,48 +613,41 @@ void MapPoint::PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP) {
                                                                  end = tmp_mObservations.end();
        it != end; ++it) {
     KeyFrame* pKFi = it->first;
-    if (spKF.find(pKFi) != spKF.end()) {
-      mBackupObservationsId1[it->first->mnId] = get<0>(it->second);
-      mBackupObservationsId2[it->first->mnId] = get<1>(it->second);
-    }
-    else {
-      EraseObservation(pKFi);
-    }
+    mBackupObservationsUuid1[it->first->uuid] = get<0>(it->second);
+    mBackupObservationsUuid2[it->first->uuid] = get<1>(it->second);
   }
 
   // Save the id of the reference KF
-  if (spKF.find(mpRefKF) != spKF.end()) {
-    mBackupRefKFId = mpRefKF->mnId;
-  }
+  mBackupRefKFUuid = mpRefKF->uuid;
 }
 
-void MapPoint::PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsigned int, MapPoint*>& mpMPid) {
-  mpRefKF = mpKFid[mBackupRefKFId];
+void MapPoint::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::uuids::uuid, MapPoint*>& mpMPid) {
+  mpRefKF = mpKFid[mBackupRefKFUuid];
   if (!mpRefKF) {
-    cout << "ERROR: MP without KF reference " << mBackupRefKFId << "; Num obs: " << nObs << endl;
+    cout << "ERROR: MP without KF reference " << mBackupRefKFUuid << "; Num obs: " << nObs << endl;
   }
   mpReplaced = static_cast<MapPoint*>(NULL);
-  if (mBackupReplacedId >= 0) {
-    map<long unsigned int, MapPoint*>::iterator it = mpMPid.find(mBackupReplacedId);
+  if (mBackupReplacedUuid != boost::uuids::nil_uuid()) {
+    map<boost::uuids::uuid, MapPoint*>::iterator it = mpMPid.find(mBackupReplacedUuid);
     if (it != mpMPid.end())
       mpReplaced = it->second;
   }
 
   mObservations.clear();
 
-  for (map<long unsigned int, int>::const_iterator it = mBackupObservationsId1.begin(),
-                                                   end = mBackupObservationsId1.end();
+  for (map<boost::uuids::uuid, int>::const_iterator it = mBackupObservationsUuid1.begin(),
+                                                    end = mBackupObservationsUuid1.end();
        it != end; ++it) {
     KeyFrame* pKFi = mpKFid[it->first];
-    map<long unsigned int, int>::const_iterator it2 = mBackupObservationsId2.find(it->first);
+    map<boost::uuids::uuid, int>::const_iterator it2 = mBackupObservationsUuid2.find(it->first);
     std::tuple<int, int> indexes = tuple<int, int>(it->second, it2->second);
     if (pKFi) {
       mObservations[pKFi] = indexes;
     }
   }
 
-  mBackupObservationsId1.clear();
-  mBackupObservationsId2.clear();
+  mBackupObservationsUuid1.clear();
+  mBackupObservationsUuid2.clear();
 }
 
 } // namespace ORB_SLAM3

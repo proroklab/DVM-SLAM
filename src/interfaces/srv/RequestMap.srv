@@ -1,4 +1,0 @@
-byte[16] target_key_frame_uuid # Get map containing this keyframe
-Uuid[] dont_include_uuids # Dont include keyframes with these uuids
----
-byte[] serialized_map

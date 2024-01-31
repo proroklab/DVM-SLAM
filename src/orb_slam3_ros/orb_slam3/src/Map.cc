@@ -23,6 +23,8 @@
 #include "KeyFrame.h"
 #include "MapPoint.h"
 
+#include <boost/uuid/nil_generator.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <mutex>
 
 namespace ORB_SLAM3 {
@@ -117,7 +119,7 @@ bool Map::isImuInitialized() {
 }
 
 void Map::EraseMapPoint(MapPoint* pMP) {
-  unique_lock<mutex> lock(mMutexMap);
+  // unique_lock<mutex> lock(mMutexMap);
   mspMapPoints.erase(pMP);
 
   // TODO: This only erase the pointer.
@@ -366,10 +368,10 @@ void Map::PreSave(std::set<GeometricCamera*>& spCams) {
   unique_lock<mutex> lock(mMutexMap);
 
   // Saves the id of KF origins
-  mvBackupKeyFrameOriginsId.clear();
-  mvBackupKeyFrameOriginsId.reserve(mvpKeyFrameOrigins.size());
+  mvBackupKeyFrameOriginsUuid.clear();
+  mvBackupKeyFrameOriginsUuid.reserve(mvpKeyFrameOrigins.size());
   for (int i = 0, numEl = mvpKeyFrameOrigins.size(); i < numEl; ++i) {
-    mvBackupKeyFrameOriginsId.push_back(mvpKeyFrameOrigins[i]->mnId);
+    mvBackupKeyFrameOriginsUuid.push_back(mvpKeyFrameOrigins[i]->uuid);
   }
 
   // Backup of MapPoints
@@ -396,35 +398,56 @@ void Map::PreSave(std::set<GeometricCamera*>& spCams) {
     pKFi->PreSave(mspKeyFrames, mspMapPoints, spCams);
   }
 
-  mnBackupKFinitialID = -1;
+  mnBackupKFinitialUuiD = boost::uuids::nil_uuid();
   if (mpKFinitial) {
-    mnBackupKFinitialID = mpKFinitial->mnId;
+    mnBackupKFinitialUuiD = mpKFinitial->uuid;
   }
 
-  mnBackupKFlowerID = -1;
+  mnBackupKFlowerUuiD = boost::uuids::nil_uuid();
   if (mpKFlowerID) {
-    mnBackupKFlowerID = mpKFlowerID->mnId;
+    mnBackupKFlowerUuiD = mpKFlowerID->uuid;
   }
 }
 
 void Map::PostLoad(KeyFrameDatabase* pKFDB,
   ORBVocabulary* pORBVoc /*, map<long unsigned int, KeyFrame*>& mpKeyFrameId*/,
-  map<unsigned int, GeometricCamera*>& mpCams) {
+  map<unsigned int, GeometricCamera*>& mpCams, vector<KeyFrame*> existingKeyFrames,
+  vector<MapPoint*> existingMapPoints) {
   unique_lock<mutex> lock(mMutexMap);
 
-  std::copy(mvpBackupMapPoints.begin(), mvpBackupMapPoints.end(), std::inserter(mspMapPoints, mspMapPoints.begin()));
-  std::copy(mvpBackupKeyFrames.begin(), mvpBackupKeyFrames.end(), std::inserter(mspKeyFrames, mspKeyFrames.begin()));
-
-  map<long unsigned int, MapPoint*> mpMapPointId;
-  for (MapPoint* pMPi : mspMapPoints) {
-    if (!pMPi || pMPi->isBad())
+  // Add all uuid->keyframe and uuid->mappoint pairs to mpKeyFrameUuid and mpMapPointUuid so we can connect to them
+  map<boost::uuids::uuid, KeyFrame*> mpKeyFrameUuid;
+  for (KeyFrame* keyFrame : existingKeyFrames) {
+    if (!keyFrame || keyFrame->isBad())
       continue;
 
-    pMPi->UpdateMap(this);
-    mpMapPointId[pMPi->mnId] = pMPi;
+    mpKeyFrameUuid[keyFrame->uuid] = keyFrame;
+  }
+  map<boost::uuids::uuid, MapPoint*> mpMapPointUuid;
+  for (MapPoint* mapPoint : existingMapPoints) {
+    if (!mapPoint || mapPoint->isBad())
+      continue;
+
+    mpMapPointUuid[mapPoint->uuid] = mapPoint;
   }
 
-  map<long unsigned int, KeyFrame*> mpKeyFrameId;
+  std::copy(mvpBackupKeyFrames.begin(), mvpBackupKeyFrames.end(), std::inserter(mspKeyFrames, mspKeyFrames.begin()));
+
+  for (MapPoint* mapPoint : mvpBackupMapPoints) {
+    if (!mapPoint || mapPoint->isBad())
+      continue;
+
+    // If a mappoint already exists, use that instead of the deserialized one
+    if (mpMapPointUuid.count(mapPoint->uuid) != 0) {
+      mspMapPoints.insert(mpMapPointUuid[mapPoint->uuid]);
+    }
+    else {
+      mspMapPoints.insert(mapPoint);
+      mapPoint->UpdateMap(this);
+      mpMapPointUuid[mapPoint->uuid] = mapPoint;
+    }
+  }
+
   for (KeyFrame* pKFi : mspKeyFrames) {
     if (!pKFi || pKFi->isBad())
       continue;
@@ -432,7 +455,7 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB,
     pKFi->UpdateMap(this);
     pKFi->SetORBVocabulary(pORBVoc);
     pKFi->SetKeyFrameDatabase(pKFDB);
-    mpKeyFrameId[pKFi->mnId] = pKFi;
+    mpKeyFrameUuid[pKFi->uuid] = pKFi;
   }
 
   // Need to make ids consistant with the other already generated maps
@@ -449,29 +472,29 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB,
     if (!pMPi || pMPi->isBad())
       continue;
 
-    pMPi->PostLoad(mpKeyFrameId, mpMapPointId);
+    pMPi->PostLoad(mpKeyFrameUuid, mpMapPointUuid);
   }
 
   for (KeyFrame* pKFi : mspKeyFrames) {
     if (!pKFi || pKFi->isBad())
       continue;
 
-    pKFi->PostLoad(mpKeyFrameId, mpMapPointId, mpCams);
+    pKFi->PostLoad(mpKeyFrameUuid, mpMapPointUuid, mpCams);
     pKFDB->add(pKFi);
   }
 
-  if (mnBackupKFinitialID != -1) {
-    mpKFinitial = mpKeyFrameId[mnBackupKFinitialID];
+  if (mnBackupKFinitialUuiD != boost::uuids::nil_uuid()) {
+    mpKFinitial = mpKeyFrameUuid[mnBackupKFinitialUuiD];
   }
 
-  if (mnBackupKFlowerID != -1) {
-    mpKFlowerID = mpKeyFrameId[mnBackupKFlowerID];
+  if (mnBackupKFlowerUuiD != boost::uuids::nil_uuid()) {
+    mpKFlowerID = mpKeyFrameUuid[mnBackupKFlowerUuiD];
   }
 
   mvpKeyFrameOrigins.clear();
-  mvpKeyFrameOrigins.reserve(mvBackupKeyFrameOriginsId.size());
-  for (int i = 0; i < mvBackupKeyFrameOriginsId.size(); ++i) {
-    mvpKeyFrameOrigins.push_back(mpKeyFrameId[mvBackupKeyFrameOriginsId[i]]);
+  mvpKeyFrameOrigins.reserve(mvBackupKeyFrameOriginsUuid.size());
+  for (int i = 0; i < mvBackupKeyFrameOriginsUuid.size(); ++i) {
+    mvpKeyFrameOrigins.push_back(mpKeyFrameUuid[mvBackupKeyFrameOriginsUuid[i]]);
   }
 
   mvpBackupMapPoints.clear();

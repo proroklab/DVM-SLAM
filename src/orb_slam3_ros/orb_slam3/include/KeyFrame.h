@@ -39,6 +39,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_serialize.hpp>
 
 namespace ORB_SLAM3 {
@@ -55,7 +56,7 @@ class KeyFrame {
 
   template <class Archive> void serialize(Archive& ar, const unsigned int version) {
     ar& mnId;
-    ar& uuid.data;
+    ar& uuid;
     ar& creatorAgentId;
     ar& const_cast<long unsigned int&>(mnFrameId);
     ar& const_cast<double&>(mTimeStamp);
@@ -147,17 +148,17 @@ class KeyFrame {
     // Pose
     serializeSophusSE3<Archive>(ar, mTcw, version);
     // MapPointsId associated to keypoints
-    ar& mvBackupMapPointsId;
+    ar& mvBackupMapPointsUuid;
     // Grid
     ar& mGrid;
     // Connected KeyFrameWeight
-    ar& mBackupConnectedKeyFrameIdWeights;
+    ar& mBackupConnectedKeyFrameUuidWeights;
     // Spanning Tree and Loop Edges
     ar& mbFirstConnection;
-    ar& mBackupParentId;
-    ar& mvBackupChildrensId;
-    ar& mvBackupLoopEdgesId;
-    ar& mvBackupMergeEdgesId;
+    ar& mBackupParentUuid;
+    ar& mvBackupChildrensUuid;
+    ar& mvBackupLoopEdgesUuid;
+    ar& mvBackupMergeEdgesUuid;
     // Bad flags
     ar& mbNotErase;
     ar& mbToBeErased;
@@ -184,8 +185,8 @@ class KeyFrame {
     ar& mImuBias;
     ar& mBackupImuPreintegrated;
     ar& mImuCalib;
-    ar& mBackupPrevKFId;
-    ar& mBackupNextKFId;
+    ar& mBackupPrevKFUuid;
+    ar& mBackupNextKFUuid;
     ar& bImu;
     ar& boost::serialization::make_array(mVw.data(), mVw.size());
     ar& boost::serialization::make_array(mOwb.data(), mOwb.size());
@@ -273,6 +274,8 @@ public:
   void SetBadFlag(bool forceErase = false);
   bool isBad();
 
+  void RemoveFromSpanningTree();
+
   // Compute Scene Depth (q=2 median). Used in monocular.
   float ComputeSceneMedianDepth(const int q);
 
@@ -294,7 +297,7 @@ public:
   bool ProjectPointUnDistort(MapPoint* pMP, cv::Point2f& kp, float& u, float& v);
 
   void PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP, set<GeometricCamera*>& spCam);
-  void PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsigned int, MapPoint*>& mpMPid,
+  void PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::uuids::uuid, MapPoint*>& mpMPid,
     map<unsigned int, GeometricCamera*>& mpCamId);
 
   void SetORBVocabulary(ORBVocabulary* pORBVoc);
@@ -447,7 +450,7 @@ protected:
   // MapPoints associated to keypoints
   std::vector<MapPoint*> mvpMapPoints;
   // For save relation without pointer, this is necessary for save/load function
-  std::vector<long long int> mvBackupMapPointsId;
+  std::vector<boost::uuids::uuid> mvBackupMapPointsUuid;
 
   // BoW
   KeyFrameDatabase* mpKeyFrameDB;
@@ -460,7 +463,7 @@ protected:
   std::vector<KeyFrame*> mvpOrderedConnectedKeyFrames;
   std::vector<int> mvOrderedWeights;
   // For save relation without pointer, this is necessary for save/load function
-  std::map<long unsigned int, int> mBackupConnectedKeyFrameIdWeights;
+  std::map<boost::uuids::uuid, int> mBackupConnectedKeyFrameUuidWeights;
 
   // Spanning Tree and Loop Edges
   bool mbFirstConnection;
@@ -469,10 +472,10 @@ protected:
   std::set<KeyFrame*> mspLoopEdges;
   std::set<KeyFrame*> mspMergeEdges;
   // For save relation without pointer, this is necessary for save/load function
-  long long int mBackupParentId;
-  std::vector<long unsigned int> mvBackupChildrensId;
-  std::vector<long unsigned int> mvBackupLoopEdgesId;
-  std::vector<long unsigned int> mvBackupMergeEdgesId;
+  boost::uuids::uuid mBackupParentUuid;
+  std::vector<boost::uuids::uuid> mvBackupChildrensUuid;
+  std::vector<boost::uuids::uuid> mvBackupLoopEdgesUuid;
+  std::vector<boost::uuids::uuid> mvBackupMergeEdgesUuid;
 
   // Bad flags
   bool mbNotErase;
@@ -484,8 +487,8 @@ protected:
   Map* mpMap;
 
   // Backup variables for inertial
-  long long int mBackupPrevKFId;
-  long long int mBackupNextKFId;
+  boost::uuids::uuid mBackupPrevKFUuid;
+  boost::uuids::uuid mBackupNextKFUuid;
   IMU::Preintegrated mBackupImuPreintegrated;
 
   // Backup for Cameras

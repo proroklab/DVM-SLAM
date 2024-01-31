@@ -25,6 +25,7 @@
 #include "KeyFrame.h"
 #include "MapPoint.h"
 
+#include <boost/uuid/uuid.hpp>
 #include <mutex>
 #include <pangolin/pangolin.h>
 #include <set>
@@ -55,10 +56,10 @@ class Map {
     ar& mvpBackupKeyFrames;
     ar& mvpBackupMapPoints;
 
-    ar& mvBackupKeyFrameOriginsId;
+    ar& mvBackupKeyFrameOriginsUuid;
 
-    ar& mnBackupKFinitialID;
-    ar& mnBackupKFlowerID;
+    ar& mnBackupKFinitialUuiD;
+    ar& mnBackupKFlowerUuiD;
 
     ar& mbImuInitialized;
     ar& mbIsInertial;
@@ -131,13 +132,14 @@ public:
 
   void PreSave(std::set<GeometricCamera*>& spCams);
   void PostLoad(KeyFrameDatabase* pKFDB, ORBVocabulary* pORBVoc /*, map<long unsigned int, KeyFrame*>& mpKeyFrameId*/,
-    map<unsigned int, GeometricCamera*>& mpCams);
+    map<unsigned int, GeometricCamera*>& mpCams, vector<KeyFrame*> existingKeyFrames = vector<KeyFrame*>(),
+    vector<MapPoint*> existingMapPoints = vector<MapPoint*>());
 
   void printReprojectionError(
     list<KeyFrame*>& lpLocalWindowKFs, KeyFrame* mpCurrentKF, string& name, string& name_folder);
 
   vector<KeyFrame*> mvpKeyFrameOrigins;
-  vector<unsigned long int> mvBackupKeyFrameOriginsId;
+  vector<boost::uuids::uuid> mvBackupKeyFrameOriginsUuid;
   KeyFrame* mpFirstRegionKF;
   std::mutex mMutexMapUpdate;
 
@@ -173,8 +175,8 @@ protected:
   KeyFrame* mpKFinitial;
   KeyFrame* mpKFlowerID;
 
-  unsigned long int mnBackupKFinitialID;
-  unsigned long int mnBackupKFlowerID;
+  boost::uuids::uuid mnBackupKFinitialUuiD;
+  boost::uuids::uuid mnBackupKFlowerUuiD;
 
   std::vector<MapPoint*> mvpReferenceMapPoints;
 
