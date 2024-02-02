@@ -205,6 +205,8 @@ KeyFrame::KeyFrame(Frame& F, Map* pMap, KeyFrameDatabase* pKFDB, unsigned int cr
   SetPose(F.GetPose());
 
   mnOriginMapId = pMap->GetId();
+
+  pKFDB->add(this);
 }
 
 void KeyFrame::ComputeBoW() {
@@ -969,7 +971,8 @@ void KeyFrame::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::u
                                                     end = mBackupConnectedKeyFrameUuidWeights.end();
        it != end; ++it) {
     KeyFrame* pKFi = mpKFid[it->first];
-    mConnectedKeyFrameWeights[pKFi] = it->second;
+    if (pKFi)
+      mConnectedKeyFrameWeights[pKFi] = it->second;
   }
 
   // Restore parent KeyFrame
@@ -987,7 +990,8 @@ void KeyFrame::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::u
   mspLoopEdges.clear();
   for (vector<boost::uuids::uuid>::const_iterator it = mvBackupLoopEdgesUuid.begin(), end = mvBackupLoopEdgesUuid.end();
        it != end; ++it) {
-    mspLoopEdges.insert(mpKFid[*it]);
+    if (mpKFid[*it])
+      mspLoopEdges.insert(mpKFid[*it]);
   }
 
   // Merge edge KeyFrame
@@ -995,7 +999,8 @@ void KeyFrame::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::u
   for (vector<boost::uuids::uuid>::const_iterator it = mvBackupMergeEdgesUuid.begin(),
                                                   end = mvBackupMergeEdgesUuid.end();
        it != end; ++it) {
-    mspMergeEdges.insert(mpKFid[*it]);
+    if (mpKFid[*it])
+      mspMergeEdges.insert(mpKFid[*it]);
   }
 
   // Camera data

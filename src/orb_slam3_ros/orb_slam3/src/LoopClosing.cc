@@ -345,7 +345,6 @@ bool LoopClosing::NewDetectCommonRegions() {
   }
 
   if (mpLastMap->IsInertial() && !mpLastMap->GetIniertialBA2()) {
-    mpKeyFrameDB->add(mpCurrentKF);
     mpCurrentKF->SetErase();
     return false;
   }
@@ -354,7 +353,6 @@ bool LoopClosing::NewDetectCommonRegions() {
   {
     // cout << "LoopClousure: Stereo KF inserted without check: " <<
     // mpCurrentKF->mnId << endl;
-    mpKeyFrameDB->add(mpCurrentKF);
     mpCurrentKF->SetErase();
     return false;
   }
@@ -363,7 +361,6 @@ bool LoopClosing::NewDetectCommonRegions() {
     // cout << "LoopClousure: Stereo KF inserted without check, map is
     // small: "
     // << mpCurrentKF->mnId << endl;
-    mpKeyFrameDB->add(mpCurrentKF);
     mpCurrentKF->SetErase();
     return false;
   }
@@ -470,7 +467,9 @@ bool LoopClosing::NewDetectCommonRegions() {
 #ifdef REGISTER_TIMES
     vdEstSim3_ms.push_back(timeEstSim3);
 #endif
-    mpKeyFrameDB->add(mpCurrentKF);
+    if (mbMergeDetected && mpMergeMatchedKF->creatorAgentId != mpAtlas->GetAgentId()) {
+      cout << "merged external map successfully" << endl; // TODO: somehow send this back to the wrapper
+    }
     return true;
   }
 
@@ -519,9 +518,10 @@ bool LoopClosing::NewDetectCommonRegions() {
   vdEstSim3_ms.push_back(timeEstSim3);
 #endif
 
-  mpKeyFrameDB->add(mpCurrentKF);
-
   if (mbMergeDetected || mbLoopDetected) {
+    if (mbMergeDetected && mpMergeMatchedKF->creatorAgentId != mpAtlas->GetAgentId()) {
+      cout << "merged external map successfully" << endl; // TODO: somehow send this back to the wrapper
+    }
     return true;
   }
 

@@ -2566,7 +2566,7 @@ void Tracking::UpdateLastFrame() {
         x3D = mLastFrame.UnprojectStereoFishEye(i);
       }
 
-      MapPoint* pNewMP = new MapPoint(x3D, mpAtlas->GetCurrentMap(), &mLastFrame, i);
+      MapPoint* pNewMP = new MapPoint(x3D, mpAtlas->GetCurrentMap(), &mLastFrame, i, pRef);
       mLastFrame.mvpMapPoints[i] = pNewMP;
 
       mlpTemporalPoints.push_back(pNewMP);

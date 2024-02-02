@@ -43,6 +43,8 @@ void KeyFrameDatabase::add(KeyFrame* pKF) {
 
   for (DBoW2::BowVector::const_iterator vit = pKF->mBowVec.begin(), vend = pKF->mBowVec.end(); vit != vend; vit++)
     mvInvertedFile[vit->first].push_back(pKF);
+
+  uuidToKeyFrame[pKF->uuid] = pKF;
 }
 
 void KeyFrameDatabase::erase(KeyFrame* pKF) {
@@ -60,11 +62,17 @@ void KeyFrameDatabase::erase(KeyFrame* pKF) {
       }
     }
   }
+
+  auto it = uuidToKeyFrame.find(pKF->uuid);
+  if (it != uuidToKeyFrame.end()) {
+    uuidToKeyFrame.erase(it);
+  }
 }
 
 void KeyFrameDatabase::clear() {
   mvInvertedFile.clear();
   mvInvertedFile.resize(mpVoc->size());
+  uuidToKeyFrame.clear();
 }
 
 void KeyFrameDatabase::clearMap(Map* pMap) {
@@ -88,6 +96,13 @@ void KeyFrameDatabase::clearMap(Map* pMap) {
       }
     }
   }
+
+  for (KeyFrame* keyFrame : pMap->GetAllKeyFrames()) {
+    auto it = uuidToKeyFrame.find(keyFrame->uuid);
+    if (it != uuidToKeyFrame.end()) {
+      uuidToKeyFrame.erase(it);
+    }
+  }
 }
 
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore) {
@@ -109,7 +124,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
         {
           if (pKFi->mnLoopQuery != pKF->mnId) {
             pKFi->mnLoopWords = 0;
-            if (!spConnectedKeyFrames.count(pKFi)) {
+            if (!spConnectedKeyFrames.count(pKFi) && pKFi->mnId != pKF->mnId) {
               pKFi->mnLoopQuery = pKF->mnId;
               lKFsSharingWords.push_back(pKFi);
             }
@@ -224,7 +239,7 @@ void KeyFrameDatabase::DetectCandidates(
         {
           if (pKFi->mnLoopQuery != pKF->mnId) {
             pKFi->mnLoopWords = 0;
-            if (!spConnectedKeyFrames.count(pKFi)) {
+            if (!spConnectedKeyFrames.count(pKFi) && pKFi->mnId != pKF->mnId) {
               pKFi->mnLoopQuery = pKF->mnId;
               lKFsSharingWordsLoop.push_back(pKFi);
             }
@@ -234,7 +249,7 @@ void KeyFrameDatabase::DetectCandidates(
         else if (!pKFi->GetMap()->IsBad()) {
           if (pKFi->mnMergeQuery != pKF->mnId) {
             pKFi->mnMergeWords = 0;
-            if (!spConnectedKeyFrames.count(pKFi)) {
+            if (!spConnectedKeyFrames.count(pKFi) && pKFi->mnId != pKF->mnId) {
               pKFi->mnMergeQuery = pKF->mnId;
               lKFsSharingWordsMerge.push_back(pKFi);
             }
@@ -438,7 +453,7 @@ void KeyFrameDatabase::DetectBestCandidates(
         if (spConnectedKF.find(pKFi) != spConnectedKF.end()) {
           continue;
         }
-        if (pKFi->mnPlaceRecognitionQuery != pKF->mnId) {
+        if (pKFi->mnPlaceRecognitionQuery != pKF->mnId && pKFi->mnId != pKF->mnId) {
           pKFi->mnPlaceRecognitionWords = 0;
           pKFi->mnPlaceRecognitionQuery = pKF->mnId;
           lKFsSharingWords.push_back(pKFi);
@@ -668,10 +683,16 @@ void KeyFrameDatabase::CalculateMergeScore(
 
     for (DBoW2::BowVector::const_iterator vit = bowVector.begin(), vend = bowVector.end(); vit != vend; vit++) {
       list<KeyFrame*>& lKFs = mvInvertedFile[vit->first];
+      cout << "lKFs.size(): " << lKFs.size() << endl;
 
       for (list<KeyFrame*>::iterator lit = lKFs.begin(), lend = lKFs.end(); lit != lend; lit++) {
         KeyFrame* pKFi = *lit;
-        if (pKFi->GetMap() == map && pKFi->mnId != keyFrameId && !pKFi->isBad()) {
+        cout << (pKFi->GetMap() == map) << (pKFi->mnId != keyFrameId) << !pKFi->isBad()
+             << (boost::hash<boost::uuids::uuid>()(pKFi->uuid) != keyFrameId) << endl;
+        if (pKFi->GetMap() == map && pKFi->mnId != keyFrameId
+          && !pKFi->isBad()
+          // needed because of the hacky uuid->ulong conversion we use in DetectMergePossibility
+          && boost::hash<boost::uuids::uuid>()(pKFi->uuid) != keyFrameId) {
           if (pKFi->mnPlaceRecognitionQuery != keyFrameId) {
             pKFi->mnPlaceRecognitionWords = 0;
             pKFi->mPlaceRecognitionScore = 0;
@@ -683,6 +704,7 @@ void KeyFrameDatabase::CalculateMergeScore(
       }
     }
   }
+  cout << "lKFsSharingWords.size(): " << lKFsSharingWords.size() << endl;
   if (lKFsSharingWords.empty())
     return;
 
@@ -709,6 +731,13 @@ void KeyFrameDatabase::CalculateMergeScore(
       pKFi->mPlaceRecognitionScore = si;
       lScoreAndMatch.push_back(make_pair(si, pKFi));
     }
+  }
+
+  for (list<pair<float, KeyFrame*>>::iterator it = lScoreAndMatch.begin(), itend = lScoreAndMatch.end(); it != itend;
+       it++) // Loop through keyframes sharing words with target KF
+  {
+    KeyFrame* pKFi = it->second;
+    cout << "id: " << pKFi->mnId << " score: " << it->first << endl;
   }
 
   if (lScoreAndMatch.empty())
@@ -751,7 +780,8 @@ bool KeyFrameDatabase::DetectMergePossibility(DBoW2::BowVector bowVector, boost:
 
   float score = 0;
   KeyFrame* bestKeyFrame;
-  unsigned long keyFrameId = boost::hash<boost::uuids::uuid>()(uuid); // Hacky to convert uuid to ulong, but will work
+  unsigned long keyFrameId
+    = boost::hash<boost::uuids::uuid>()(uuid); // Hacky to convert uuid to ulong, but will work. only needs to be unique
   CalculateMergeScore(bowVector, keyFrameId, map, score, bestKeyFrame);
 
   if (score == 0)
@@ -877,5 +907,9 @@ void KeyFrameDatabase::SetORBVocabulary(ORBVocabulary* pORBVoc) {
   mvInvertedFile.clear();
   mvInvertedFile.resize(mpVoc->size());
 }
+
+KeyFrame* KeyFrameDatabase::ConvertUuidToKeyFrame(boost::uuids::uuid uuid) { return uuidToKeyFrame[uuid]; }
+
+map<boost::uuids::uuid, KeyFrame*> KeyFrameDatabase::GetUuidToKeyFrameMap() { return uuidToKeyFrame; }
 
 } // namespace ORB_SLAM3

@@ -78,6 +78,9 @@ public:
   // Relocalization
   std::vector<KeyFrame*> DetectRelocalizationCandidates(Frame* F, Map* pMap);
 
+  KeyFrame* ConvertUuidToKeyFrame(boost::uuids::uuid uuid);
+  map<boost::uuids::uuid, KeyFrame*> GetUuidToKeyFrameMap();
+
   void PreSave();
   void PostLoad(map<long unsigned int, KeyFrame*> mpKFid);
   void SetORBVocabulary(ORBVocabulary* pORBVoc);
@@ -88,6 +91,8 @@ protected:
 
   // Inverted file
   std::vector<list<KeyFrame*>> mvInvertedFile;
+
+  map<boost::uuids::uuid, KeyFrame*> uuidToKeyFrame;
 
   // For save relation without pointer, this is necessary for save/load function
   std::vector<list<long unsigned int>> mvBackupInvertedFileId;

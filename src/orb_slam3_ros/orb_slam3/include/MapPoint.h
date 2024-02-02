@@ -52,7 +52,6 @@ class MapPoint {
     ar& uuid;
     ar& mnFirstKFid;
     ar& mnFirstFrame;
-    ar& nObs;
     // Variables used by the tracking
     ar& mTrackProjX;
     ar& mTrackProjY;
@@ -108,7 +107,7 @@ public:
 
   MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap);
   MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF, KeyFrame* pHostKF, Map* pMap);
-  MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF);
+  MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF, KeyFrame* pRefKF);
 
   void SetWorldPos(const Eigen::Vector3f& Pos);
   Eigen::Vector3f GetWorldPos();

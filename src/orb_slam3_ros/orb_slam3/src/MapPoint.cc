@@ -124,7 +124,7 @@ MapPoint::MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF,
   uuid = boost::uuids::random_generator()();
 }
 
-MapPoint::MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF)
+MapPoint::MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF, KeyFrame* pRefKF)
   : mnFirstKFid(-1)
   , mnFirstFrame(pFrame->mnId)
   , nObs(0)
@@ -136,7 +136,7 @@ MapPoint::MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const i
   , mnCorrectedByKF(0)
   , mnCorrectedReference(0)
   , mnBAGlobalForKF(0)
-  , mpRefKF(static_cast<KeyFrame*>(NULL))
+  , mpRefKF(pRefKF)
   , mnVisible(1)
   , mnFound(1)
   , mbBad(false)
@@ -624,7 +624,8 @@ void MapPoint::PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP) {
 void MapPoint::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::uuids::uuid, MapPoint*>& mpMPid) {
   mpRefKF = mpKFid[mBackupRefKFUuid];
   if (!mpRefKF) {
-    cout << "ERROR: MP without KF reference " << mBackupRefKFUuid << "; Num obs: " << nObs << endl;
+    cout << "ERROR: MP without KF reference " << mBackupRefKFUuid << "; Num obs: " << mBackupObservationsUuid1.size()
+         << endl;
   }
   mpReplaced = static_cast<MapPoint*>(NULL);
   if (mBackupReplacedUuid != boost::uuids::nil_uuid()) {
@@ -643,6 +644,18 @@ void MapPoint::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::u
     std::tuple<int, int> indexes = tuple<int, int>(it->second, it2->second);
     if (pKFi) {
       mObservations[pKFi] = indexes;
+
+      // Update nObs
+      int leftIndex = get<0>(indexes), rightIndex = get<1>(indexes);
+      if (leftIndex != -1) {
+        if (!pKFi->mpCamera2 && pKFi->mvuRight[leftIndex] >= 0)
+          nObs += 2;
+        else
+          nObs++;
+      }
+      if (rightIndex != -1) {
+        nObs++;
+      }
     }
   }
 
