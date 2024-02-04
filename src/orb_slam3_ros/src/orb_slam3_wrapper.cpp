@@ -251,13 +251,7 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
 
   ORB_SLAM3::Map* currentMap = pSLAM->GetAtlas()->GetCurrentMap();
 
-  // Move keyframes to current map
-  for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
-    currentMap->AddKeyFrame(keyFrame);
-    keyFrame->UpdateMap(currentMap);
-  }
-
-  // Move map points to current map, while also deduplicating
+  // Move map points to current map
   for (ORB_SLAM3::MapPoint* mapPoint : newMap->GetAllMapPoints()) {
     if (mapPoint->isBad()) {
       continue;
@@ -265,6 +259,22 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
 
     currentMap->AddMapPoint(mapPoint);
     mapPoint->UpdateMap(currentMap);
+  }
+
+  // Move keyframes to current map
+  for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
+    currentMap->AddKeyFrame(keyFrame);
+    keyFrame->UpdateMap(currentMap);
+
+    pSLAM->GetLocalMapper()->InsertKeyFrame(keyFrame);
+    // // Run bundle adjustment for new KFs and a local window around them
+    // bool mbAbortBA = false; // no idea what this is used for
+    // int num_FixedKF_BA = 0;
+    // int num_OptKF_BA = 0;
+    // int num_MPs_BA = 0;
+    // int num_edges_BA = 0;
+    // ORB_SLAM3::Optimizer::LocalBundleAdjustment(
+    //   keyFrame, &mbAbortBA, currentMap, num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
   }
 
   // Update links in the Covisibility Graph

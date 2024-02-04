@@ -44,6 +44,7 @@ class Map {
 
   template <class Archive> void serialize(Archive& ar, const unsigned int version) {
     ar& mnId;
+    ar& uuid;
     ar& creatorAgentId;
     ar& mnInitKFid;
     ar& mnMaxKFid;
@@ -89,6 +90,7 @@ public:
   long unsigned KeyFramesInMap();
 
   long unsigned int GetId();
+  boost::uuids::uuid GetUuid();
 
   long unsigned int GetInitKFid();
   void SetInitKFid(long unsigned int initKFif);
@@ -163,6 +165,7 @@ public:
 
 protected:
   long unsigned int mnId;
+  boost::uuids::uuid uuid;
 
   std::set<MapPoint*> mspMapPoints;
   std::set<KeyFrame*> mspKeyFrames;

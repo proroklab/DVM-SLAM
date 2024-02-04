@@ -24,6 +24,7 @@
 #include "MapPoint.h"
 
 #include <boost/uuid/nil_generator.hpp>
+#include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <mutex>
 
@@ -47,6 +48,7 @@ Map::Map()
   , mbIMU_BA1(false)
   , mbIMU_BA2(false) {
   mnId = nNextId++;
+  uuid = boost::uuids::random_generator()();
   mThumbnail = static_cast<GLubyte*>(NULL);
 }
 
@@ -68,6 +70,7 @@ Map::Map(int initKFid, unsigned int creatorAgentId)
   , mbIMU_BA1(false)
   , mbIMU_BA2(false) {
   mnId = nNextId++;
+  uuid = boost::uuids::random_generator()();
   mThumbnail = static_cast<GLubyte*>(NULL);
 }
 
@@ -206,6 +209,9 @@ vector<MapPoint*> Map::GetReferenceMapPoints() {
 }
 
 long unsigned int Map::GetId() { return mnId; }
+
+boost::uuids::uuid Map::GetUuid() { return uuid; }
+
 long unsigned int Map::GetInitKFid() {
   unique_lock<mutex> lock(mMutexMap);
   return mnInitKFid;

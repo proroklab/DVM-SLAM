@@ -22,6 +22,7 @@
 #include "System.h"
 #include "Converter.h"
 #include "KeyFrameDatabase.h"
+#include "LocalMapping.h"
 #include "ORBVocabulary.h"
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -1433,6 +1434,8 @@ ORBVocabulary* System::GetORBVocabulary() { return mpVocabulary; }
 unsigned int System::GetAgentId() { return agentId; }
 
 KeyFrameDatabase* System::GetKeyFrameDatabase() { return mpKeyFrameDatabase; }
+
+LocalMapping* System::GetLocalMapper() { return mpLocalMapper; }
 
 void System::SaveAtlas(int type) {
   if (!mStrSaveAtlasToFile.empty()) {

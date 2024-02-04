@@ -213,6 +213,8 @@ public:
 
   KeyFrameDatabase* GetKeyFrameDatabase();
 
+  LocalMapping* GetLocalMapper();
+
 private:
   void SaveAtlas(int type);
   bool LoadAtlas(int type);

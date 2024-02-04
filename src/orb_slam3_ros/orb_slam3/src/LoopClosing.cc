@@ -26,6 +26,8 @@
 #include "ORBmatcher.h"
 #include "Optimizer.h"
 #include "Sim3Solver.h"
+#include "sophus/se3.hpp"
+#include "sophus/sim3.hpp"
 
 #include <mutex>
 #include <thread>
@@ -1252,6 +1254,18 @@ void LoopClosing::MergeLocal() {
   // tracking
   Map* pCurrentMap = mpCurrentKF->GetMap();
   Map* pMergeMap = mpMergeMatchedKF->GetMap();
+
+  if (pMergeMap->GetUuid() < pCurrentMap->GetUuid()) {
+    mg2oMergeScw = mg2oMergeScw.inverse();
+
+    Map* tempMapPtr = pCurrentMap;
+    pCurrentMap = pMergeMap;
+    pMergeMap = tempMapPtr;
+
+    KeyFrame* tempKeyFramePtr = mpCurrentKF;
+    mpCurrentKF = mpMergeMatchedKF;
+    mpMergeMatchedKF = tempKeyFramePtr;
+  }
 
   // std::cout << "Merge local, Active map: " << pCurrentMap->GetId() <<
   // std::endl; std::cout << "Merge local, Non-Active map: " <<
