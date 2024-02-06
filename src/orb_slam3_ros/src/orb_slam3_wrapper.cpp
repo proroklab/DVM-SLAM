@@ -6,6 +6,7 @@
 #include "Map.h"
 #include "MapPoint.h"
 #include "Optimizer.h"
+#include "agent.h"
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
@@ -58,23 +59,15 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
   newKeyFramesSub = this->create_subscription<interfaces::msg::NewKeyFrames>(
     node_name + "/new_key_frames", 1, std::bind(&OrbSlam3Wrapper::receiveNewKeyFrames, this, std::placeholders::_1));
 
+  // TODO: create a proper topic handler that handles nodes connecting/disconnecting
+  vector<uint> connectedAgentIds;
   if (agentId == 1)
     connectedAgentIds = { 2 };
   else
     connectedAgentIds = { 1 };
 
-  // TODO: create a proper topic handler that handles nodes connecting/disconnecting
   for (uint connectedAgentId : connectedAgentIds) {
-    newKeyFrameBowsPubs[connectedAgentId] = this->create_publisher<interfaces::msg::NewKeyFrameBows>(
-      "robot" + to_string(connectedAgentId) + "/new_key_frame_bows", 1);
-    getCurrentMapClients[connectedAgentId]
-      = this->create_client<interfaces::srv::GetCurrentMap>("robot" + to_string(connectedAgentId) + "/get_current_map");
-    successfullyMergedPubs[connectedAgentId] = this->create_publisher<interfaces::msg::SuccessfullyMerged>(
-      "robot" + to_string(connectedAgentId) + "/successfully_merged", 1);
-    newKeyFramesPubs[connectedAgentId] = this->create_publisher<interfaces::msg::NewKeyFrames>(
-      "robot" + to_string(connectedAgentId) + "/new_key_frames", 1);
-
-    successfullyMerged[connectedAgentId] = false;
+    connectedAgents[connectedAgentId] = new Agent(this->shared_from_this(), connectedAgentId);
   }
 
   shareNewKeyFrameBowsTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
@@ -94,7 +87,7 @@ void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interface
       latestKeyFrame = keyFrame;
     }
   }
-  referenceKeyFrame[request->sender_agent_id] = latestKeyFrame;
+  connectedAgents[request->sender_agent_id]->setReferenceKeyFrame(latestKeyFrame);
 
   // Clone current map
   ORB_SLAM3::Map* currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
@@ -131,7 +124,7 @@ void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv
   interfaces::msg::SuccessfullyMerged msg;
   msg.successfully_merged = true;
   msg.sender_agent_id = agentId;
-  successfullyMergedPubs[response->sender_agent_id]->publish(msg);
+  connectedAgents[response->sender_agent_id]->successfullyMergedPub->publish(msg);
 }
 
 void OrbSlam3Wrapper::handleAddMapRequest(const std::shared_ptr<interfaces::srv::AddMap::Request> request,
@@ -147,8 +140,10 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
   unique_lock<mutex> lock(mutexWrapper);
 
   // Send new key frames to all peers
-  for (uint connectedAgentId : connectedAgentIds) {
-    if (!successfullyMerged[connectedAgentId]) {
+  for (auto& pair : connectedAgents) {
+    Agent* connectedAgent = pair.second;
+
+    if (!connectedAgent->getSuccessfullyMerged()) {
       continue;
     }
 
@@ -157,7 +152,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     // Remove keyframes not from this agent or have already been sent
     // keep all keyframe connections to reconnect later
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
-      if (keyFrame->creatorAgentId != agentId || sentKeyFrameUuids[connectedAgentId].count(keyFrame->uuid) != 0) {
+      if (keyFrame->creatorAgentId != agentId || connectedAgent->getSentKeyFrameUuids().count(keyFrame->uuid) != 0) {
         currentMapCopy->EraseKeyFrame(keyFrame);
       }
     }
@@ -176,7 +171,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     }
 
     // Transform keyframes and map points to move the reference keyframe to the origin
-    Sophus::SE3f referenceKeyFramePoseInv = referenceKeyFrame[connectedAgentId]->GetPoseInverse();
+    Sophus::SE3f referenceKeyFramePoseInv = connectedAgent->getReferenceKeyFrame()->GetPoseInverse();
 
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
       Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePoseInv;
@@ -192,7 +187,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
 
     // Add keyframes to sent keyframes map
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
-      sentKeyFrameUuids[connectedAgentId].insert(keyFrame->uuid);
+      connectedAgent->addSentKeyFrameUuid(keyFrame->uuid);
     }
 
     // Get the lastest keyframe to later make as the reference keyframe uuid
@@ -209,16 +204,16 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     interfaces::msg::NewKeyFrames msg;
     msg.sender_agent_id = agentId;
     msg.serialized_map = pSLAM->SerializeMap(currentMapCopy);
-    msg.reference_key_frame_uuid = uuidToArray(referenceKeyFrame[connectedAgentId]->uuid);
+    msg.reference_key_frame_uuid = uuidToArray(connectedAgent->getReferenceKeyFrame()->uuid);
     msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
-    newKeyFramesPubs[connectedAgentId]->publish(msg);
+    connectedAgent->newKeyFramesPub->publish(msg);
 
     // Set reference KF as erase and next reference KF as no erase
-    referenceKeyFrame[connectedAgentId]->SetErase();
+    connectedAgent->getReferenceKeyFrame()->SetErase();
     nextReferenceKeyFrame->SetNotErase();
 
     // Actually set referenceKeyFrameUuid
-    referenceKeyFrame[connectedAgentId] = nextReferenceKeyFrame;
+    connectedAgent->setReferenceKeyFrame(nextReferenceKeyFrame);
 
     cout << "Sent new key frames" << endl;
   }
@@ -289,8 +284,10 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
   vector<ORB_SLAM3::KeyFrame*> keyFrames = pSLAM->GetAllKeyFrames();
 
   // Send new key frame bows to all peers
-  for (uint connectedAgentId : connectedAgentIds) {
-    if (successfullyMerged[connectedAgentId]) {
+  for (auto& pair : connectedAgents) {
+    Agent* connectedAgent = pair.second;
+
+    if (connectedAgent->getSuccessfullyMerged()) {
       continue;
     }
 
@@ -298,7 +295,7 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
     vector<interfaces::msg::KeyFrameBowVector> keyFrameBowVectorMsgs;
 
     for (ORB_SLAM3::KeyFrame* keyFrame : keyFrames) {
-      if (keyFrame->creatorAgentId == agentId && sentKeyFrameBowUuids[connectedAgentId].count(keyFrame->uuid) == 0) {
+      if (keyFrame->creatorAgentId == agentId && connectedAgent->getSentKeyFrameBowUuids().count(keyFrame->uuid) == 0) {
         interfaces::msg::KeyFrameBowVector keyFrameBowVectorMsg;
 
         // Set uuid
@@ -326,10 +323,10 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
       interfaces::msg::NewKeyFrameBows msg;
       msg.key_frame_bow_vectors = keyFrameBowVectorMsgs;
       msg.sender_agent_id = agentId;
-      newKeyFrameBowsPubs[connectedAgentId]->publish(msg);
+      connectedAgent->newKeyFrameBowsPub->publish(msg);
 
       // Add to sent key frames map
-      sentKeyFrameBowUuids[connectedAgentId].insert(newKeyFrameBowUuids.begin(), newKeyFrameBowUuids.end());
+      connectedAgent->addSentKeyFrameBowUuids(newKeyFrameBowUuids.begin(), newKeyFrameBowUuids.end());
     }
   }
 }
@@ -357,7 +354,7 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
       cout << "Merge possible!" << endl;
       auto request = std::make_shared<interfaces::srv::GetCurrentMap::Request>();
       request->sender_agent_id = agentId;
-      auto future_result = getCurrentMapClients[msg->sender_agent_id]->async_send_request(
+      auto future_result = connectedAgents[msg->sender_agent_id]->getCurrentMapClient->async_send_request(
         request, bind(&OrbSlam3Wrapper::handleGetCurrentMapResponse, this, placeholders::_1));
 
       break;
@@ -366,11 +363,11 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
 }
 
 void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg) {
-  successfullyMerged[msg->sender_agent_id] = msg->successfully_merged;
+  connectedAgents[msg->sender_agent_id]->setSuccessfullyMerged(msg->successfully_merged);
 
   // Add keyframes to sent keyframes map
   for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
-    sentKeyFrameUuids[msg->sender_agent_id].insert(keyFrame->uuid);
+    connectedAgents[msg->sender_agent_id]->addSentKeyFrameUuid(keyFrame->uuid);
   }
 }
 

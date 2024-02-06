@@ -41,7 +41,7 @@ include_directories(
   ${Pangolin_INCLUDE_DIRS}
 )
 
-add_library(orb_slam3_wrapper src/orb_slam3_wrapper.cpp)
+add_library(orb_slam3_wrapper src/orb_slam3_wrapper.cpp src/agent.cpp)
 ament_target_dependencies(orb_slam3_wrapper rclcpp cv_bridge OpenCV geometry_msgs visualization_msgs nav_msgs tf2_ros image_transport interfaces)
 target_link_libraries(orb_slam3_wrapper ORB_SLAM3 DBoW2)
 

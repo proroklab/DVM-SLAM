@@ -2,6 +2,7 @@
 
 #include "KeyFrame.h"
 #include "System.h"
+#include "agent.h"
 #include "cv_bridge/cv_bridge.h"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
@@ -36,11 +37,7 @@ public:
 protected:
   uint agentId;
 
-  vector<uint> connectedAgentIds;
-  map<uint, set<boost::uuids::uuid>> sentKeyFrameUuids;
-  map<uint, set<boost::uuids::uuid>> sentKeyFrameBowUuids; // Map from agentId to sent keyframe uuids
-  map<uint, bool> successfullyMerged;
-  map<uint, ORB_SLAM3::KeyFrame*> referenceKeyFrame;
+  map<uint, Agent*> connectedAgents;
 
   ORB_SLAM3::System* pSLAM;
   ORB_SLAM3::System::eSensor sensor_type;
@@ -58,9 +55,6 @@ protected:
   image_transport::Publisher tracking_img_pub;
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr kf_markers_pub;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
-  map<uint, rclcpp::Publisher<interfaces::msg::NewKeyFrames>::SharedPtr> newKeyFramesPubs;
-  map<uint, rclcpp::Publisher<interfaces::msg::NewKeyFrameBows>::SharedPtr> newKeyFrameBowsPubs;
-  map<uint, rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr> successfullyMergedPubs;
 
   // ROS services
   rclcpp::Service<interfaces::srv::GetCurrentMap>::SharedPtr get_current_map_service;
@@ -73,9 +67,6 @@ protected:
 
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
   rclcpp::TimerBase::SharedPtr shareNewKeyFramesTimer;
-
-  // ROS clients
-  map<uint, rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr> getCurrentMapClients;
 
   string world_frame_id = "/world";
   string imu_frame_id = "/imu";
