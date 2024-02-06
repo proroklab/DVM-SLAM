@@ -72,6 +72,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
 
   shareNewKeyFrameBowsTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
   shareNewKeyFramesTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
+  shareSuccessfullyMergedMsgTimer
+    = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendSuccessfullyMergedMsg, this));
 };
 
 void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
@@ -348,7 +350,7 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
       cout << "Merge possible!" << endl;
       auto request = std::make_shared<interfaces::srv::GetCurrentMap::Request>();
       request->sender_agent_id = agentId;
-      auto future_result = connectedAgents[msg->sender_agent_id]->getCurrentMapClient->async_send_request(
+      auto future_result = connectedPeers[msg->sender_agent_id]->getCurrentMapClient->async_send_request(
         request, bind(&OrbSlam3Wrapper::handleGetCurrentMapResponse, this, placeholders::_1));
 
       break;
@@ -356,12 +358,48 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
   }
 }
 
+void OrbSlam3Wrapper::sendSuccessfullyMergedMsg() {
+  for (auto& pair : connectedPeers) {
+    Peer* connectedPeer = pair.second;
+
+    // If we havent noted this peer as being merged locally, check if this peer has become successfully merged
+    if (!connectedPeer->getLocalSuccessfullyMerged()) {
+      vector<uint> successfullyMergedAgentIds = pSLAM->GetAtlas()->GetSuccessfullyMergedAgentIds();
+      bool successfullyMerged
+        = find(successfullyMergedAgentIds.begin(), successfullyMergedAgentIds.end(), connectedPeer->getId())
+        != successfullyMergedAgentIds.end();
+
+      cout << "not successfully locally merged " << successfullyMerged << endl;
+
+      if (successfullyMerged) {
+        connectedPeer->setLocalSuccessfullyMerged(true);
+
+        // Tell this agent that we are successfully merged
+        interfaces::msg::SuccessfullyMerged msg;
+        msg.successfully_merged = true;
+        msg.sender_agent_id = agentId;
+        connectedPeer->successfullyMergedPub->publish(msg);
+      }
+    }
+  }
+}
+
 void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg) {
-  connectedAgents[msg->sender_agent_id]->setSuccessfullyMerged(msg->successfully_merged);
+  connectedPeers[msg->sender_agent_id]->setRemoteSuccessfullyMerged(msg->successfully_merged);
+
+  cout << "Recieved successful merge message from peer, now requesting its map" << endl;
 
   // Add keyframes to sent keyframes map
   for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
-    connectedAgents[msg->sender_agent_id]->addSentKeyFrameUuid(keyFrame->uuid);
+    connectedPeers[msg->sender_agent_id]->addSentKeyFrameUuid(keyFrame->uuid);
+  }
+
+  if (!connectedPeers[msg->sender_agent_id]->getLocalSuccessfullyMerged()) {
+    // Request map from that peer
+    auto request = std::make_shared<interfaces::srv::GetCurrentMap::Request>();
+    request->sender_agent_id = agentId;
+    auto future_result = connectedPeers[msg->sender_agent_id]->getCurrentMapClient->async_send_request(
+      request, bind(&OrbSlam3Wrapper::handleGetCurrentMapResponse, this, placeholders::_1));
   }
 }
 

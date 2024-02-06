@@ -67,6 +67,7 @@ protected:
 
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
   rclcpp::TimerBase::SharedPtr shareNewKeyFramesTimer;
+  rclcpp::TimerBase::SharedPtr shareSuccessfullyMergedMsgTimer;
 
   string world_frame_id = "/world";
   string imu_frame_id = "/imu";
@@ -85,6 +86,7 @@ protected:
   void sendNewKeyFrameBows();
   void receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameBows::SharedPtr msg);
 
+  void sendSuccessfullyMergedMsg();
   void receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg);
 
   boost::uuids::uuid arrayToUuid(array<unsigned char, 16> array);

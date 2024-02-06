@@ -425,4 +425,8 @@ map<long unsigned int, KeyFrame*> Atlas::GetAtlasKeyframes() {
   return mpIdKFs;
 }
 
+void Atlas::AddSuccessfullyMergedAgentId(unsigned int agentId) { successfullyMergedAgentIds.push_back(agentId); }
+
+vector<uint> Atlas::GetSuccessfullyMergedAgentIds() { return successfullyMergedAgentIds; }
+
 } // namespace ORB_SLAM3

@@ -521,8 +521,9 @@ bool LoopClosing::NewDetectCommonRegions() {
 #endif
 
   if (mbMergeDetected || mbLoopDetected) {
-    if (mbMergeDetected && mpMergeMatchedKF->creatorAgentId != mpAtlas->GetAgentId()) {
-      cout << "merged external map successfully" << endl; // TODO: somehow send this back to the wrapper
+    if (mbMergeDetected && mpCurrentKF->creatorAgentId != mpAtlas->GetAgentId()) {
+      cout << "merged external map successfully" << endl;
+      mpAtlas->AddSuccessfullyMergedAgentId(mpCurrentKF->creatorAgentId);
     }
     return true;
   }

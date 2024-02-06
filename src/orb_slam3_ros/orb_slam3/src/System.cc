@@ -175,8 +175,6 @@ System::System(const string& strVocFile, const string& strSettingsFile, const eS
 
     loadedAtlas = true;
 
-    mpAtlas->SetAgentId(agentId);
-
     mpAtlas->CreateNewMap();
 
     // clock_t timeElapsed = clock() - start;
@@ -185,6 +183,8 @@ System::System(const string& strVocFile, const string& strSettingsFile, const eS
 
     // usleep(10*1000*1000);
   }
+
+  mpAtlas->SetAgentId(agentId);
 
   if (mSensor == IMU_STEREO || mSensor == IMU_MONOCULAR || mSensor == IMU_RGBD)
     mpAtlas->SetInertialSensor();

@@ -148,8 +148,13 @@ public:
 
   long unsigned int GetNumLivedMP();
 
+  void AddSuccessfullyMergedAgentId(unsigned int agentId);
+  vector<uint> GetSuccessfullyMergedAgentIds();
+
 protected:
   unsigned int agentId;
+
+  vector<uint> successfullyMergedAgentIds;
 
   std::set<Map*> mspMaps;
   std::set<Map*> mspBadMaps;
