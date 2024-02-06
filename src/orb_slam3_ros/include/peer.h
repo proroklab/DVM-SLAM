@@ -14,18 +14,20 @@
 
 using namespace std;
 
-class Agent {
+class Peer {
 public:
-  Agent(rclcpp::Node::SharedPtr rosNode, uint agentId);
+  Peer(rclcpp::Node::SharedPtr rosNode, uint agentId);
 
   uint getId();
-  bool getSuccessfullyMerged();
+  bool getRemoteSuccessfullyMerged();
+  bool getLocalSuccessfullyMerged();
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
   ORB_SLAM3::KeyFrame* getReferenceKeyFrame();
 
   void setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame);
-  void setSuccessfullyMerged(bool successfullyMerged);
+  void setRemoteSuccessfullyMerged(bool remoteSuccessfullyMerged);
+  void setLocalSuccessfullyMerged(bool localSuccessfullyMerged);
   void addSentKeyFrameUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameUuid(boost::uuids::uuid uuid);
@@ -43,8 +45,10 @@ protected:
 
   set<boost::uuids::uuid> sentKeyFrameUuids;
   set<boost::uuids::uuid> sentKeyFrameBowUuids;
-  bool successfullyMerged;
   ORB_SLAM3::KeyFrame* referenceKeyFrame;
+
+  bool remoteSuccessfullyMerged; // Remote map is successfully merged together
+  bool localSuccessfullyMerged; // Local map is successfully merged together
 
   rclcpp::Node::SharedPtr rosNode;
 };

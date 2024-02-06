@@ -2,7 +2,6 @@
 
 #include "KeyFrame.h"
 #include "System.h"
-#include "agent.h"
 #include "cv_bridge/cv_bridge.h"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
@@ -15,6 +14,7 @@
 #include "interfaces/srv/get_current_map.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "opencv2/highgui/highgui.hpp"
+#include "peer.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
@@ -37,7 +37,7 @@ public:
 protected:
   uint agentId;
 
-  map<uint, Agent*> connectedAgents;
+  map<uint, Peer*> connectedPeers;
 
   ORB_SLAM3::System* pSLAM;
   ORB_SLAM3::System::eSensor sensor_type;
