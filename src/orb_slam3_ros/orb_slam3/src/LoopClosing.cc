@@ -533,12 +533,15 @@ bool LoopClosing::NewDetectCommonRegions() {
 
   // If the currentKF's map was created by a different agent and no more KFs from that map are in the queue, it means
   // that we were unable to merge it into our current map and should delete the map
-  bool noMoreSiblingKFsinQueue = find_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
-                                   [this](KeyFrame* element) { return element->GetMap() == mpCurrentKF->GetMap(); })
-    == mlpLoopKeyFrameQueue.end();
-  if (mpLastMap->creatorAgentId != mpAtlas->GetAgentId() && noMoreSiblingKFsinQueue) {
-    cout << "External map merge unsucessful, deleting map with ID: " << mpLastMap->GetId() << endl;
-    mpAtlas->SetMapBad(mpLastMap);
+  if (mpCurrentKF->GetMap() != mpAtlas->GetCurrentMap()) {
+    bool noMoreSiblingKFsinQueue = find_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
+                                     [this](KeyFrame* element) { return element->GetMap() == mpCurrentKF->GetMap(); })
+      == mlpLoopKeyFrameQueue.end();
+
+    if (noMoreSiblingKFsinQueue) {
+      cout << "External map merge unsucessful, deleting map with ID: " << mpLastMap->GetId() << endl;
+      mpAtlas->SetMapBad(mpLastMap);
+    }
   }
 
   return false;

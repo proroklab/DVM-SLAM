@@ -250,6 +250,10 @@ void MapPoint::EraseObservation(KeyFrame* pKF, int minObservationsBeforeDeletion
       if (mpRefKF == pKF)
         mpRefKF = mObservations.begin()->first;
 
+      // Not sure why nObs doesnt always line up with mObservations.size(), TODO: look into this
+      if (!mpRefKF)
+        bBad = true;
+
       // If number of observations is less than minObservationsBeforeDeletion, discard point
       if (nObs < minObservationsBeforeDeletion)
         bBad = true;
