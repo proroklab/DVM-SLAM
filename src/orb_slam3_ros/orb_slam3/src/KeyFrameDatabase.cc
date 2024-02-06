@@ -683,12 +683,9 @@ void KeyFrameDatabase::CalculateMergeScore(
 
     for (DBoW2::BowVector::const_iterator vit = bowVector.begin(), vend = bowVector.end(); vit != vend; vit++) {
       list<KeyFrame*>& lKFs = mvInvertedFile[vit->first];
-      cout << "lKFs.size(): " << lKFs.size() << endl;
 
       for (list<KeyFrame*>::iterator lit = lKFs.begin(), lend = lKFs.end(); lit != lend; lit++) {
         KeyFrame* pKFi = *lit;
-        cout << (pKFi->GetMap() == map) << (pKFi->mnId != keyFrameId) << !pKFi->isBad()
-             << (boost::hash<boost::uuids::uuid>()(pKFi->uuid) != keyFrameId) << endl;
         if (pKFi->GetMap() == map && pKFi->mnId != keyFrameId
           && !pKFi->isBad()
           // needed because of the hacky uuid->ulong conversion we use in DetectMergePossibility
@@ -704,7 +701,7 @@ void KeyFrameDatabase::CalculateMergeScore(
       }
     }
   }
-  cout << "lKFsSharingWords.size(): " << lKFsSharingWords.size() << endl;
+
   if (lKFsSharingWords.empty())
     return;
 

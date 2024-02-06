@@ -32,7 +32,7 @@ private:
 
       rclcpp::Time timestamp = msg->header.stamp;
       double seconds = timestamp.nanoseconds() * 1.e-9;
-      RCLCPP_INFO(this->get_logger(), "New Image. Timestamp: %f", seconds);
+      // RCLCPP_INFO(this->get_logger(), "New Image. Timestamp: %f", seconds);
       Sophus::SE3f Tcw = pSLAM->TrackMonocular(image_cpy, seconds);
 
       rclcpp::Time msg_time = msg->header.stamp;
