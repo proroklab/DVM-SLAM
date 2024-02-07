@@ -18,10 +18,12 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sophus/se3.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Transform.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
 #include <boost/uuid/uuid.hpp>
 #include <memory>
 #include <rclcpp/logging.hpp>
@@ -49,11 +51,11 @@ protected:
   std::mutex mutexWrapper;
 
   // ROS publishers
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_pub;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr tracked_mappoints_pub;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr all_mappoints_pub;
   image_transport::Publisher tracking_img_pub;
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr kf_markers_pub;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr kf_markers_pub;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
 
   // ROS services
@@ -70,8 +72,11 @@ protected:
   rclcpp::TimerBase::SharedPtr shareSuccessfullyMergedMsgTimer;
 
   string world_frame_id = "/world";
+  string origin_frame_id = "/origin";
   string imu_frame_id = "/imu";
   string cam_frame_id = "camera";
+
+  vector<geometry_msgs::msg::Point> cameraWireframe;
 
   void handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
     std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response);
@@ -102,9 +107,11 @@ protected:
   void publish_tracking_img(cv::Mat image, rclcpp::Time msg_time);
   void publish_tracked_points(std::vector<ORB_SLAM3::MapPoint*> tracked_points, rclcpp::Time msg_time);
   void publish_all_points(std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time);
-  void publish_kf_markers(std::vector<Sophus::SE3f> vKFposes, rclcpp::Time msg_time);
+  void publish_keyframes(std::vector<ORB_SLAM3::KeyFrame*> keyFrames, rclcpp::Time msg_time);
   void publish_body_odom(
     Sophus::SE3f Twb_SE3f, Eigen::Vector3f Vwb_E3f, Eigen::Vector3f ang_vel_body, rclcpp::Time msg_time);
+
+  void resetVisualization();
 
   sensor_msgs::msg::PointCloud2 mappoint_to_pointcloud(
     std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time);

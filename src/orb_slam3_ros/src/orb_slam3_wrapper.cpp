@@ -6,13 +6,16 @@
 #include "Map.h"
 #include "MapPoint.h"
 #include "Optimizer.h"
+#include "System.h"
 #include "peer.h"
+#include "sophus/types.hpp"
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
 #include <mutex>
 #include <shared_mutex>
 #include <vector>
+#include <visualization_msgs/msg/detail/marker_array__struct.hpp>
 
 #define MIN_MAP_SHARE_SIZE 5
 
@@ -34,11 +37,11 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
   pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, agentId, true);
 
   // Create publishers
-  pose_pub = this->create_publisher<geometry_msgs::msg::PoseStamped>(node_name + "/camera_pose", 1);
+  pose_pub = this->create_publisher<visualization_msgs::msg::Marker>(node_name + "/camera_pose", 1);
   tracked_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/tracked_points", 1);
   all_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/all_points", 1);
   tracking_img_pub = image_transport.advertise(node_name + "/tracking_image", 1);
-  kf_markers_pub = this->create_publisher<visualization_msgs::msg::Marker>(node_name + "/kf_markers", 1000);
+  kf_markers_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(node_name + "/kf_markers", 1000);
   if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR || sensor_type == ORB_SLAM3::System::IMU_STEREO
     || sensor_type == ORB_SLAM3::System::IMU_RGBD) {
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>(node_name + "/body_odom", 1);
@@ -74,6 +77,38 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
   shareNewKeyFramesTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
   shareSuccessfullyMergedMsgTimer
     = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendSuccessfullyMergedMsg, this));
+
+  resetVisualization();
+
+  // Create camera wireframe
+  float scaleX = 0.05;
+  float scaleY = 0.03;
+  float scaleZ = 0.05;
+  float cameraWireframePoints[][3] = {
+    { 0, 0, 0 },
+    { 1, 1, 1 },
+    { 0, 0, 0 },
+    { 1, -1, 1 },
+    { 0, 0, 0 },
+    { -1, 1, 1 },
+    { 0, 0, 0 },
+    { -1, -1, 1 },
+    { 1, 1, 1 },
+    { 1, -1, 1 },
+    { 1, -1, 1 },
+    { -1, -1, 1 },
+    { -1, -1, 1 },
+    { -1, 1, 1 },
+    { -1, 1, 1 },
+    { 1, 1, 1 },
+  };
+  for (float* cameraWireframePoint : cameraWireframePoints) {
+    geometry_msgs::msg::Point point;
+    point.x = cameraWireframePoint[0] * scaleX;
+    point.y = cameraWireframePoint[1] * scaleY;
+    point.z = cameraWireframePoint[2] * scaleZ;
+    cameraWireframe.push_back(point);
+  }
 };
 
 void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
@@ -369,8 +404,6 @@ void OrbSlam3Wrapper::sendSuccessfullyMergedMsg() {
         = find(successfullyMergedAgentIds.begin(), successfullyMergedAgentIds.end(), connectedPeer->getId())
         != successfullyMergedAgentIds.end();
 
-      cout << "not successfully locally merged " << successfullyMerged << endl;
-
       if (successfullyMerged) {
         connectedPeer->setLocalSuccessfullyMerged(true);
 
@@ -449,14 +482,21 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
   if (Twc.translation().array().isNaN()[0] || Twc.rotationMatrix().array().isNaN()(0, 0)) // avoid publishing NaN
     return;
 
+  // Publish origin transformation
+  Eigen::Matrix3f rotation_matrix;
+  rotation_matrix << 1, 0, 0, 0, 0, 1, 0, -1, 0;
+  Eigen::Vector3f translation(0, 0, 0);
+  Sophus::SE3f worldToOrigin(rotation_matrix, translation);
+  publish_tf_transform(worldToOrigin, world_frame_id, origin_frame_id, this->now());
+
   // Common topics
   publish_camera_pose(Twc, msg_time);
-  publish_tf_transform(Twc, world_frame_id, cam_frame_id, msg_time);
+  publish_tf_transform(Twc, origin_frame_id, cam_frame_id, msg_time);
 
   publish_tracking_img(pSLAM->GetCurrentFrame(), msg_time);
   publish_tracked_points(pSLAM->GetTrackedMapPoints(), msg_time);
   publish_all_points(pSLAM->GetAllMapPoints(), msg_time);
-  publish_kf_markers(pSLAM->GetAllKeyframePoses(), msg_time);
+  publish_keyframes(pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames(), msg_time);
 
   // IMU-specific topics
   if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR || sensor_type == ORB_SLAM3::System::IMU_STEREO
@@ -470,26 +510,38 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
     Sophus::Matrix3f Rwb = Twb.rotationMatrix();
     Eigen::Vector3f Wwb = Rwb * Wbb;
 
-    publish_tf_transform(Twb, world_frame_id, imu_frame_id, msg_time);
+    // publish_tf_transform(Twb, origin_frame_id, imu_frame_id, msg_time);
     publish_body_odom(Twb, Vwb, Wwb, msg_time);
   }
 }
 
 void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Time msg_time) {
-  geometry_msgs::msg::PoseStamped pose_msg;
-  pose_msg.header.frame_id = world_frame_id;
-  pose_msg.header.stamp = msg_time;
+  visualization_msgs::msg::Marker cameraPoseWireframe;
+  cameraPoseWireframe.header.frame_id = origin_frame_id;
+  cameraPoseWireframe.header.stamp = msg_time;
+  cameraPoseWireframe.ns = "cameraPoseWireframe";
+  cameraPoseWireframe.type = visualization_msgs::msg::Marker::LINE_LIST;
+  cameraPoseWireframe.action = visualization_msgs::msg::Marker::ADD;
 
-  pose_msg.pose.position.x = Tcw_SE3f.translation().x();
-  pose_msg.pose.position.y = Tcw_SE3f.translation().y();
-  pose_msg.pose.position.z = Tcw_SE3f.translation().z();
+  cameraPoseWireframe.id = 0;
+  cameraPoseWireframe.scale.x = 0.005;
+  cameraPoseWireframe.scale.y = 0.005;
+  cameraPoseWireframe.scale.z = 0.005;
+  cameraPoseWireframe.color.g = 1.0;
+  cameraPoseWireframe.color.a = 1.0;
 
-  pose_msg.pose.orientation.w = Tcw_SE3f.unit_quaternion().coeffs().w();
-  pose_msg.pose.orientation.x = Tcw_SE3f.unit_quaternion().coeffs().x();
-  pose_msg.pose.orientation.y = Tcw_SE3f.unit_quaternion().coeffs().y();
-  pose_msg.pose.orientation.z = Tcw_SE3f.unit_quaternion().coeffs().z();
+  cameraPoseWireframe.pose.position.x = Tcw_SE3f.translation().x();
+  cameraPoseWireframe.pose.position.y = Tcw_SE3f.translation().y();
+  cameraPoseWireframe.pose.position.z = Tcw_SE3f.translation().z();
 
-  pose_pub->publish(pose_msg);
+  cameraPoseWireframe.pose.orientation.w = Tcw_SE3f.unit_quaternion().coeffs().w();
+  cameraPoseWireframe.pose.orientation.x = Tcw_SE3f.unit_quaternion().coeffs().x();
+  cameraPoseWireframe.pose.orientation.y = Tcw_SE3f.unit_quaternion().coeffs().y();
+  cameraPoseWireframe.pose.orientation.z = Tcw_SE3f.unit_quaternion().coeffs().z();
+
+  cameraPoseWireframe.points = cameraWireframe;
+
+  pose_pub->publish(cameraPoseWireframe);
 }
 
 void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f& T_SE3f, const std::string& frame_id,
@@ -518,7 +570,7 @@ void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f& T_SE3f, const std
 void OrbSlam3Wrapper::publish_tracking_img(cv::Mat image, rclcpp::Time msg_time) {
   std_msgs::msg::Header header;
   header.stamp = msg_time;
-  header.frame_id = world_frame_id;
+  header.frame_id = cam_frame_id;
 
   const sensor_msgs::msg::Image::SharedPtr rendered_image_msg = cv_bridge::CvImage(header, "bgr8", image).toImageMsg();
 
@@ -537,42 +589,98 @@ void OrbSlam3Wrapper::publish_all_points(std::vector<ORB_SLAM3::MapPoint*> map_p
   all_mappoints_pub->publish(cloud);
 }
 
-void OrbSlam3Wrapper::publish_kf_markers(std::vector<Sophus::SE3f> vKFposes, rclcpp::Time msg_time) {
-  int numKFs = vKFposes.size();
-  if (numKFs == 0)
-    return;
+void OrbSlam3Wrapper::publish_keyframes(std::vector<ORB_SLAM3::KeyFrame*> keyFrames, rclcpp::Time msg_time) {
+  visualization_msgs::msg::MarkerArray keyFrameMarkers;
 
-  visualization_msgs::msg::Marker kf_markers;
-  kf_markers.header.frame_id = world_frame_id;
-  kf_markers.ns = "kf_markers";
-  kf_markers.type = visualization_msgs::msg::Marker::SPHERE_LIST;
-  kf_markers.action = visualization_msgs::msg::Marker::ADD;
-  kf_markers.pose.orientation.w = 1.0;
-  kf_markers.lifetime = rclcpp::Duration(0, 0); // not sure?
+  // Create keyframe wireframes
+  for (ORB_SLAM3::KeyFrame* keyFrame : keyFrames) {
+    if (keyFrame->isBad())
+      continue;
 
-  kf_markers.id = 0;
-  kf_markers.scale.x = 0.05;
-  kf_markers.scale.y = 0.05;
-  kf_markers.scale.z = 0.05;
-  kf_markers.color.g = 1.0;
-  kf_markers.color.a = 1.0;
+    visualization_msgs::msg::Marker keyFrameWireframe;
+    keyFrameWireframe.header.frame_id = origin_frame_id;
+    keyFrameWireframe.ns = "keyFrameWireframes";
+    keyFrameWireframe.type = visualization_msgs::msg::Marker::LINE_LIST;
+    keyFrameWireframe.action = visualization_msgs::msg::Marker::ADD;
 
-  for (int i = 0; i <= numKFs; i++) {
-    geometry_msgs::msg::Point kf_marker;
-    kf_marker.x = vKFposes[i].translation().x();
-    kf_marker.y = vKFposes[i].translation().y();
-    kf_marker.z = vKFposes[i].translation().z();
-    kf_markers.points.push_back(kf_marker);
+    keyFrameWireframe.id = keyFrame->mnId;
+    keyFrameWireframe.scale.x = 0.005;
+    keyFrameWireframe.scale.y = 0.005;
+    keyFrameWireframe.scale.z = 0.005;
+    keyFrameWireframe.color.a = 1.0;
+
+    if (keyFrame->creatorAgentId == agentId)
+      keyFrameWireframe.color.g = 0.5;
+    else
+      keyFrameWireframe.color.r = 0.5;
+
+    Sophus::SE3f worldToKeyFrame = keyFrame->GetPoseInverse();
+
+    keyFrameWireframe.pose.position.x = worldToKeyFrame.translation().x();
+    keyFrameWireframe.pose.position.y = worldToKeyFrame.translation().y();
+    keyFrameWireframe.pose.position.z = worldToKeyFrame.translation().z();
+    keyFrameWireframe.pose.orientation.w = worldToKeyFrame.unit_quaternion().coeffs().w();
+    keyFrameWireframe.pose.orientation.x = worldToKeyFrame.unit_quaternion().coeffs().x();
+    keyFrameWireframe.pose.orientation.y = worldToKeyFrame.unit_quaternion().coeffs().y();
+    keyFrameWireframe.pose.orientation.z = worldToKeyFrame.unit_quaternion().coeffs().z();
+
+    keyFrameWireframe.points = cameraWireframe;
+
+    keyFrameMarkers.markers.push_back(keyFrameWireframe);
   }
 
-  kf_markers_pub->publish(kf_markers);
+  // Create covisibility graph
+  for (ORB_SLAM3::KeyFrame* keyFrame : keyFrames) {
+    if (keyFrame->isBad())
+      continue;
+
+    vector<ORB_SLAM3::KeyFrame*> connectedKeyFrames = keyFrame->GetCovisiblesByWeight(100);
+
+    visualization_msgs::msg::Marker connectedKeyFrameLines;
+    connectedKeyFrameLines.header.frame_id = origin_frame_id;
+    connectedKeyFrameLines.ns = "connectedKeyFrameLines";
+    connectedKeyFrameLines.type = visualization_msgs::msg::Marker::LINE_LIST;
+    connectedKeyFrameLines.action = visualization_msgs::msg::Marker::ADD;
+
+    connectedKeyFrameLines.id = keyFrame->mnId;
+    connectedKeyFrameLines.scale.x = 0.0025;
+    connectedKeyFrameLines.scale.y = 0.0025;
+    connectedKeyFrameLines.scale.z = 0.0025;
+    connectedKeyFrameLines.color.b = 1.0;
+    connectedKeyFrameLines.color.a = 1.0;
+
+    for (ORB_SLAM3::KeyFrame* connectedKeyFrame : connectedKeyFrames) {
+      if (connectedKeyFrame->isBad() || connectedKeyFrame->mnId < keyFrame->mnId)
+        continue;
+
+      geometry_msgs::msg::Point keyFramePoint;
+      keyFramePoint.x = keyFrame->GetCameraCenter().x();
+      keyFramePoint.y = keyFrame->GetCameraCenter().y();
+      keyFramePoint.z = keyFrame->GetCameraCenter().z();
+      connectedKeyFrameLines.points.push_back(keyFramePoint);
+
+      geometry_msgs::msg::Point connectedKeyFramePoint;
+      connectedKeyFramePoint.x = connectedKeyFrame->GetCameraCenter().x();
+      connectedKeyFramePoint.y = connectedKeyFrame->GetCameraCenter().y();
+      connectedKeyFramePoint.z = connectedKeyFrame->GetCameraCenter().z();
+      connectedKeyFrameLines.points.push_back(connectedKeyFramePoint);
+    }
+
+    if (connectedKeyFrameLines.points.size() != 0) {
+      keyFrameMarkers.markers.push_back(connectedKeyFrameLines);
+    }
+  }
+
+  kf_markers_pub->publish(keyFrameMarkers);
 }
+
+// void OrbSlam3Wrapper::publish_kf_markers(std::vector<Sophus::SE3f> vKFposes, rclcpp::Time msg_time) {
 
 void OrbSlam3Wrapper::publish_body_odom(
   Sophus::SE3f Twb_SE3f, Eigen::Vector3f Vwb_E3f, Eigen::Vector3f ang_vel_body, rclcpp::Time msg_time) {
   nav_msgs::msg::Odometry odom_msg;
   odom_msg.child_frame_id = imu_frame_id;
-  odom_msg.header.frame_id = world_frame_id;
+  odom_msg.header.frame_id = origin_frame_id;
   odom_msg.header.stamp = msg_time;
 
   odom_msg.pose.pose.position.x = Twb_SE3f.translation().x();
@@ -595,6 +703,22 @@ void OrbSlam3Wrapper::publish_body_odom(
   odom_pub->publish(odom_msg);
 }
 
+void OrbSlam3Wrapper::resetVisualization() {
+
+  // Delete all keyframe markers
+  visualization_msgs::msg::MarkerArray kf_markers;
+  visualization_msgs::msg::Marker kf_marker;
+
+  kf_marker.ns = "keyFrameWireframes";
+  kf_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+  kf_markers.markers.push_back(kf_marker);
+  kf_marker.ns = "connectedKeyFrameLines";
+  kf_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+  kf_markers.markers.push_back(kf_marker);
+
+  kf_markers_pub->publish(kf_markers);
+}
+
 sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
   std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time) {
   const int num_channels = 3; // x y z
@@ -606,7 +730,7 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
   sensor_msgs::msg::PointCloud2 cloud;
 
   cloud.header.stamp = msg_time;
-  cloud.header.frame_id = world_frame_id;
+  cloud.header.frame_id = origin_frame_id;
   cloud.height = 1;
   cloud.width = map_points.size();
   cloud.is_bigendian = false;

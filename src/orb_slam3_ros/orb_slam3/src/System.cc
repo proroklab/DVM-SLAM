@@ -1324,32 +1324,6 @@ vector<MapPoint*> System::GetAllMapPoints() {
 
 vector<KeyFrame*> System::GetAllKeyFrames() { return mpAtlas->GetCurrentMap()->GetAllKeyFrames(); }
 
-vector<Sophus::SE3f> System::GetAllKeyframePoses() {
-  vector<KeyFrame*> vpKFs = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
-  sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
-
-  vector<Sophus::SE3f> vKFposes;
-
-  for (size_t i = 0; i < vpKFs.size(); i++) {
-    KeyFrame* pKF = vpKFs[i];
-
-    if (pKF->isBad())
-      continue;
-
-    // Twb can be world frame to cam0 frame (without IMU) or body in world frame
-    // (with IMU)
-    Sophus::SE3f Twb;
-    if (mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO || mSensor == IMU_RGBD) // with IMU
-      Twb = vpKFs[i]->GetImuPose();
-    else // without IMU
-      Twb = vpKFs[i]->GetPoseInverse();
-
-    vKFposes.push_back(Twb);
-  }
-
-  return vKFposes;
-}
-
 cv::Mat System::GetCurrentFrame() { return mpFrameDrawer->DrawFrame(); }
 
 Sophus::SE3f System::GetCamTwc() { return mpTracker->GetCamTwc(); }
