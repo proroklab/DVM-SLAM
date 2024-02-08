@@ -1259,7 +1259,8 @@ void LoopClosing::MergeLocal() {
   Map* pCurrentMap = mpCurrentKF->GetMap();
   Map* pMergeMap = mpMergeMatchedKF->GetMap();
 
-  if (pMergeMap->GetUuid() < pCurrentMap->GetUuid()) {
+  // Map with the lower creatorAgentId is the base map
+  if (pMergeMap->creatorAgentId > pCurrentMap->creatorAgentId) {
     mg2oMergeScw = mg2oMergeScw.inverse();
 
     Map* tempMapPtr = pCurrentMap;
