@@ -8,16 +8,21 @@
 #include "Optimizer.h"
 #include "System.h"
 #include "peer.h"
+#include "sophus/se3.hpp"
 #include "sophus/types.hpp"
+#include <Eigen/src/Core/Matrix.h>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
+#include <interfaces/msg/detail/map_point__struct.hpp>
+#include <interfaces/srv/detail/get_map_points__struct.hpp>
 #include <mutex>
 #include <shared_mutex>
 #include <vector>
 #include <visualization_msgs/msg/detail/marker_array__struct.hpp>
 
 #define MIN_MAP_SHARE_SIZE 5
+#define MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT 1000
 
 using namespace std;
 
@@ -52,6 +57,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
     std::bind(&OrbSlam3Wrapper::handleGetCurrentMapRequest, this, std::placeholders::_1, std::placeholders::_2));
   add_map_service = this->create_service<interfaces::srv::AddMap>(node_name + "/add_map",
     std::bind(&OrbSlam3Wrapper::handleAddMapRequest, this, std::placeholders::_1, std::placeholders::_2));
+  getMapPointsService = this->create_service<interfaces::srv::GetMapPoints>(node_name + "/get_map_points",
+    std::bind(&OrbSlam3Wrapper::handleGetMapPointsRequest, this, std::placeholders::_1, std::placeholders::_2));
 
   // Create subscriptions
   newKeyFrameBowsSub = this->create_subscription<interfaces::msg::NewKeyFrameBows>(node_name + "/new_key_frame_bows", 1,
@@ -77,6 +84,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
   shareNewKeyFramesTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
   shareSuccessfullyMergedMsgTimer
     = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendSuccessfullyMergedMsg, this));
+  updateMapScaleTimer = this->create_wall_timer(10s, std::bind(&OrbSlam3Wrapper::updateMapScale, this));
 
   resetVisualization();
 
@@ -436,6 +444,80 @@ void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::Succes
   }
 }
 
+void OrbSlam3Wrapper::updateMapScale() {
+  auto handleGetMapPointsResponse = [this](rclcpp::Client<interfaces::srv::GetMapPoints>::SharedFuture future) {
+    unique_lock<mutex> lock(mutexWrapper);
+    interfaces::srv::GetMapPoints::Response::SharedPtr response = future.get();
+
+    cout << "Received peer's map points" << endl;
+
+    map<boost::uuids::uuid, Eigen::Vector3f> peerMapPointUuidToPos;
+    for (interfaces::msg::MapPoint peerMapPointMsg : response->map_points) {
+      boost::uuids::uuid uuid = arrayToUuid(peerMapPointMsg.uuid);
+      Eigen::Vector3f position(peerMapPointMsg.position[0], peerMapPointMsg.position[1], peerMapPointMsg.position[2]);
+      peerMapPointUuidToPos[uuid] = position;
+    }
+
+    vector<Eigen::Vector3f> sourcePoints;
+    vector<Eigen::Vector3f> targetPoints;
+
+    for (ORB_SLAM3::MapPoint* mapPoint : pSLAM->GetAtlas()->GetCurrentMap()->GetAllMapPoints()) {
+      if (peerMapPointUuidToPos.count(mapPoint->uuid) != 0) {
+        sourcePoints.push_back(mapPoint->GetWorldPos());
+        targetPoints.push_back(peerMapPointUuidToPos[mapPoint->uuid]);
+      }
+    }
+
+    cout << sourcePoints.size() << " point matches" << endl;
+
+    if (sourcePoints.size() < MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT)
+      return;
+
+    auto [transformation, scale] = pointSetAlignment(sourcePoints, targetPoints);
+
+    pSLAM->GetAtlas()->GetCurrentMap()->ApplyScaledRotation(transformation, scale);
+
+    cout << "Applied translation: " << transformation.translation() << " rotation: " << transformation.rotationMatrix()
+         << " & scale: " << scale << endl;
+  };
+
+  cout << "Updating map scale..." << endl;
+
+  uint lowestConnectedPeerAgentId = connectedPeers.begin()->first;
+  Peer* lowestConnectedPeer = connectedPeers[lowestConnectedPeerAgentId];
+
+  if (agentId < lowestConnectedPeerAgentId)
+    return;
+
+  auto request = std::make_shared<interfaces::srv::GetMapPoints::Request>();
+  auto future_result = lowestConnectedPeer->getMapPointsClient->async_send_request(request, handleGetMapPointsResponse);
+}
+
+void OrbSlam3Wrapper::handleGetMapPointsRequest(const std::shared_ptr<interfaces::srv::GetMapPoints::Request> request,
+  std::shared_ptr<interfaces::srv::GetMapPoints::Response> response) {
+  unique_lock<mutex> lock(mutexWrapper);
+
+  vector<ORB_SLAM3::MapPoint*> mapPoints = pSLAM->GetAtlas()->GetCurrentMap()->GetAllMapPoints();
+
+  for (ORB_SLAM3::MapPoint* mapPoint : mapPoints) {
+    if (mapPoint->isBad())
+      continue;
+
+    interfaces::msg::MapPoint mapPointMsg;
+
+    mapPointMsg.uuid = uuidToArray(mapPoint->uuid);
+    array<float, 3> position;
+    position[0] = mapPoint->GetWorldPos().x();
+    position[1] = mapPoint->GetWorldPos().y();
+    position[2] = mapPoint->GetWorldPos().z();
+    mapPointMsg.position = position;
+
+    response->map_points.push_back(mapPointMsg);
+  }
+
+  cout << "Sent map points" << endl;
+}
+
 boost::uuids::uuid OrbSlam3Wrapper::arrayToUuid(array<unsigned char, 16> array) {
   boost::uuids::uuid uuid;
   std::copy(array.begin(), array.end(), uuid.data);
@@ -765,4 +847,59 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
     }
   }
   return cloud;
+}
+
+// Least-squares estimation of transformation parameters between two point patterns
+// DOI: 10.1109/34.88573
+// https://zpl.fi/aligning-point-patterns-with-kabsch-umeyama-algorithm/
+tuple<Sophus::SE3f, float> OrbSlam3Wrapper::pointSetAlignment(
+  vector<Eigen::Vector3f> sourcePoints, vector<Eigen::Vector3f> targetPoints) {
+
+  // Center around centroid
+  Eigen::Vector3f souceCentroid = Eigen::Vector3f::Zero();
+  for (Eigen::Vector3f point : sourcePoints) {
+    souceCentroid += point;
+  }
+  souceCentroid /= sourcePoints.size();
+  for (Eigen::Vector3f point : sourcePoints) {
+    point -= souceCentroid;
+  }
+
+  Eigen::Vector3f targetCentroid = Eigen::Vector3f::Zero();
+  for (Eigen::Vector3f point : targetPoints) {
+    targetCentroid += point;
+  }
+  targetCentroid /= targetPoints.size();
+  for (Eigen::Vector3f point : targetPoints) {
+    point -= targetCentroid;
+  }
+
+  // Compute variance of source
+  float sourceVariance = 0;
+  for (Eigen::Vector3f point : sourcePoints) {
+    sourceVariance += point.squaredNorm();
+  }
+  sourceVariance /= sourcePoints.size();
+
+  // Compute covariance matrix
+  Eigen::Matrix3f H = Eigen::Matrix3f::Zero();
+  for (int i = 0; i < sourcePoints.size(); i++) {
+    H += sourcePoints[i] * targetPoints[i].transpose();
+  }
+  H /= sourcePoints.size();
+
+  // Compute SVD
+  Eigen::JacobiSVD<Eigen::Matrix3f> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+  // Compute scale
+  float s = static_cast<Eigen::Matrix3f>(svd.singularValues().asDiagonal()).trace() / sourceVariance;
+
+  // Compute rotation
+  Eigen::Matrix3f R = svd.matrixV() * svd.matrixU().transpose();
+
+  // Compute translation
+  Eigen::Vector3f t = targetCentroid - R * souceCentroid;
+
+  Sophus::SE3f sourceToTarget(R, t);
+  return { sourceToTarget, s };
 }

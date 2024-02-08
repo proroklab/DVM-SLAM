@@ -5,8 +5,8 @@
 #include "interfaces/msg/new_key_frames.hpp"
 #include "interfaces/msg/successfully_merged.hpp"
 #include "interfaces/srv/get_current_map.hpp"
+#include "interfaces/srv/get_map_points.hpp"
 #include <boost/uuid/uuid.hpp>
-#include <interfaces/srv/detail/get_current_map__struct.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/service.hpp>
@@ -39,6 +39,7 @@ public:
   rclcpp::Publisher<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsPub;
   rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedPub;
   rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr getCurrentMapClient;
+  rclcpp::Client<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsClient;
 
 protected:
   uint agentId;

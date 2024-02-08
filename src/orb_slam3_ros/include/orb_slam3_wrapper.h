@@ -12,6 +12,7 @@
 #include "interfaces/msg/uuid.hpp"
 #include "interfaces/srv/add_map.hpp"
 #include "interfaces/srv/get_current_map.hpp"
+#include "interfaces/srv/get_map_points.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "peer.h"
@@ -61,6 +62,7 @@ protected:
   // ROS services
   rclcpp::Service<interfaces::srv::GetCurrentMap>::SharedPtr get_current_map_service;
   rclcpp::Service<interfaces::srv::AddMap>::SharedPtr add_map_service;
+  rclcpp::Service<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsService;
 
   // ROS subscriptions
   rclcpp::Subscription<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesSub;
@@ -70,6 +72,7 @@ protected:
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
   rclcpp::TimerBase::SharedPtr shareNewKeyFramesTimer;
   rclcpp::TimerBase::SharedPtr shareSuccessfullyMergedMsgTimer;
+  rclcpp::TimerBase::SharedPtr updateMapScaleTimer;
 
   string world_frame_id = "/world";
   string origin_frame_id = "/origin";
@@ -94,6 +97,11 @@ protected:
   void sendSuccessfullyMergedMsg();
   void receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg);
 
+  void updateMapScale();
+
+  void handleGetMapPointsRequest(const std::shared_ptr<interfaces::srv::GetMapPoints::Request> request,
+    std::shared_ptr<interfaces::srv::GetMapPoints::Response> response);
+
   boost::uuids::uuid arrayToUuid(array<unsigned char, 16> array);
   array<unsigned char, 16> uuidToArray(boost::uuids::uuid uuid);
 
@@ -115,4 +123,7 @@ protected:
 
   sensor_msgs::msg::PointCloud2 mappoint_to_pointcloud(
     std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time);
+
+  tuple<Sophus::SE3f, float> pointSetAlignment(
+    vector<Eigen::Vector3f> sourcePoints, vector<Eigen::Vector3f> targetPoints);
 };

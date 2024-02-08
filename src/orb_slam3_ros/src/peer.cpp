@@ -17,6 +17,8 @@ Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
     "robot" + to_string(agentId) + "/successfully_merged", 1);
   newKeyFramesPub
     = rosNode->create_publisher<interfaces::msg::NewKeyFrames>("robot" + to_string(agentId) + "/new_key_frames", 1);
+  getMapPointsClient
+    = rosNode->create_client<interfaces::srv::GetMapPoints>("robot" + to_string(agentId) + "/get_map_points");
 }
 
 uint Peer::getId() { return agentId; }
