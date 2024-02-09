@@ -126,6 +126,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
 void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
   std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
   unique_lock<mutex> lock(mutexWrapper);
+  unique_lock<mutex> lock2(pSLAM->GetAtlas()->GetCurrentMap()->mMutexMapUpdate); // Wait for map merge
 
   cout << "Handling get current map request" << endl;
 
@@ -266,6 +267,8 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
 }
 
 void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::SharedPtr msg) {
+  unique_lock<mutex> lock(mutexWrapper);
+
   RCLCPP_INFO(this->get_logger(), "Received new key frames. Size: %d", msg->serialized_map.size());
 
   ORB_SLAM3::Map* newMap = pSLAM->GetAtlas()->DeserializeMap(msg->serialized_map);
@@ -440,6 +443,8 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
 }
 
 void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg) {
+  unique_lock<mutex> lock(mutexWrapper);
+
   connectedPeers[msg->sender_agent_id]->setRemoteSuccessfullyMerged(msg->successfully_merged);
 
   cout << "Recieved successful merge message from peer, now requesting its map" << endl;
@@ -521,13 +526,15 @@ void OrbSlam3Wrapper::updateMapScale() {
          << " & scale: " << scale << endl;
   };
 
-  cout << "Updating map scale..." << endl;
+  cout << "Attempting to update map scale..." << endl;
 
   uint lowestConnectedPeerAgentId = connectedPeers.begin()->first;
   Peer* lowestConnectedPeer = connectedPeers[lowestConnectedPeerAgentId];
 
-  if (agentId < lowestConnectedPeerAgentId)
+  if (agentId < lowestConnectedPeerAgentId || lowestConnectedPeer->getRemoteSuccessfullyMerged() == false
+    || lowestConnectedPeer->getLocalSuccessfullyMerged() == false || lowestConnectedPeer->getIsLostFromBaseMap()) {
     return;
+  }
 
   auto request = std::make_shared<interfaces::srv::GetMapPoints::Request>();
   auto future_result = lowestConnectedPeer->getMapPointsClient->async_send_request(request, handleGetMapPointsResponse);
@@ -605,6 +612,8 @@ void OrbSlam3Wrapper::processedNewFrame(rclcpp::Time msg_time) {
 }
 
 void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb) {
+  unique_lock<mutex> lock(mutexWrapper);
+
   Sophus::SE3f Twc = pSLAM->GetCamTwc();
 
   if (Twc.translation().array().isNaN()[0] || Twc.rotationMatrix().array().isNaN()(0, 0)) // avoid publishing NaN
