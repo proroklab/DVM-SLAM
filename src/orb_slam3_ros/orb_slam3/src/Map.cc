@@ -466,12 +466,19 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB,
 
   // Need to make ids consistant with the other already generated maps
   // TODO: does this break loading maps from a file?
-  for (MapPoint* pMPi : mspMapPoints) {
+  vector<MapPoint*> mapPointsVector(mspMapPoints.begin(), mspMapPoints.end());
+  std::sort(mapPointsVector.begin(), mapPointsVector.end(),
+    [](const MapPoint* a, const MapPoint* b) { return a->mnId < b->mnId; });
+  for (MapPoint* pMPi : mapPointsVector) {
     pMPi->mnId = MapPoint::nNextId++;
   }
-  for (KeyFrame* pKFi : mspKeyFrames) {
+  vector<KeyFrame*> keyFrameVector(mspKeyFrames.begin(), mspKeyFrames.end());
+  std::sort(keyFrameVector.begin(), keyFrameVector.end(),
+    [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
+  for (KeyFrame* pKFi : keyFrameVector) {
     pKFi->mnId = KeyFrame::nNextId++;
   }
+  mnMaxKFid = keyFrameVector.back()->mnId;
 
   // References reconstruction between different instances
   for (MapPoint* pMPi : mspMapPoints) {
