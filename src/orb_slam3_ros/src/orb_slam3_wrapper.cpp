@@ -21,8 +21,9 @@
 #include <vector>
 #include <visualization_msgs/msg/detail/marker_array__struct.hpp>
 
-#define MIN_MAP_SHARE_SIZE 5
-#define MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT 1000
+#define MIN_KEY_FRAME_SHARE_SIZE 5
+#define MIN_BOW_SHARE_SIZE 12
+#define MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT 500
 
 using namespace std;
 
@@ -87,8 +88,6 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
 
   shareNewKeyFrameBowsTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
   shareNewKeyFramesTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
-  shareSuccessfullyMergedMsgTimer
-    = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendSuccessfullyMergedMsg, this));
   updateMapScaleTimer = this->create_wall_timer(10s, std::bind(&OrbSlam3Wrapper::updateMapScale, this));
 
   resetVisualization();
@@ -213,7 +212,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       }
     }
 
-    if (currentMapCopy->GetAllKeyFrames().size() < MIN_MAP_SHARE_SIZE) {
+    if (currentMapCopy->GetAllKeyFrames().size() < MIN_KEY_FRAME_SHARE_SIZE) {
       continue;
     }
 
@@ -367,7 +366,7 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
       }
     }
 
-    if (keyFrameBowVectorMsgs.size() > MIN_MAP_SHARE_SIZE) {
+    if (keyFrameBowVectorMsgs.size() > MIN_BOW_SHARE_SIZE) {
       // Send new keyframes message to agent
       cout << "sent new key frame bows" << endl;
       interfaces::msg::NewKeyFrameBows msg;
@@ -412,26 +411,30 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
   }
 }
 
-void OrbSlam3Wrapper::sendSuccessfullyMergedMsg() {
+void OrbSlam3Wrapper::updateSuccessfullyMerged() {
+  unique_lock<mutex> lock(mutexWrapper);
+
+  vector<uint> successfullyMergedAgentIds = pSLAM->GetAtlas()->GetSuccessfullyMergedAgentIds();
+
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
 
-    // If we havent noted this peer as being merged locally, check if this peer has become successfully merged
-    if (!connectedPeer->getLocalSuccessfullyMerged()) {
-      vector<uint> successfullyMergedAgentIds = pSLAM->GetAtlas()->GetSuccessfullyMergedAgentIds();
-      bool successfullyMerged
-        = find(successfullyMergedAgentIds.begin(), successfullyMergedAgentIds.end(), connectedPeer->getId())
-        != successfullyMergedAgentIds.end();
+    bool successfullyMerged
+      = find(successfullyMergedAgentIds.begin(), successfullyMergedAgentIds.end(), connectedPeer->getId())
+      != successfullyMergedAgentIds.end();
 
+    if (connectedPeer->getLocalSuccessfullyMerged() != successfullyMerged) {
       if (successfullyMerged) {
-        connectedPeer->setLocalSuccessfullyMerged(true);
+        baseMap = pSLAM->GetAtlas()->GetCurrentMap();
+      } // TODO: handle else case. is there even an else case?
 
-        // Tell this agent that we are successfully merged
-        interfaces::msg::SuccessfullyMerged msg;
-        msg.successfully_merged = true;
-        msg.sender_agent_id = agentId;
-        connectedPeer->successfullyMergedPub->publish(msg);
-      }
+      connectedPeer->setLocalSuccessfullyMerged(successfullyMerged);
+
+      // Tell this agent that we are successfully merged
+      interfaces::msg::SuccessfullyMerged msg;
+      msg.successfully_merged = successfullyMerged;
+      msg.sender_agent_id = agentId;
+      connectedPeer->successfullyMergedPub->publish(msg);
     }
   }
 }

@@ -197,6 +197,15 @@ void LoopClosing::Run() {
             else
               MergeLocal();
 
+            if (mpCurrentKF->creatorAgentId != mpAtlas->GetAgentId()
+              || mpMergeMatchedKF->creatorAgentId != mpAtlas->GetAgentId()) {
+              cout << "merged external map successfully" << endl; // TODO: somehow send this back to the wrapper
+              uint peerAgentId = mpCurrentKF->creatorAgentId != mpAtlas->GetAgentId()
+                ? mpCurrentKF->creatorAgentId
+                : mpMergeMatchedKF->creatorAgentId;
+              mpAtlas->AddSuccessfullyMergedAgentId(peerAgentId);
+            }
+
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndMerge = std::chrono::steady_clock::now();
 
@@ -465,13 +474,13 @@ bool LoopClosing::NewDetectCommonRegions() {
         .count();
 #endif
 
+  // Only detect loops for KFs that we create
+  mbLoopDetected = mbLoopDetected && mpCurrentKF->creatorAgentId == mpAtlas->GetAgentId();
+
   if (mbMergeDetected || mbLoopDetected) {
 #ifdef REGISTER_TIMES
     vdEstSim3_ms.push_back(timeEstSim3);
 #endif
-    if (mbMergeDetected && mpMergeMatchedKF->creatorAgentId != mpAtlas->GetAgentId()) {
-      cout << "merged external map successfully" << endl; // TODO: somehow send this back to the wrapper
-    }
     return true;
   }
 
@@ -520,11 +529,10 @@ bool LoopClosing::NewDetectCommonRegions() {
   vdEstSim3_ms.push_back(timeEstSim3);
 #endif
 
+  // Only detect loops for KFs that we create
+  mbLoopDetected = mbLoopDetected && mpCurrentKF->creatorAgentId == mpAtlas->GetAgentId();
+
   if (mbMergeDetected || mbLoopDetected) {
-    if (mbMergeDetected && mpCurrentKF->creatorAgentId != mpAtlas->GetAgentId()) {
-      cout << "merged external map successfully" << endl;
-      mpAtlas->AddSuccessfullyMergedAgentId(mpCurrentKF->creatorAgentId);
-    }
     return true;
   }
 
@@ -533,15 +541,11 @@ bool LoopClosing::NewDetectCommonRegions() {
 
   // If the currentKF's map was created by a different agent and no more KFs from that map are in the queue, it means
   // that we were unable to merge it into our current map and should delete the map
-  if (mpCurrentKF->GetMap() != mpAtlas->GetCurrentMap()) {
-    bool noMoreSiblingKFsinQueue = find_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
-                                     [this](KeyFrame* element) { return element->GetMap() == mpCurrentKF->GetMap(); })
-      == mlpLoopKeyFrameQueue.end();
-
-    if (noMoreSiblingKFsinQueue) {
-      cout << "External map merge unsucessful, deleting map with ID: " << mpLastMap->GetId() << endl;
-      mpAtlas->SetMapBad(mpLastMap);
-    }
+  if (mpCurrentKF->GetMap() != mpAtlas->GetCurrentMap()
+    && mpCurrentKF->GetMap()->creatorAgentId != mpAtlas->GetAgentId()
+    && mpCurrentKF->GetMap()->GetMaxKFid() == mpCurrentKF->mnId) {
+    cout << "External map merge unsucessful, deleting map with ID: " << mpCurrentKF->GetMap()->GetId() << endl;
+    mpAtlas->SetMapBad(mpCurrentKF->GetMap());
   }
 
   return false;
