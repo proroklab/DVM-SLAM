@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KeyFrame.h"
+#include "interfaces/msg/is_lost_from_base_map.hpp"
 #include "interfaces/msg/new_key_frame_bows.hpp"
 #include "interfaces/msg/new_key_frames.hpp"
 #include "interfaces/msg/successfully_merged.hpp"
@@ -25,6 +26,9 @@ public:
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
   ORB_SLAM3::KeyFrame* getReferenceKeyFrame();
 
+  bool getIsLostFromBaseMap();
+  void setIsLostFromBaseMap(bool isLost);
+
   void setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame);
   void setRemoteSuccessfullyMerged(bool remoteSuccessfullyMerged);
   void setLocalSuccessfullyMerged(bool localSuccessfullyMerged);
@@ -38,6 +42,7 @@ public:
   rclcpp::Publisher<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesPub;
   rclcpp::Publisher<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsPub;
   rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedPub;
+  rclcpp::Publisher<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapPub;
   rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr getCurrentMapClient;
   rclcpp::Client<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsClient;
 
@@ -50,6 +55,8 @@ protected:
 
   bool remoteSuccessfullyMerged; // Remote map is successfully merged together
   bool localSuccessfullyMerged; // Local map is successfully merged together
+
+  bool isLostFromBaseMap = false; // Peer is lost in its own map
 
   rclcpp::Node::SharedPtr rosNode;
 };

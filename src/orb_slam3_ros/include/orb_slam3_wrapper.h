@@ -1,11 +1,13 @@
 #pragma once
 
 #include "KeyFrame.h"
+#include "Map.h"
 #include "System.h"
 #include "cv_bridge/cv_bridge.h"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "image_transport/image_transport.hpp"
+#include "interfaces/msg/is_lost_from_base_map.hpp"
 #include "interfaces/msg/new_key_frame_bows.hpp"
 #include "interfaces/msg/new_key_frames.hpp"
 #include "interfaces/msg/successfully_merged.hpp"
@@ -42,6 +44,9 @@ protected:
 
   map<uint, Peer*> connectedPeers;
 
+  bool isLostFromBaseMap = false;
+  ORB_SLAM3::Map* baseMap;
+
   ORB_SLAM3::System* pSLAM;
   ORB_SLAM3::System::eSensor sensor_type;
 
@@ -68,10 +73,10 @@ protected:
   rclcpp::Subscription<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesSub;
   rclcpp::Subscription<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsSub;
   rclcpp::Subscription<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedSub;
+  rclcpp::Subscription<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapSub;
 
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
   rclcpp::TimerBase::SharedPtr shareNewKeyFramesTimer;
-  rclcpp::TimerBase::SharedPtr shareSuccessfullyMergedMsgTimer;
   rclcpp::TimerBase::SharedPtr updateMapScaleTimer;
 
   string world_frame_id = "/world";
@@ -94,8 +99,11 @@ protected:
   void sendNewKeyFrameBows();
   void receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameBows::SharedPtr msg);
 
-  void sendSuccessfullyMergedMsg();
+  void updateSuccessfullyMerged();
   void receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg);
+
+  void updateIsLostFromBaseMap();
+  void receiveIsLostFromBaseMapMsg(const interfaces::msg::IsLostFromBaseMap::SharedPtr msg);
 
   void updateMapScale();
 
@@ -106,6 +114,8 @@ protected:
   array<unsigned char, 16> uuidToArray(boost::uuids::uuid uuid);
 
   ORB_SLAM3::Map* deepCopyMap(ORB_SLAM3::Map* targetMap);
+
+  void processedNewFrame(rclcpp::Time msg_time);
 
   // Publish data to ros topics
   void publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb = Eigen::Vector3f::Zero());

@@ -41,6 +41,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
   this->sensor_type = sensor_type;
   pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, agentId, true);
 
+  baseMap = pSLAM->GetAtlas()->GetCurrentMap();
+
   // Create publishers
   pose_pub = this->create_publisher<visualization_msgs::msg::Marker>(node_name + "/camera_pose", 1);
   tracked_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/tracked_points", 1);
@@ -68,6 +70,9 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
       std::bind(&OrbSlam3Wrapper::receiveSuccessfullyMergedMsg, this, std::placeholders::_1));
   newKeyFramesSub = this->create_subscription<interfaces::msg::NewKeyFrames>(
     node_name + "/new_key_frames", 1, std::bind(&OrbSlam3Wrapper::receiveNewKeyFrames, this, std::placeholders::_1));
+  isLostFromBaseMapSub
+    = this->create_subscription<interfaces::msg::IsLostFromBaseMap>(node_name + "/is_lost_from_base_map", 1,
+      std::bind(&OrbSlam3Wrapper::receiveIsLostFromBaseMapMsg, this, std::placeholders::_1));
 
   // TODO: create a proper topic handler that handles nodes connecting/disconnecting
   vector<uint> connectedPeerIds;
@@ -178,11 +183,14 @@ void OrbSlam3Wrapper::handleAddMapRequest(const std::shared_ptr<interfaces::srv:
 void OrbSlam3Wrapper::sendNewKeyFrames() {
   unique_lock<mutex> lock(mutexWrapper);
 
+  if (isLostFromBaseMap)
+    return;
+
   // Send new key frames to all peers
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
 
-    if (!connectedPeer->getRemoteSuccessfullyMerged()) {
+    if (!connectedPeer->getRemoteSuccessfullyMerged() || connectedPeer->getIsLostFromBaseMap()) {
       continue;
     }
 
@@ -320,13 +328,16 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
 void OrbSlam3Wrapper::sendNewKeyFrameBows() {
   unique_lock<mutex> lock(mutexWrapper);
 
+  if (isLostFromBaseMap)
+    return;
+
   vector<ORB_SLAM3::KeyFrame*> keyFrames = pSLAM->GetAllKeyFrames();
 
   // Send new key frame bows to all peers
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
 
-    if (connectedPeer->getRemoteSuccessfullyMerged()) {
+    if (connectedPeer->getRemoteSuccessfullyMerged() || connectedPeer->getIsLostFromBaseMap()) {
       continue;
     }
 
@@ -444,6 +455,32 @@ void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::Succes
   }
 }
 
+void OrbSlam3Wrapper::updateIsLostFromBaseMap() {
+  unique_lock<mutex> lock(mutexWrapper);
+
+  bool newIsLostFromBaseMap = baseMap != pSLAM->GetAtlas()->GetCurrentMap();
+
+  if (isLostFromBaseMap != newIsLostFromBaseMap) {
+    isLostFromBaseMap = newIsLostFromBaseMap;
+
+    // Update peers on if we are lost or not
+    interfaces::msg::IsLostFromBaseMap msg;
+    msg.sender_agent_id = agentId;
+    msg.is_lost_from_base_map = isLostFromBaseMap;
+
+    for (auto& pair : connectedPeers) {
+      Peer* connectedPeer = pair.second;
+      connectedPeer->isLostFromBaseMapPub->publish(msg);
+    }
+  }
+}
+
+void OrbSlam3Wrapper::receiveIsLostFromBaseMapMsg(const interfaces::msg::IsLostFromBaseMap::SharedPtr msg) {
+  unique_lock<mutex> lock(mutexWrapper);
+
+  connectedPeers[msg->sender_agent_id]->setIsLostFromBaseMap(msg->is_lost_from_base_map);
+}
+
 void OrbSlam3Wrapper::updateMapScale() {
   auto handleGetMapPointsResponse = [this](rclcpp::Client<interfaces::srv::GetMapPoints>::SharedFuture future) {
     unique_lock<mutex> lock(mutexWrapper);
@@ -556,6 +593,12 @@ ORB_SLAM3::Map* OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMap) {
   mapCopy->PostLoad(dummyKFDB, dummyORBVoc, dummyMCams);
 
   return mapCopy;
+}
+
+void OrbSlam3Wrapper::processedNewFrame(rclcpp::Time msg_time) {
+  publish_topics(msg_time);
+  updateSuccessfullyMerged();
+  updateIsLostFromBaseMap();
 }
 
 void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb) {

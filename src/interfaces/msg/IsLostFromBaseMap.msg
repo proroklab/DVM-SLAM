@@ -1,0 +1,2 @@
+uint32 sender_agent_id
+bool is_lost_from_base_map

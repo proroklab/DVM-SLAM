@@ -19,6 +19,8 @@ Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
     = rosNode->create_publisher<interfaces::msg::NewKeyFrames>("robot" + to_string(agentId) + "/new_key_frames", 1);
   getMapPointsClient
     = rosNode->create_client<interfaces::srv::GetMapPoints>("robot" + to_string(agentId) + "/get_map_points");
+  isLostFromBaseMapPub = rosNode->create_publisher<interfaces::msg::IsLostFromBaseMap>(
+    "robot" + to_string(agentId) + "/is_lost_from_base_map", 1);
 }
 
 uint Peer::getId() { return agentId; }
@@ -27,6 +29,9 @@ bool Peer::getLocalSuccessfullyMerged() { return localSuccessfullyMerged; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameUuids() { return sentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameBowUuids() { return sentKeyFrameBowUuids; }
 ORB_SLAM3::KeyFrame* Peer::getReferenceKeyFrame() { return referenceKeyFrame; }
+
+bool Peer::getIsLostFromBaseMap() { return isLostFromBaseMap; }
+void Peer::setIsLostFromBaseMap(bool isLost) { this->isLostFromBaseMap = isLost; }
 
 void Peer::setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame) { this->referenceKeyFrame = referenceKeyFrame; }
 

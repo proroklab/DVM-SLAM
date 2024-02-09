@@ -37,7 +37,7 @@ private:
 
       rclcpp::Time msg_time = msg->header.stamp;
 
-      OrbSlam3Wrapper::publish_topics(msg_time);
+      OrbSlam3Wrapper::processedNewFrame(msg_time);
 
     } catch (cv_bridge::Exception& e) {
       RCLCPP_ERROR(this->get_logger(), "Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
