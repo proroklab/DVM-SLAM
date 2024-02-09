@@ -73,7 +73,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   Atlas();
-  Atlas(int initKFid); // When its initialization the first map is created
+  Atlas(int initKFid, uint agentId); // When its initialization the first map is created
   ~Atlas();
 
   void SetAgentId(unsigned int agentId);

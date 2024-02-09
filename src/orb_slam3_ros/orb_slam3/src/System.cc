@@ -137,7 +137,7 @@ System::System(const string& strVocFile, const string& strSettingsFile, const eS
 
     // Create the Atlas
     cout << "Initialization of Atlas from scratch " << endl;
-    mpAtlas = new Atlas(0);
+    mpAtlas = new Atlas(0, agentId);
   }
   else {
     // Load ORB Vocabulary
@@ -183,8 +183,6 @@ System::System(const string& strVocFile, const string& strSettingsFile, const eS
 
     // usleep(10*1000*1000);
   }
-
-  mpAtlas->SetAgentId(agentId);
 
   if (mSensor == IMU_STEREO || mSensor == IMU_MONOCULAR || mSensor == IMU_RGBD)
     mpAtlas->SetInertialSensor();
@@ -1503,6 +1501,7 @@ bool System::LoadAtlas(int type) {
       return false; // Both are differents
     }
 
+    mpAtlas->SetAgentId(agentId);
     mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
     mpAtlas->SetORBVocabulary(mpVocabulary);
     mpAtlas->PostLoad();

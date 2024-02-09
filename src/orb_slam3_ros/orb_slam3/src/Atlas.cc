@@ -34,9 +34,10 @@ namespace ORB_SLAM3 {
 
 Atlas::Atlas() { mpCurrentMap = static_cast<Map*>(NULL); }
 
-Atlas::Atlas(int initKFid)
+Atlas::Atlas(int initKFid, uint agentId)
   : mnLastInitKFidMap(initKFid)
-  , mHasViewer(false) {
+  , mHasViewer(false)
+  , agentId(agentId) {
   mpCurrentMap = static_cast<Map*>(NULL);
   CreateNewMap();
 }
