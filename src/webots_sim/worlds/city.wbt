@@ -1,0 +1,428 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/advertising_board/protos/AdvertisingBoard.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/road/protos/RoadIntersection.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/road/protos/StraightRoadSegment.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/buildings/protos/GasStation.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/buildings/protos/FastFoodRestaurant.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/street_furniture/protos/BusStop.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/buildings/protos/ModernHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/buildings/protos/LargeResidentialTower.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/traffic/protos/HighwayPole.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/traffic/protos/WorkBarrier.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/traffic/protos/HighwaySign.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/obstacles/protos/OilBarrel.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/vehicles/protos/mercedes_benz/MercedesBenzSprinterSimple.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/vehicles/protos/bmw/BmwX5Simple.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/vehicles/protos/lincoln/LincolnMKZSimple.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/vehicles/protos/generic/TruckSimple.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/vehicles/protos/range_rover/RangeRoverSportSVRSimple.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/vehicles/protos/toyota/ToyotaPriusSimple.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/traffic/protos/YieldSign.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/traffic/protos/SpeedLimitSign.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/rocks/protos/Rock.proto"
+
+WorldInfo {
+  info [
+    "Autonomous Vehicle Simulation"
+    "The simple controller example uses an on-board camera to follow the yellow road lines and a SICK sensor to avoid the obstacles."
+    "The control of the vehicle is done using the driver library."
+    "The vehicle based on the Car PROTO is modelled with realistic physics properties: motor torques, body mass, friction forces, suspensions, etc."
+  ]
+  title "City"
+  ERP 0.6
+  basicTimeStep 10
+  lineScale 1
+  contactProperties [
+    ContactProperties {
+      coulombFriction [
+        8
+      ]
+      softCFM 1e-05
+      bumpSound ""
+      rollSound ""
+      slideSound ""
+    }
+    ContactProperties {
+      material2 "CitroenCZeroWheels"
+      coulombFriction [
+        8
+      ]
+      softCFM 1e-05
+      bumpSound ""
+      rollSound ""
+      slideSound ""
+    }
+    ContactProperties {
+      material2 "ToyotaPriusWheels"
+      coulombFriction [
+        8
+      ]
+      softCFM 1e-05
+      bumpSound ""
+      rollSound ""
+      slideSound ""
+    }
+    ContactProperties {
+      material2 "LincolnMKZWheels"
+      coulombFriction [
+        8
+      ]
+      softCFM 1e-05
+      bumpSound ""
+      rollSound ""
+      slideSound ""
+    }
+    ContactProperties {
+      material2 "RangeRoverSportSVRWheels"
+      coulombFriction [
+        8
+      ]
+      softCFM 1e-05
+      bumpSound ""
+      rollSound ""
+      slideSound ""
+    }
+    ContactProperties {
+      material2 "TruckWheels"
+      coulombFriction [
+        8
+      ]
+      softCFM 1e-05
+      bumpSound ""
+      rollSound ""
+      slideSound ""
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.4044261464567917 -0.3459118026755544 -0.8466312756045916 4.37087221276289
+  position 15.747541233181849 -66.89142033242457 107.81359937973102
+  near 1
+  followSmoothness 0
+}
+TexturedBackground {
+  luminosity 2
+}
+TexturedBackgroundLight {
+}
+DEF GROUND Solid {
+  translation 0 0 -0.1
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.8 0.8
+        baseColorMap ImageTexture {
+          url [
+            "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/vehicles/worlds/textures/ground_grass.jpg"
+          ]
+        }
+        roughness 0.5
+        metalness 0
+        textureTransform TextureTransform {
+          scale 500 500
+        }
+      }
+      geometry DEF GROUND_PLANE Plane {
+        size 2000 2000
+      }
+    }
+  ]
+  boundingObject USE GROUND_PLANE
+  locked TRUE
+}
+StraightRoadSegment {
+  translation 7 0 0
+  length 50
+}
+RangeRoverSportSVRSimple {
+  translation -2.5978 25.0834 0.4
+  rotation 0 0 1 1.5708
+  name "vehicle(3)"
+}
+StraightRoadSegment {
+  translation -9 0 0
+  rotation 0 0 1 3.141592653589793
+  name "road(3)"
+  length 50
+}
+YieldSign {
+  translation 2.85074 -3.76158 0
+}
+YieldSign {
+  translation -4.95926 3.71842 0
+  rotation 0 0 1 3.14159
+  name "yield sign(1)"
+}
+YieldSign {
+  translation -4.95926 -4.11158 0
+  rotation 0 0 1 -1.5707953071795862
+  name "yield sign(2)"
+}
+WorkBarrier {
+  translation 1.71958 -25.6052 0
+  rotation 0 0 1 -1.5707953071795862
+}
+WorkBarrier {
+  translation 0.30958 -25.6052 0
+  rotation 0 0 1 -1.5707953071795862
+  name "work barrier(1)"
+}
+WorkBarrier {
+  translation -1.18042 -25.6052 0
+  rotation 0 0 1 -1.5707953071795862
+  name "work barrier(2)"
+}
+WorkBarrier {
+  translation -2.62042 -25.6052 0
+  rotation 0 0 1 -1.5707953071795862
+  name "work barrier(3)"
+}
+WorkBarrier {
+  translation -4.10042 -25.6052 0
+  rotation 0 0 1 -1.5707953071795862
+  name "work barrier(4)"
+}
+OilBarrel {
+  translation 2.61639 -24.593 0.44
+}
+OilBarrel {
+  translation 1.36148 -27.6119 0.44
+  name "oil barrel(1)"
+}
+OilBarrel {
+  translation -2.5588 -27.644 0.44
+  name "oil barrel(4)"
+}
+OilBarrel {
+  translation -1.76212 -29.2404 0.44
+  name "oil barrel(6)"
+}
+OilBarrel {
+  translation -0.308891 -27.3227 0.44
+  name "oil barrel(2)"
+}
+OilBarrel {
+  translation -0.323029 -30.0748 0.44
+  name "oil barrel(3)"
+}
+OilBarrel {
+  translation -3.91968 -29.5349 0.44
+  name "oil barrel(5)"
+}
+OilBarrel {
+  translation 0.989829 -24.7352 0.44
+  name "oil barrel(7)"
+}
+StraightRoadSegment {
+  translation -1 8 0
+  rotation 0 0 1 1.5707996938995747
+  name "road(1)"
+  length 50
+}
+ToyotaPriusSimple {
+  translation -29.0939 -1.63956 0.4
+  rotation 0 0 1 3.14159
+  name "vehicle(4)"
+}
+StraightRoadSegment {
+  translation -1 -8 0
+  rotation 0 0 1 -1.570795613280012
+  name "road(2)"
+  length 50
+}
+StraightRoadSegment {
+  translation 20 -4 0
+  rotation 0 0 1 -1.570795613280012
+  name "road(4)"
+  width 34
+  numberOfLanes 1
+  startingRoadBorderWidth 0
+  endingRoadBorderWidth 0
+  length 39
+}
+AdvertisingBoard {
+  translation 3.9911 34.7535 -0.06
+  rotation 0 0 -1 1.8326
+  name "advertising board(1)"
+  frontTexture [
+    "https://www.create.ac.uk/wp-content/uploads/2018/02/university-of-cambridge-logo-2.png"
+  ]
+  backTexture [
+    ""
+  ]
+  recognitionColors [
+    0 0 0
+    1 1 1
+  ]
+  displayWidth 12
+  displayHeight 5
+  frameThickness 0.9
+  frameColor 0.52549 0.52549 0.52549
+  poleNumber 1
+  poleHeight 12
+  baseRatio 1
+}
+Robot {
+  translation 12.5502 -1.65994 1.5
+  rotation 0 0 -1 3.14159
+  children [
+    Pose {
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.1 0.2 0.12
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.04 0 0
+      rotation 0 1 0 -1.57
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 1
+            metalness 0
+          }
+          geometry Cone {
+            bottomRadius 0.08
+            height 0.1
+          }
+        }
+      ]
+    }
+    Camera {
+      translation 0.09 0 0
+      fieldOfView 2.27
+      width 640
+      height 480
+      antiAliasing TRUE
+    }
+  ]
+  name "robot1"
+  controller "<extern>"
+  supervisor TRUE
+}
+Robot {
+  translation 0.90996 14.2 1.5
+  rotation 0 0 -1 1.57079
+  children [
+    Pose {
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.1 0.2 0.12
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.04 0 0
+      rotation 0 1 0 -1.57
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 1
+            metalness 0
+          }
+          geometry Cone {
+            bottomRadius 0.08
+            height 0.1
+          }
+        }
+      ]
+    }
+    Camera {
+      translation 0.09 0 0
+      fieldOfView 2.27
+      width 640
+      height 480
+      antiAliasing TRUE
+    }
+  ]
+  name "robot2"
+  controller "<extern>"
+  supervisor TRUE
+}
+RoadIntersection {
+  translation -1 0 0
+  rotation 0 0 1 0.7853996938995746
+}
+Rock {
+  translation -1.4292 -39.1573 2.64
+  scale 50
+}
+SpeedLimitSign {
+  translation 6.98 -3.78 0
+}
+SpeedLimitSign {
+  translation -10.59 3.78 0
+  name "speed limit(1)"
+}
+YieldSign {
+  translation 2.55074 3.71842 0
+  rotation 0 0 1 1.5708
+  name "yield sign(3)"
+}
+ModernHouse {
+  translation -16.6385 13.1636 0
+}
+GasStation {
+  translation 19.7569 -18.2943 0
+  rotation 0 0 1 3.14159
+}
+FastFoodRestaurant {
+  translation -10.3943 -12.8861 1.42109e-14
+}
+BusStop {
+  translation -9.52378 -5.90125 -2.13163e-14
+  rotation 0 0 1 1.5708
+}
+LargeResidentialTower {
+  translation 13.2914 10.8048 0
+  rotation 0 0 1 1.5708
+}
+HighwayPole {
+  translation -32.8381 3.89173 0
+  height 5
+  rightVerticalSigns [
+    WorkBarrier {
+    }
+    HighwaySign {
+      name "horizontal sign"
+      height 2.1
+      length 3.2
+      texture [
+        "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/traffic/protos/textures/highway_sign_la_ciotat.jpg"
+      ]
+    }
+  ]
+}
+MercedesBenzSprinterSimple {
+  translation -25.3639 1.55342 0.4
+}
+BmwX5Simple {
+  translation 1.01744 22.3932 0.4
+  rotation 0 0 -1 1.62479
+}
+LincolnMKZSimple {
+  translation 19.824 -2.14135 0.4
+  rotation 0 0 1 -5.307179586466759e-06
+  name "vehicle(1)"
+}
+TruckSimple {
+  translation 31.095 1.62542 0.5
+  rotation 0 0 1 3.14159
+  name "vehicle(2)"
+}

@@ -8,6 +8,8 @@ data_files.append(('share/' + package_name + '/launch',
                   ['launch/robot_launch.py']))
 data_files.append(('share/' + package_name + '/worlds',
                   ['worlds/complete_apartment.wbt']))
+data_files.append(('share/' + package_name + '/worlds',
+                  ['worlds/city.wbt']))
 data_files.append(
     ('share/' + package_name + '/resource', ['resource/robot1.urdf']))
 data_files.append(
