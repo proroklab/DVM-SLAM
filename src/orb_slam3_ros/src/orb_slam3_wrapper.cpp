@@ -17,6 +17,7 @@
 #include <interfaces/msg/map_point.hpp>
 #include <interfaces/msg/uuid.hpp>
 #include <interfaces/srv/get_map_points.hpp>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <vector>
@@ -139,7 +140,7 @@ void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interface
   connectedPeers[request->sender_agent_id]->setReferenceKeyFrame(latestKeyFrame);
 
   // Clone current map
-  ORB_SLAM3::Map* currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
+  unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
 
   // Remove keyframes not from this agent
   for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
@@ -150,7 +151,7 @@ void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interface
 
   response->next_reference_key_frame_uuid = uuidToArray(latestKeyFrame->uuid);
   response->sender_agent_id = agentId;
-  response->serialized_map = pSLAM->SerializeMap(currentMapCopy);
+  response->serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
 }
 
 void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedFuture future) {
@@ -185,13 +186,15 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       continue;
     }
 
-    ORB_SLAM3::Map* currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
+    unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
 
     // Remove keyframes not from this agent or have already been sent
     // keep all keyframe connections to reconnect later
+    vector<ORB_SLAM3::KeyFrame*> keyFramesToDelete;
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
       if (keyFrame->creatorAgentId != agentId || connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0) {
         currentMapCopy->EraseKeyFrame(keyFrame);
+        keyFramesToDelete.push_back(keyFrame);
       }
     }
 
@@ -201,7 +204,11 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
       if (!mapPoint->GetReferenceKeyFrame() || remainingKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0) {
         mapPoint->SetBadFlag();
+        delete mapPoint;
       }
+    }
+    for (ORB_SLAM3::KeyFrame* keyFrame : keyFramesToDelete) { // TODO: REALLY REALLY should move to smart pointers
+      delete keyFrame;
     }
 
     if (currentMapCopy->GetAllKeyFrames().size() < MIN_KEY_FRAME_SHARE_SIZE) {
@@ -241,7 +248,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     // Send new frames to peer
     interfaces::msg::NewKeyFrames msg;
     msg.sender_agent_id = agentId;
-    msg.serialized_map = pSLAM->SerializeMap(currentMapCopy);
+    msg.serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
     msg.reference_key_frame_uuid = uuidToArray(connectedPeer->getReferenceKeyFrame()->uuid);
     msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
     connectedPeer->newKeyFramesPub->publish(msg);
@@ -292,12 +299,14 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
       continue;
     }
 
+    newMap->EraseMapPoint(mapPoint);
     currentMap->AddMapPoint(mapPoint);
     mapPoint->UpdateMap(currentMap);
   }
 
   // Move keyframes to current map
   for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
+    newMap->EraseKeyFrame(keyFrame);
     currentMap->AddKeyFrame(keyFrame);
     keyFrame->UpdateMap(currentMap);
 
@@ -316,6 +325,8 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
   for (ORB_SLAM3::KeyFrame* keyFrame : currentMap->GetAllKeyFrames()) {
     // keyFrame->UpdateConnections();
   }
+
+  delete newMap;
 }
 
 void OrbSlam3Wrapper::sendNewKeyFrameBows() {
@@ -588,7 +599,7 @@ array<unsigned char, 16> OrbSlam3Wrapper::uuidToArray(boost::uuids::uuid uuid) {
   return array;
 }
 
-ORB_SLAM3::Map* OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMap) {
+unique_ptr<ORB_SLAM3::Map> OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMap) {
   // Make a deep copy of the target map
   // TODO: make this less terrible!
   ORB_SLAM3::Map* mapCopy;
@@ -597,7 +608,8 @@ ORB_SLAM3::Map* OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMap) {
   vector<ORB_SLAM3::GeometricCamera*> mvpCameras = pSLAM->GetAtlas()->GetAllCameras();
   set<ORB_SLAM3::GeometricCamera*> dummySCams(mvpCameras.begin(), mvpCameras.end());
   ORB_SLAM3::ORBVocabulary* dummyORBVoc = pSLAM->GetORBVocabulary();
-  ORB_SLAM3::KeyFrameDatabase* dummyKFDB = new ORB_SLAM3::KeyFrameDatabase(*dummyORBVoc);
+  delete dummyKFDB;
+  dummyKFDB = new ORB_SLAM3::KeyFrameDatabase(*dummyORBVoc);
   map<unsigned int, ORB_SLAM3::GeometricCamera*> dummyMCams;
   for (ORB_SLAM3::GeometricCamera* pCam : mvpCameras) {
     dummyMCams[pCam->GetId()] = pCam;
@@ -613,7 +625,7 @@ ORB_SLAM3::Map* OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMap) {
   ia >> mapCopy;
   mapCopy->PostLoad(dummyKFDB, dummyORBVoc, dummyMCams);
 
-  return mapCopy;
+  return unique_ptr<ORB_SLAM3::Map>(mapCopy);
 }
 
 void OrbSlam3Wrapper::processedNewFrame(rclcpp::Time msg_time) {

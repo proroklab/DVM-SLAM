@@ -84,6 +84,8 @@ protected:
 
   vector<geometry_msgs::msg::Point> cameraWireframe;
 
+  ORB_SLAM3::KeyFrameDatabase* dummyKFDB;
+
   void handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
     std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response);
   void handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedFuture future);
@@ -108,7 +110,7 @@ protected:
   boost::uuids::uuid arrayToUuid(array<unsigned char, 16> array);
   array<unsigned char, 16> uuidToArray(boost::uuids::uuid uuid);
 
-  ORB_SLAM3::Map* deepCopyMap(ORB_SLAM3::Map* targetMap);
+  unique_ptr<ORB_SLAM3::Map> deepCopyMap(ORB_SLAM3::Map* targetMap);
 
   void processedNewFrame(rclcpp::Time msg_time);
 

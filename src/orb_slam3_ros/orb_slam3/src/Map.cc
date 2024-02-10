@@ -75,10 +75,12 @@ Map::Map(int initKFid, unsigned int creatorAgentId)
 }
 
 Map::~Map() {
-  // TODO: erase all points from memory
+  for (set<MapPoint*>::iterator sit = mspMapPoints.begin(), send = mspMapPoints.end(); sit != send; sit++)
+    delete *sit;
   mspMapPoints.clear();
 
-  // TODO: erase all keyframes from memory
+  for (set<KeyFrame*>::iterator sit = mspKeyFrames.begin(), send = mspKeyFrames.end(); sit != send; sit++)
+    delete *sit;
   mspKeyFrames.clear();
 
   if (mThumbnail)
