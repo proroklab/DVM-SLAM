@@ -32,6 +32,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <mutex>
 #include <set>
 
@@ -81,7 +82,7 @@ public:
 
   void CreateNewMap();
   Map* CreateNewMap(vector<unsigned char> serializedMap);
-  Map* DeserializeMap(vector<unsigned char> serializedMap);
+  Map* DeserializeMap(vector<unsigned char> serializedMap, bool connectToExistingMPandKFs);
   void ChangeMap(Map* pMap);
 
   unsigned long int GetLastInitKFid();
@@ -148,13 +149,13 @@ public:
 
   long unsigned int GetNumLivedMP();
 
-  void AddSuccessfullyMergedAgentId(unsigned int agentId);
-  vector<uint> GetSuccessfullyMergedAgentIds();
+  void AddSuccessfullyMergedAgentId(unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids);
+  map<uint, vector<boost::uuids::uuid>> GetSuccessfullyMergedAgentIds();
 
 protected:
   unsigned int agentId;
 
-  vector<uint> successfullyMergedAgentIds;
+  map<uint, vector<boost::uuids::uuid>> successfullyMergedAgentIdsAndMergedKeyFrameUuids;
 
   std::set<Map*> mspMaps;
   std::set<Map*> mspBadMaps;

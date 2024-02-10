@@ -12,7 +12,6 @@
 #include "interfaces/msg/new_key_frames.hpp"
 #include "interfaces/msg/successfully_merged.hpp"
 #include "interfaces/msg/uuid.hpp"
-#include "interfaces/srv/add_map.hpp"
 #include "interfaces/srv/get_current_map.hpp"
 #include "interfaces/srv/get_map_points.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -66,7 +65,6 @@ protected:
 
   // ROS services
   rclcpp::Service<interfaces::srv::GetCurrentMap>::SharedPtr get_current_map_service;
-  rclcpp::Service<interfaces::srv::AddMap>::SharedPtr add_map_service;
   rclcpp::Service<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsService;
 
   // ROS subscriptions
@@ -89,9 +87,6 @@ protected:
   void handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
     std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response);
   void handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedFuture future);
-
-  void handleAddMapRequest(const std::shared_ptr<interfaces::srv::AddMap::Request> request,
-    std::shared_ptr<interfaces::srv::AddMap::Response> response);
 
   void sendNewKeyFrames();
   void receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::SharedPtr msg);

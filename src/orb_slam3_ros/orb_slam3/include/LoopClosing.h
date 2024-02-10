@@ -58,7 +58,7 @@ public:
   // Main function
   void Run();
 
-  void InsertKeyFrame(KeyFrame* pKF);
+  void InsertKeyFrame(KeyFrame* pKF, Map* requestingMap = nullptr);
 
   void RequestReset();
   void RequestResetActiveMap(Map* pMap);
@@ -157,7 +157,7 @@ protected:
 
   LocalMapping* mpLocalMapper;
 
-  std::list<KeyFrame*> mlpLoopKeyFrameQueue;
+  std::list<pair<KeyFrame*, Map*>> mlpLoopKeyFrameQueue;
 
   std::mutex mMutexLoopQueue;
 

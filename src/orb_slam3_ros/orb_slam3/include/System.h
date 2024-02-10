@@ -202,9 +202,10 @@ public:
 
   vector<unsigned char> GetSerializedCurrentMap();
   vector<unsigned char> SerializeMap(Map* map);
-  Map* AddSerializedMap(vector<unsigned char> serialized_map);
+  Map* AddSerializedMapToTryMerge(
+    vector<unsigned char> serialized_map, vector<boost::uuids::uuid> potentialMergeKeyFrameUuids);
 
-  bool DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid);
+  pair<bool, boost::uuids::uuid> DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid);
 
   Atlas* GetAtlas();
   ORBVocabulary* GetORBVocabulary();

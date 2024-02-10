@@ -25,8 +25,10 @@
 #include "Map.h"
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
 #include <boost/functional/hash.hpp>
+#include <boost/uuid/nil_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include <iostream>
 #include <mutex>
 
 using namespace std;
@@ -664,6 +666,16 @@ void KeyFrameDatabase::DetectNBestCandidates(
   }
 }
 
+void KeyFrameDatabase::ResetPlaceRecognitionQuery(Map* map) {
+  unique_lock<mutex> lock(mMutex);
+
+  for (KeyFrame* keyFrame : map->GetAllKeyFrames()) {
+    keyFrame->mnPlaceRecognitionQuery = 0;
+    keyFrame->mnPlaceRecognitionWords = 0;
+    keyFrame->mPlaceRecognitionScore = 0;
+  }
+}
+
 /**
  * @brief Score of merging KF with a given BOW vector into map
  *
@@ -674,9 +686,13 @@ void KeyFrameDatabase::DetectNBestCandidates(
  * @param[out] bestKeyFrame
  */
 void KeyFrameDatabase::CalculateMergeScore(
-  DBoW2::BowVector bowVector, unsigned long keyFrameId, Map* map, float& score, KeyFrame*& bestKeyFrame) {
+  DBoW2::BowVector bowVector, boost::uuids::uuid uuid, Map* map, float& score, KeyFrame*& bestKeyFrame) {
   list<KeyFrame*> lKFsSharingWords;
 
+  // Hacky to convert uuid to ulong, but will work. only needs to be unique
+  ulong keyFrameId = boost::hash_range(uuid.data, uuid.data + 16);
+
+  ResetPlaceRecognitionQuery(map);
   // Search all keyframes that share a word with current frame
   {
     unique_lock<mutex> lock(mMutex);
@@ -686,10 +702,8 @@ void KeyFrameDatabase::CalculateMergeScore(
 
       for (list<KeyFrame*>::iterator lit = lKFs.begin(), lend = lKFs.end(); lit != lend; lit++) {
         KeyFrame* pKFi = *lit;
-        if (pKFi->GetMap() == map && pKFi->mnId != keyFrameId
-          && !pKFi->isBad()
-          // needed because of the hacky uuid->ulong conversion we use in DetectMergePossibility
-          && boost::hash<boost::uuids::uuid>()(pKFi->uuid) != keyFrameId) {
+
+        if (pKFi->GetMap()->GetUuid() == map->GetUuid() && !pKFi->isBad() && pKFi->uuid != uuid) {
           if (pKFi->mnPlaceRecognitionQuery != keyFrameId) {
             pKFi->mnPlaceRecognitionWords = 0;
             pKFi->mPlaceRecognitionScore = 0;
@@ -773,25 +787,25 @@ void KeyFrameDatabase::CalculateMergeScore(
 }
 
 // Returns true if a merge is possible based on BOW vector. Used for determing if a merge with a peers map is possible
-bool KeyFrameDatabase::DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid, Map* map) {
+pair<bool, boost::uuids::uuid> KeyFrameDatabase::DetectMergePossibility(
+  DBoW2::BowVector bowVector, boost::uuids::uuid uuid, Map* map) {
 
   float score = 0;
   KeyFrame* bestKeyFrame;
-  unsigned long keyFrameId
-    = boost::hash<boost::uuids::uuid>()(uuid); // Hacky to convert uuid to ulong, but will work. only needs to be unique
-  CalculateMergeScore(bowVector, keyFrameId, map, score, bestKeyFrame);
+  CalculateMergeScore(bowVector, uuid, map, score, bestKeyFrame);
 
   if (score == 0)
-    return false;
+    return make_pair(false, boost::uuids::nil_uuid());
 
   // Get baseline score by calcuating the score of bestKeyFrame with this map
   float baselineScore = 0;
   KeyFrame* baselineBestKeyFrame;
-  CalculateMergeScore(bestKeyFrame->mBowVec, bestKeyFrame->mnId, map, baselineScore, baselineBestKeyFrame);
+  CalculateMergeScore(
+    bestKeyFrame->mBowVec, bestKeyFrame->uuid, bestKeyFrame->GetMap(), baselineScore, baselineBestKeyFrame);
 
   cout << " best match score: " << score << "    baseline score: " << baselineScore << endl;
 
-  return score > baselineScore;
+  return make_pair(score > baselineScore * 0.9, bestKeyFrame->uuid);
 }
 
 vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame* F, Map* pMap) {

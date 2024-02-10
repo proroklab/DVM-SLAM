@@ -19,7 +19,6 @@ public:
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscriber;
-  rclcpp::Client<interfaces::srv::AddMap>::SharedPtr add_map_client;
   rclcpp::TimerBase::SharedPtr timer_;
 
   void grab_image(const sensor_msgs::msg::Image::SharedPtr msg) {

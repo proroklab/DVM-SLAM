@@ -206,6 +206,7 @@ KeyFrame::KeyFrame(Frame& F, Map* pMap, KeyFrameDatabase* pKFDB, unsigned int cr
 
   mnOriginMapId = pMap->GetId();
 
+  ComputeBoW();
   pKFDB->add(this);
 }
 

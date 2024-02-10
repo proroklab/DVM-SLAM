@@ -29,6 +29,7 @@
 #include "Pinhole.h"
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/uuid/uuid.hpp>
 
 namespace ORB_SLAM3 {
 
@@ -82,7 +83,7 @@ void Atlas::CreateNewMap() {
 }
 
 Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
-  Map* newMap = DeserializeMap(serializedMap);
+  Map* newMap = DeserializeMap(serializedMap, false);
 
   unique_lock<mutex> lock(mMutexAtlas);
   cout << "Creation of new map from serialized data with id: " << Map::nNextId << endl;
@@ -102,7 +103,7 @@ Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
   return newMap;
 }
 
-Map* Atlas::DeserializeMap(vector<unsigned char> serializedMap) {
+Map* Atlas::DeserializeMap(vector<unsigned char> serializedMap, bool connectToExistingMPandKFs) {
   std::string serializedMapString(serializedMap.begin(), serializedMap.end());
   std::istringstream stream(serializedMapString);
   boost::archive::binary_iarchive ia(stream);
@@ -115,7 +116,10 @@ Map* Atlas::DeserializeMap(vector<unsigned char> serializedMap) {
   Map* newMap = new Map(mnLastInitKFidMap, agentId);
   ia >> newMap;
 
-  newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams, GetAllKeyFrames(), GetAllMapPoints());
+  if (connectToExistingMPandKFs)
+    newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams, GetAllKeyFrames(), GetAllMapPoints());
+  else
+    newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
 
   return newMap;
 }
@@ -426,8 +430,12 @@ map<long unsigned int, KeyFrame*> Atlas::GetAtlasKeyframes() {
   return mpIdKFs;
 }
 
-void Atlas::AddSuccessfullyMergedAgentId(unsigned int agentId) { successfullyMergedAgentIds.push_back(agentId); }
+void Atlas::AddSuccessfullyMergedAgentId(unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids) {
+  successfullyMergedAgentIdsAndMergedKeyFrameUuids[agentId] = mergedKeyFrameUuids;
+}
 
-vector<uint> Atlas::GetSuccessfullyMergedAgentIds() { return successfullyMergedAgentIds; }
+map<uint, vector<boost::uuids::uuid>> Atlas::GetSuccessfullyMergedAgentIds() {
+  return successfullyMergedAgentIdsAndMergedKeyFrameUuids;
+}
 
 } // namespace ORB_SLAM3

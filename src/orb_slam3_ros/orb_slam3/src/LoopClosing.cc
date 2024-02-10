@@ -23,12 +23,14 @@
 
 #include "Converter.h"
 #include "G2oTypes.h"
+#include "KeyFrame.h"
 #include "ORBmatcher.h"
 #include "Optimizer.h"
 #include "Sim3Solver.h"
 #include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"
 
+#include <iostream>
 #include <mutex>
 #include <thread>
 
@@ -180,8 +182,9 @@ void LoopClosing::Run() {
             // from causing issues later, after the merge has
             // occured
             mlpLoopKeyFrameQueue.erase(std::remove_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
-                                         [this](KeyFrame* element) {
-                                           return element->GetMap()->GetId() == mpMergeLastCurrentKF->GetMap()->GetId();
+                                         [this](pair<KeyFrame*, Map*> pair) {
+                                           return pair.first->GetMap()->GetId()
+                                             == mpMergeLastCurrentKF->GetMap()->GetId();
                                          }),
               mlpLoopKeyFrameQueue.end());
 
@@ -199,11 +202,12 @@ void LoopClosing::Run() {
 
             if (mpCurrentKF->creatorAgentId != mpAtlas->GetAgentId()
               || mpMergeMatchedKF->creatorAgentId != mpAtlas->GetAgentId()) {
-              cout << "merged external map successfully" << endl; // TODO: somehow send this back to the wrapper
+              cout << "merged external map successfully" << endl;
               uint peerAgentId = mpCurrentKF->creatorAgentId != mpAtlas->GetAgentId()
                 ? mpCurrentKF->creatorAgentId
                 : mpMergeMatchedKF->creatorAgentId;
-              mpAtlas->AddSuccessfullyMergedAgentId(peerAgentId);
+              vector<boost::uuids::uuid> mergedKFUuids = { mpCurrentKF->uuid, mpMergeMatchedKF->uuid };
+              mpAtlas->AddSuccessfullyMergedAgentId(peerAgentId, mergedKFUuids);
             }
 
 #ifdef REGISTER_TIMES
@@ -326,10 +330,10 @@ void LoopClosing::Run() {
   SetFinish();
 }
 
-void LoopClosing::InsertKeyFrame(KeyFrame* pKF) {
+void LoopClosing::InsertKeyFrame(KeyFrame* pKF, Map* requestingMap) {
   unique_lock<mutex> lock(mMutexLoopQueue);
   if (pKF->mnId != 0)
-    mlpLoopKeyFrameQueue.push_back(pKF);
+    mlpLoopKeyFrameQueue.push_back(make_pair(pKF, requestingMap));
 }
 
 bool LoopClosing::CheckNewKeyFrames() {
@@ -343,9 +347,13 @@ bool LoopClosing::NewDetectCommonRegions() {
   if (!mbActiveLC)
     return false;
 
+  Map* requestingMap; // External map that requested the merge. Null if request came from current map
+
   {
     unique_lock<mutex> lock(mMutexLoopQueue);
-    mpCurrentKF = mlpLoopKeyFrameQueue.front();
+    auto pair = mlpLoopKeyFrameQueue.front();
+    mpCurrentKF = pair.first;
+    requestingMap = pair.second;
     mlpLoopKeyFrameQueue.pop_front();
     // Avoid that a keyframe can be erased while it is being process by this
     // thread
@@ -539,13 +547,16 @@ bool LoopClosing::NewDetectCommonRegions() {
   mpCurrentKF->SetErase();
   mpCurrentKF->mbCurrentPlaceRecognition = false;
 
-  // If the currentKF's map was created by a different agent and no more KFs from that map are in the queue, it means
-  // that we were unable to merge it into our current map and should delete the map
-  if (mpCurrentKF->GetMap() != mpAtlas->GetCurrentMap()
-    && mpCurrentKF->GetMap()->creatorAgentId != mpAtlas->GetAgentId()
-    && mpCurrentKF->GetMap()->GetMaxKFid() == mpCurrentKF->mnId) {
-    cout << "External map merge unsucessful, deleting map with ID: " << mpCurrentKF->GetMap()->GetId() << endl;
-    mpAtlas->SetMapBad(mpCurrentKF->GetMap());
+  if (requestingMap && requestingMap != mpAtlas->GetCurrentMap()) {
+    bool noMoreSiblingKFsinQueue
+      = find_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
+          [this, requestingMap](pair<KeyFrame*, Map*> element) { return element.second == requestingMap; })
+      == mlpLoopKeyFrameQueue.end();
+
+    if (noMoreSiblingKFsinQueue) {
+      cout << "External map merge unsucessful, deleting map with ID: " << requestingMap->GetId() << endl;
+      mpAtlas->SetMapBad(requestingMap);
+    }
   }
 
   return false;
@@ -1262,19 +1273,6 @@ void LoopClosing::MergeLocal() {
   // tracking
   Map* pCurrentMap = mpCurrentKF->GetMap();
   Map* pMergeMap = mpMergeMatchedKF->GetMap();
-
-  // Map with the lower creatorAgentId is the base map
-  if (pMergeMap->creatorAgentId > pCurrentMap->creatorAgentId) {
-    mg2oMergeScw = mg2oMergeScw.inverse();
-
-    Map* tempMapPtr = pCurrentMap;
-    pCurrentMap = pMergeMap;
-    pMergeMap = tempMapPtr;
-
-    KeyFrame* tempKeyFramePtr = mpCurrentKF;
-    mpCurrentKF = mpMergeMatchedKF;
-    mpMergeMatchedKF = tempKeyFramePtr;
-  }
 
   // std::cout << "Merge local, Active map: " << pCurrentMap->GetId() <<
   // std::endl; std::cout << "Merge local, Non-Active map: " <<
@@ -2215,8 +2213,9 @@ void LoopClosing::ResetIfRequested() {
   }
   else if (mbResetActiveMapRequested) {
 
-    for (list<KeyFrame*>::const_iterator it = mlpLoopKeyFrameQueue.begin(); it != mlpLoopKeyFrameQueue.end();) {
-      KeyFrame* pKFi = *it;
+    for (list<pair<KeyFrame*, Map*>>::const_iterator it = mlpLoopKeyFrameQueue.begin();
+         it != mlpLoopKeyFrameQueue.end();) {
+      KeyFrame* pKFi = it->first;
       if (pKFi->GetMap() == mpMapToReset) {
         it = mlpLoopKeyFrameQueue.erase(it);
       }

@@ -46,6 +46,8 @@ public:
   rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr getCurrentMapClient;
   rclcpp::Client<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsClient;
 
+  vector<boost::uuids::uuid> mergeCandidateKeyFrameUuids;
+
 protected:
   uint agentId;
 

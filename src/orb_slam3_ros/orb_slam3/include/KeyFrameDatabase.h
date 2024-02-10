@@ -61,9 +61,11 @@ public:
   void clear();
   void clearMap(Map* pMap);
 
+  void ResetPlaceRecognitionQuery(Map* map);
+
   void CalculateMergeScore(
-    DBoW2::BowVector bowVector, unsigned long keyFrameId, Map* map, float& score, KeyFrame*& bestKeyFrame);
-  bool DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid, Map* map);
+    DBoW2::BowVector bowVector, boost::uuids::uuid keyFrameId, Map* map, float& score, KeyFrame*& bestKeyFrame);
+  pair<bool, boost::uuids::uuid> DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid, Map* map);
 
   // Loop Detection(DEPRECATED)
   std::vector<KeyFrame*> DetectLoopCandidates(KeyFrame* pKF, float minScore);

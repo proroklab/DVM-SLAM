@@ -32,6 +32,7 @@
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/string.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <iomanip>
 #include <openssl/md5.h>
 #include <pangolin/pangolin.h>
@@ -1378,24 +1379,47 @@ vector<unsigned char> System::GetSerializedCurrentMap() { return mpAtlas->Serial
 
 vector<unsigned char> System::SerializeMap(Map* map) { return mpAtlas->SerializeMap(map); }
 
-Map* System::AddSerializedMap(vector<unsigned char> serialized_map) {
+Map* System::AddSerializedMapToTryMerge(
+  vector<unsigned char> serialized_map, vector<boost::uuids::uuid> potentialMergeKeyFrameUuids) {
   mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
   mpAtlas->SetORBVocabulary(mpVocabulary);
   Map* newMap = mpAtlas->CreateNewMap(serialized_map);
 
-  // Insert KFs from new map into loop closer queue to try merge with existing
-  // maps
-  vector<KeyFrame*> newMapKeyFrames = newMap->GetAllKeyFrames();
-  std::sort(newMapKeyFrames.begin(), newMapKeyFrames.end(),
-    [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
-  for (KeyFrame* pKF : newMapKeyFrames) {
-    mpLoopCloser->InsertKeyFrame(pKF);
+  // Put keyframes from the map with the higher creatorAgentId into loopCloser queue, so that we merge into the map with
+  // the lower creatorAgentId
+  if (newMap->creatorAgentId > agentId) {
+    // TODO: is sorting necessary?
+    vector<KeyFrame*> newMapKeyFrames = newMap->GetAllKeyFrames();
+    std::sort(newMapKeyFrames.begin(), newMapKeyFrames.end(),
+      [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
+
+    for (KeyFrame* pKF : newMapKeyFrames) {
+      if (find(potentialMergeKeyFrameUuids.begin(), potentialMergeKeyFrameUuids.end(), pKF->uuid)
+        != potentialMergeKeyFrameUuids.end()) {
+        mpLoopCloser->InsertKeyFrame(pKF, newMap);
+        cout << "added kf to loop closer queue" << endl;
+      }
+    }
+  }
+  else {
+    // TODO: is sorting necessary?
+    vector<KeyFrame*> currentMapKeyFrames = mpAtlas->GetCurrentMap()->GetAllKeyFrames();
+    std::sort(currentMapKeyFrames.begin(), currentMapKeyFrames.end(),
+      [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
+
+    for (KeyFrame* pKF : currentMapKeyFrames) {
+      if (find(potentialMergeKeyFrameUuids.begin(), potentialMergeKeyFrameUuids.end(), pKF->uuid)
+        != potentialMergeKeyFrameUuids.end()) {
+        mpLoopCloser->InsertKeyFrame(pKF, newMap);
+        cout << "added kf to loop closer queue" << endl;
+      }
+    }
   }
 
   return newMap;
 }
 
-bool System::DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid) {
+pair<bool, boost::uuids::uuid> System::DetectMergePossibility(DBoW2::BowVector bowVector, boost::uuids::uuid uuid) {
   return mpKeyFrameDatabase->DetectMergePossibility(bowVector, uuid, mpAtlas->GetCurrentMap());
 }
 
