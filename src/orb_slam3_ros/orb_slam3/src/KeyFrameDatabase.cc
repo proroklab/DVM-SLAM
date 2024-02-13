@@ -748,7 +748,6 @@ void KeyFrameDatabase::CalculateMergeScore(
        it++) // Loop through keyframes sharing words with target KF
   {
     KeyFrame* pKFi = it->second;
-    cout << "id: " << pKFi->mnId << " score: " << it->first << endl;
   }
 
   if (lScoreAndMatch.empty())
