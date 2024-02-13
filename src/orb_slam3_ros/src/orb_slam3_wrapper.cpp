@@ -14,6 +14,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <interfaces/msg/map_point.hpp>
 #include <interfaces/msg/uuid.hpp>
 #include <interfaces/srv/get_map_points.hpp>
@@ -47,7 +48,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
   baseMap = pSLAM->GetAtlas()->GetCurrentMap();
 
   // Create publishers
-  pose_pub = this->create_publisher<visualization_msgs::msg::Marker>(node_name + "/camera_pose", 1);
+  pose_pub = this->create_publisher<geometry_msgs::msg::PoseStamped>(node_name + "/camera_pose", 1);
+  pose_marker_pub = this->create_publisher<visualization_msgs::msg::Marker>(node_name + "/camera_pose_marker", 1);
   tracked_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/tracked_points", 1);
   all_mappoints_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/all_points", 1);
   tracking_img_pub = image_transport.advertise(node_name + "/tracking_image", 1);
@@ -650,13 +652,12 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
   publish_tf_transform(worldToOrigin, world_frame_id, origin_frame_id, this->now());
 
   // Common topics
-  publish_camera_pose(Twc, msg_time);
   publish_tf_transform(Twc, origin_frame_id, cam_frame_id, msg_time);
-
   publish_tracking_img(pSLAM->GetCurrentFrame(), msg_time);
   publish_tracked_points(pSLAM->GetTrackedMapPoints(), msg_time);
   publish_all_points(pSLAM->GetAllMapPoints(), msg_time);
   publish_keyframes(pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames(), msg_time);
+  publish_camera_pose(Twc, msg_time);
 
   // IMU-specific topics
   if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR || sensor_type == ORB_SLAM3::System::IMU_STEREO
@@ -701,7 +702,20 @@ void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Time ms
 
   cameraPoseWireframe.points = cameraWireframe;
 
-  pose_pub->publish(cameraPoseWireframe);
+  pose_marker_pub->publish(cameraPoseWireframe);
+
+  geometry_msgs::msg::PoseStamped poseStampedMsg;
+  poseStampedMsg.header.stamp = msg_time;
+  poseStampedMsg.header.frame_id = origin_frame_id;
+  poseStampedMsg.pose.position.x = Tcw_SE3f.translation().x();
+  poseStampedMsg.pose.position.y = Tcw_SE3f.translation().y();
+  poseStampedMsg.pose.position.z = Tcw_SE3f.translation().z();
+  poseStampedMsg.pose.orientation.w = Tcw_SE3f.unit_quaternion().coeffs().w();
+  poseStampedMsg.pose.orientation.x = Tcw_SE3f.unit_quaternion().coeffs().x();
+  poseStampedMsg.pose.orientation.y = Tcw_SE3f.unit_quaternion().coeffs().y();
+  poseStampedMsg.pose.orientation.z = Tcw_SE3f.unit_quaternion().coeffs().z();
+
+  pose_pub->publish(poseStampedMsg);
 }
 
 void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f& T_SE3f, const std::string& frame_id,

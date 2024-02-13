@@ -1,7 +1,7 @@
 import rclpy
 import numpy as np
-from geometry_msgs.msg import Twist
-from sensor_msgs.msg import Imu
+from geometry_msgs.msg import Twist, PoseStamped
+from scipy.spatial.transform import Rotation
 
 
 class RobotDriver:
@@ -19,45 +19,29 @@ class RobotDriver:
         self.node.create_subscription(
             Twist, f'{self.robot.getName()}/cmd_vel', self.cmd_vel_callback, 1)
 
-        self.prev_velocity = None
-        self.prev_timestamp = None
-        self.imu_publisher = self.node.create_publisher(
-            Imu, f'{self.robot.getName()}/imu', 10)
+        self.pose_publisher = self.node.create_publisher(
+            PoseStamped, f'{self.robot.getName()}/ground_truth_pose', 10)
 
-    def publish_imu_data(self):
-        robot_velocity = np.array([
-            self.target_twist.linear.x,
-            self.target_twist.linear.y,
-            self.target_twist.linear.z
-        ])
-        robot_rotation = np.array([
-            self.target_twist.angular.x,
-            self.target_twist.angular.y,
-            self.target_twist.angular.z
-        ])
+    def publish_pose(self):
+        pose_msg = PoseStamped()
 
-        if (self.prev_velocity is not None and self.prev_timestamp is not None):
-            imu_msg = Imu()
-            timestamp = self.robot.getTime()
+        pose_msg.header.stamp = self.node.get_clock().now().to_msg()
 
-            imu_msg.header.stamp = self.node.get_clock().now().to_msg()
+        pose_msg.pose.position.x = self.robot_node.getPosition()[0]
+        pose_msg.pose.position.y = self.robot_node.getPosition()[1]
+        pose_msg.pose.position.z = self.robot_node.getPosition()[2]
 
-            imu_msg.angular_velocity.x = robot_rotation[0]
-            imu_msg.angular_velocity.y = robot_rotation[1]
-            imu_msg.angular_velocity.z = robot_rotation[2]
+        rotation_matrix = np.array(
+            self.robot_node.getOrientation()).reshape((3, 3))
+        r = Rotation.from_matrix(rotation_matrix)
+        quaternion = r.as_quat()
 
-            robot_accel = (
-                (robot_velocity - self.prev_velocity) /
-                (timestamp - self.prev_timestamp)
-            ) if timestamp != self.prev_timestamp else [0.0, 0.0, -9.8]
-            imu_msg.linear_acceleration.x = robot_accel[0]
-            imu_msg.linear_acceleration.y = robot_accel[1]
-            imu_msg.linear_acceleration.z = robot_accel[2] - 9.8
+        pose_msg.pose.orientation.x = quaternion[0]
+        pose_msg.pose.orientation.y = quaternion[1]
+        pose_msg.pose.orientation.z = quaternion[2]
+        pose_msg.pose.orientation.w = quaternion[3]
 
-            self.imu_publisher.publish(imu_msg)
-
-        self.prev_velocity = robot_velocity
-        self.prev_timestamp = self.robot.getTime()
+        self.pose_publisher.publish(pose_msg)
 
     def cmd_vel_callback(self, twist):
         self.target_twist = twist
@@ -92,4 +76,4 @@ class RobotDriver:
         self.robot_node.setVelocity(
             world_velocity.tolist() + world_rotation.tolist())
 
-        self.publish_imu_data()
+        self.publish_pose()

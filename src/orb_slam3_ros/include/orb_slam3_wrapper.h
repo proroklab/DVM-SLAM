@@ -27,6 +27,7 @@
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 #include <boost/uuid/uuid.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <memory>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/service.hpp>
@@ -56,7 +57,8 @@ protected:
   std::mutex mutexWrapper;
 
   // ROS publishers
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_pub;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_marker_pub;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr tracked_mappoints_pub;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr all_mappoints_pub;
   image_transport::Publisher tracking_img_pub;
