@@ -15,8 +15,8 @@ Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
     = rosNode->create_client<interfaces::srv::GetCurrentMap>("robot" + to_string(agentId) + "/get_current_map");
   successfullyMergedPub = rosNode->create_publisher<interfaces::msg::SuccessfullyMerged>(
     "robot" + to_string(agentId) + "/successfully_merged", 1);
-  newKeyFramesPub
-    = rosNode->create_publisher<interfaces::msg::NewKeyFrames>("robot" + to_string(agentId) + "/new_key_frames", 1);
+  keyFrameUpdatePub
+    = rosNode->create_publisher<interfaces::msg::KeyFrameUpdate>("robot" + to_string(agentId) + "/key_frame_update", 1);
   getMapPointsClient
     = rosNode->create_client<interfaces::srv::GetMapPoints>("robot" + to_string(agentId) + "/get_map_points");
   isLostFromBaseMapPub = rosNode->create_publisher<interfaces::msg::IsLostFromBaseMap>(
@@ -28,6 +28,7 @@ bool Peer::getRemoteSuccessfullyMerged() { return remoteSuccessfullyMerged; }
 bool Peer::getLocalSuccessfullyMerged() { return localSuccessfullyMerged; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameUuids() { return sentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameBowUuids() { return sentKeyFrameBowUuids; }
+set<boost::uuids::uuid> Peer::getSentCulledKeyFrameUuids() { return sentCulledKeyFrameUuids; }
 ORB_SLAM3::KeyFrame* Peer::getReferenceKeyFrame() { return referenceKeyFrame; }
 
 bool Peer::getIsLostFromBaseMap() { return isLostFromBaseMap; }
@@ -54,3 +55,5 @@ void Peer::addSentKeyFrameBowUuids(
 }
 
 void Peer::addSentKeyFrameBowUuid(boost::uuids::uuid uuid) { sentKeyFrameBowUuids.insert(uuid); }
+
+void Peer::addSentCulledKeyFrameUuid(boost::uuids::uuid uuid) { sentCulledKeyFrameUuids.insert(uuid); }

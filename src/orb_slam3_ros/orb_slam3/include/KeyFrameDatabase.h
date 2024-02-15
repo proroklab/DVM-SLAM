@@ -87,6 +87,9 @@ public:
   void PostLoad(map<long unsigned int, KeyFrame*> mpKFid);
   void SetORBVocabulary(ORBVocabulary* pORBVoc);
 
+  void InsertCulledKeyFrame(KeyFrame* keyFrame);
+  vector<KeyFrame*> GetCulledKeyFrames();
+
 protected:
   // Associated vocabulary
   const ORBVocabulary* mpVoc;
@@ -101,6 +104,8 @@ protected:
 
   // Mutex
   std::mutex mMutex;
+
+  vector<KeyFrame*> culledKeyFrames;
 };
 
 } // namespace ORB_SLAM3

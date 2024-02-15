@@ -301,8 +301,10 @@ void LoopClosing::Run() {
                   .count();
             vdLoopTotal_ms.push_back(timeLoopTotal);
 #endif
-
-            mnNumCorrection += 1;
+            // mpAtlas->AddLoopConnection(mpCurrentKF->uuid, mpLoopMatchedKF->uuid);
+            // todo: send over necessary information for peer to do loop closing
+            // mvpLoopMapPoints, mg2oLoopScw, what else?
+            // todo: propagate kf deletions to all agents
           }
 
           // Reset all variables

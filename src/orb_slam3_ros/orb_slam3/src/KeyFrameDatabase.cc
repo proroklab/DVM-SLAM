@@ -922,4 +922,8 @@ KeyFrame* KeyFrameDatabase::ConvertUuidToKeyFrame(boost::uuids::uuid uuid) { ret
 
 map<boost::uuids::uuid, KeyFrame*> KeyFrameDatabase::GetUuidToKeyFrameMap() { return uuidToKeyFrame; }
 
+void KeyFrameDatabase::InsertCulledKeyFrame(KeyFrame* keyFrame) { culledKeyFrames.push_back(keyFrame); }
+
+vector<KeyFrame*> KeyFrameDatabase::GetCulledKeyFrames() { return culledKeyFrames; }
+
 } // namespace ORB_SLAM3

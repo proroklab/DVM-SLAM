@@ -15,6 +15,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <interfaces/msg/detail/uuid__struct.hpp>
 #include <interfaces/msg/map_point.hpp>
 #include <interfaces/msg/uuid.hpp>
 #include <interfaces/srv/get_map_points.hpp>
@@ -71,8 +72,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
   successfullyMergedSub
     = this->create_subscription<interfaces::msg::SuccessfullyMerged>(node_name + "/successfully_merged", 1,
       std::bind(&OrbSlam3Wrapper::receiveSuccessfullyMergedMsg, this, std::placeholders::_1));
-  newKeyFramesSub = this->create_subscription<interfaces::msg::NewKeyFrames>(
-    node_name + "/new_key_frames", 1, std::bind(&OrbSlam3Wrapper::receiveNewKeyFrames, this, std::placeholders::_1));
+  keyFrameUpdateSub = this->create_subscription<interfaces::msg::KeyFrameUpdate>(node_name + "/key_frame_update", 1,
+    std::bind(&OrbSlam3Wrapper::receiveKeyFrameUpdate, this, std::placeholders::_1));
   isLostFromBaseMapSub
     = this->create_subscription<interfaces::msg::IsLostFromBaseMap>(node_name + "/is_lost_from_base_map", 1,
       std::bind(&OrbSlam3Wrapper::receiveIsLostFromBaseMapMsg, this, std::placeholders::_1));
@@ -88,8 +89,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(
     connectedPeers[connectedPeerId] = new Peer(this->shared_from_this(), connectedPeerId);
   }
 
-  shareNewKeyFrameBowsTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
-  shareNewKeyFramesTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
+  shareNewKeyFrameBowsTimer = this->create_wall_timer(1s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
+  shareKeyFrameUpdateTimer = this->create_wall_timer(500ms, std::bind(&OrbSlam3Wrapper::sendKeyFrameUpdate, this));
   updateMapScaleTimer = this->create_wall_timer(10s, std::bind(&OrbSlam3Wrapper::updateMapScale, this));
 
   resetVisualization();
@@ -174,7 +175,7 @@ void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv
     ->SetNotErase();
 }
 
-void OrbSlam3Wrapper::sendNewKeyFrames() {
+void OrbSlam3Wrapper::sendKeyFrameUpdate() {
   unique_lock<mutex> lock(mutexWrapper);
 
   if (isLostFromBaseMap)
@@ -188,147 +189,182 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       continue;
     }
 
-    unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
+    interfaces::msg::KeyFrameUpdate msg;
 
-    // Remove keyframes not from this agent or have already been sent
-    // keep all keyframe connections to reconnect later
-    vector<ORB_SLAM3::KeyFrame*> keyFramesToDelete;
-    for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
-      if (keyFrame->creatorAgentId != agentId || connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0) {
-        currentMapCopy->EraseKeyFrame(keyFrame);
-        keyFramesToDelete.push_back(keyFrame);
+    // Check if we have enough keyframes to send update
+    int newKeyFrames = 0;
+    for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
+      if (connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) == 0 && keyFrame->creatorAgentId == agentId)
+        newKeyFrames++;
+    }
+
+    if (newKeyFrames >= MIN_KEY_FRAME_SHARE_SIZE) {
+      unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
+
+      // Remove keyframes not from this agent or have already been sent
+      // keep all keyframe connections to reconnect later
+      vector<ORB_SLAM3::KeyFrame*> keyFramesToDelete;
+      for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
+        if (keyFrame->creatorAgentId != agentId || connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0) {
+          currentMapCopy->EraseKeyFrame(keyFrame);
+          keyFramesToDelete.push_back(keyFrame);
+        }
+      }
+
+      // Remove mappoints that dont have one of the remaning kfs as their reference kf
+      vector<ORB_SLAM3::KeyFrame*> remainingKeyFramesVec = currentMapCopy->GetAllKeyFrames();
+      set<ORB_SLAM3::KeyFrame*> remainingKeyFramesSet = set(remainingKeyFramesVec.begin(), remainingKeyFramesVec.end());
+      for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
+        if (!mapPoint->GetReferenceKeyFrame() || remainingKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0) {
+          mapPoint->SetBadFlag();
+          delete mapPoint;
+        }
+      }
+      for (ORB_SLAM3::KeyFrame* keyFrame : keyFramesToDelete) { // TODO: REALLY REALLY should move to smart pointers
+        delete keyFrame;
+      }
+
+      // Transform keyframes and map points to move the reference keyframe to the origin
+      Sophus::SE3f referenceKeyFramePoseInv = connectedPeer->getReferenceKeyFrame()->GetPoseInverse();
+
+      for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
+        Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePoseInv;
+        keyFrame->SetPose(newPose);
+      }
+      for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
+        Eigen::Vector3f newWorldPos = referenceKeyFramePoseInv.translation() + mapPoint->GetWorldPos();
+        mapPoint->SetWorldPos(newWorldPos);
+
+        Eigen::Vector3f newNormal = referenceKeyFramePoseInv.rotationMatrix() * mapPoint->GetNormal();
+        mapPoint->SetNormalVector(newNormal);
+      }
+
+      // Add keyframes to sent keyframes map
+      for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
+        connectedPeer->addSentKeyFrameUuid(keyFrame->uuid);
+      }
+
+      // Get the lastest keyframe to later make as the reference keyframe uuid
+      ORB_SLAM3::KeyFrame* latestKeyFrame = nullptr;
+      for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
+        if (!latestKeyFrame || (keyFrame->mnId > latestKeyFrame->mnId && keyFrame->creatorAgentId == agentId)) {
+          // Get KF from current map, because this keyframe has had its coordinate frame changed
+          latestKeyFrame = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(keyFrame->uuid);
+        }
+      }
+      ORB_SLAM3::KeyFrame* nextReferenceKeyFrame = latestKeyFrame;
+
+      msg.new_key_frames = true;
+      msg.serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
+      msg.reference_key_frame_uuid = uuidToArray(connectedPeer->getReferenceKeyFrame()->uuid);
+      msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
+
+      // Set reference KF as erase and next reference KF as no erase
+      connectedPeer->getReferenceKeyFrame()->SetErase();
+      nextReferenceKeyFrame->SetNotErase();
+
+      // Actually set referenceKeyFrameUuid
+      connectedPeer->setReferenceKeyFrame(nextReferenceKeyFrame);
+    }
+    else {
+      msg.new_key_frames = false;
+    }
+
+    // Send any culled keyframes
+    vector<interfaces::msg::Uuid> newCulledKeyFrameUuidsMsg;
+    for (ORB_SLAM3::KeyFrame* culledKeyFrame : pSLAM->GetKeyFrameDatabase()->GetCulledKeyFrames()) {
+      if (connectedPeer->getSentCulledKeyFrameUuids().count(culledKeyFrame->uuid) == 0) {
+        interfaces::msg::Uuid uuidMsg;
+        uuidMsg.uuid = uuidToArray(culledKeyFrame->uuid);
+        newCulledKeyFrameUuidsMsg.push_back(uuidMsg);
       }
     }
-
-    // Remove mappoints that dont have one of the remaning kfs as their reference kf
-    vector<ORB_SLAM3::KeyFrame*> remainingKeyFramesVec = currentMapCopy->GetAllKeyFrames();
-    set<ORB_SLAM3::KeyFrame*> remainingKeyFramesSet = set(remainingKeyFramesVec.begin(), remainingKeyFramesVec.end());
-    for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
-      if (!mapPoint->GetReferenceKeyFrame() || remainingKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0) {
-        mapPoint->SetBadFlag();
-        delete mapPoint;
-      }
-    }
-    for (ORB_SLAM3::KeyFrame* keyFrame : keyFramesToDelete) { // TODO: REALLY REALLY should move to smart pointers
-      delete keyFrame;
-    }
-
-    if (currentMapCopy->GetAllKeyFrames().size() < MIN_KEY_FRAME_SHARE_SIZE) {
-      continue;
-    }
-
-    // Transform keyframes and map points to move the reference keyframe to the origin
-    Sophus::SE3f referenceKeyFramePoseInv = connectedPeer->getReferenceKeyFrame()->GetPoseInverse();
-
-    for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
-      Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePoseInv;
-      keyFrame->SetPose(newPose);
-    }
-    for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
-      Eigen::Vector3f newWorldPos = referenceKeyFramePoseInv.translation() + mapPoint->GetWorldPos();
-      mapPoint->SetWorldPos(newWorldPos);
-
-      Eigen::Vector3f newNormal = referenceKeyFramePoseInv.rotationMatrix() * mapPoint->GetNormal();
-      mapPoint->SetNormalVector(newNormal);
-    }
-
-    // Add keyframes to sent keyframes map
-    for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
-      connectedPeer->addSentKeyFrameUuid(keyFrame->uuid);
-    }
-
-    // Get the lastest keyframe to later make as the reference keyframe uuid
-    ORB_SLAM3::KeyFrame* latestKeyFrame = nullptr;
-    for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
-      if (!latestKeyFrame || (keyFrame->mnId > latestKeyFrame->mnId && keyFrame->creatorAgentId == agentId)) {
-        // Get KF from current map, because this keyframe has had its coordinate frame changed
-        latestKeyFrame = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(keyFrame->uuid);
-      }
-    }
-    ORB_SLAM3::KeyFrame* nextReferenceKeyFrame = latestKeyFrame;
 
     // Send new frames to peer
-    interfaces::msg::NewKeyFrames msg;
     msg.sender_agent_id = agentId;
-    msg.serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
-    msg.reference_key_frame_uuid = uuidToArray(connectedPeer->getReferenceKeyFrame()->uuid);
-    msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
-    connectedPeer->newKeyFramesPub->publish(msg);
+    msg.culled_keyframes = newCulledKeyFrameUuidsMsg;
+    connectedPeer->keyFrameUpdatePub->publish(msg);
 
-    // Set reference KF as erase and next reference KF as no erase
-    connectedPeer->getReferenceKeyFrame()->SetErase();
-    nextReferenceKeyFrame->SetNotErase();
-
-    // Actually set referenceKeyFrameUuid
-    connectedPeer->setReferenceKeyFrame(nextReferenceKeyFrame);
-
-    cout << "Sent new key frames" << endl;
+    cout << "Sent key frame update" << endl;
   }
 }
 
-void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::SharedPtr msg) {
+void OrbSlam3Wrapper::receiveKeyFrameUpdate(const interfaces::msg::KeyFrameUpdate::SharedPtr msg) {
   unique_lock<mutex> lock(mutexWrapper);
 
-  RCLCPP_INFO(this->get_logger(), "Received new key frames. Size: %d", msg->serialized_map.size());
+  RCLCPP_INFO(this->get_logger(), "Received key frame update. Size: %d", msg->serialized_map.size());
 
-  ORB_SLAM3::Map* newMap = pSLAM->GetAtlas()->DeserializeMap(msg->serialized_map, true);
+  // If the message contains new keyframes, add them
+  if (msg->new_key_frames) {
+    ORB_SLAM3::Map* newMap = pSLAM->GetAtlas()->DeserializeMap(msg->serialized_map, true);
 
-  // Transform keyframes and map points to move origin to the reference keyframe
-  ORB_SLAM3::KeyFrame* referenceKeyFrame
-    = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(arrayToUuid(msg->reference_key_frame_uuid));
-  Sophus::SE3f referenceKeyFramePose = referenceKeyFrame->GetPose();
-  for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
-    Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePose;
-    keyFrame->SetPose(newPose);
-  }
-  for (ORB_SLAM3::MapPoint* mapPoint : newMap->GetAllMapPoints()) {
-    Eigen::Vector3f newWorldPos = referenceKeyFramePose.translation() + mapPoint->GetWorldPos();
-    mapPoint->SetWorldPos(newWorldPos);
+    // Transform keyframes and map points to move origin to the reference keyframe
+    ORB_SLAM3::KeyFrame* referenceKeyFrame
+      = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(arrayToUuid(msg->reference_key_frame_uuid));
+    Sophus::SE3f referenceKeyFramePose = referenceKeyFrame->GetPose();
+    for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
+      Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePose;
+      keyFrame->SetPose(newPose);
+    }
+    for (ORB_SLAM3::MapPoint* mapPoint : newMap->GetAllMapPoints()) {
+      Eigen::Vector3f newWorldPos = referenceKeyFramePose.translation() + mapPoint->GetWorldPos();
+      mapPoint->SetWorldPos(newWorldPos);
 
-    Eigen::Vector3f newNormal = referenceKeyFramePose.rotationMatrix() * mapPoint->GetNormal();
-    mapPoint->SetNormalVector(newNormal);
-  }
-
-  // Allow reference KF to be erased and stop next reference KF from being erased
-  referenceKeyFrame->SetErase();
-  pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(arrayToUuid(msg->next_reference_key_frame_uuid))->SetNotErase();
-
-  ORB_SLAM3::Map* currentMap = pSLAM->GetAtlas()->GetCurrentMap();
-
-  // Move map points to current map
-  for (ORB_SLAM3::MapPoint* mapPoint : newMap->GetAllMapPoints()) {
-    if (mapPoint->isBad()) {
-      continue;
+      Eigen::Vector3f newNormal = referenceKeyFramePose.rotationMatrix() * mapPoint->GetNormal();
+      mapPoint->SetNormalVector(newNormal);
     }
 
-    newMap->EraseMapPoint(mapPoint);
-    currentMap->AddMapPoint(mapPoint);
-    mapPoint->UpdateMap(currentMap);
+    // Allow reference KF to be erased and stop next reference KF from being erased
+    referenceKeyFrame->SetErase();
+    pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(arrayToUuid(msg->next_reference_key_frame_uuid))->SetNotErase();
+
+    ORB_SLAM3::Map* currentMap = pSLAM->GetAtlas()->GetCurrentMap();
+
+    // Move map points to current map
+    for (ORB_SLAM3::MapPoint* mapPoint : newMap->GetAllMapPoints()) {
+      if (mapPoint->isBad()) {
+        continue;
+      }
+
+      newMap->EraseMapPoint(mapPoint);
+      currentMap->AddMapPoint(mapPoint);
+      mapPoint->UpdateMap(currentMap);
+    }
+
+    // Move keyframes to current map
+    for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
+      newMap->EraseKeyFrame(keyFrame);
+      currentMap->AddKeyFrame(keyFrame);
+      keyFrame->UpdateMap(currentMap);
+
+      pSLAM->GetLocalMapper()->InsertKeyFrame(keyFrame);
+      // // Run bundle adjustment for new KFs and a local window around them
+      // bool mbAbortBA = false; // no idea what this is used for
+      // int num_FixedKF_BA = 0;
+      // int num_OptKF_BA = 0;
+      // int num_MPs_BA = 0;
+      // int num_edges_BA = 0;
+      // ORB_SLAM3::Optimizer::LocalBundleAdjustment(
+      //   keyFrame, &mbAbortBA, currentMap, num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+    }
+
+    // Update links in the Covisibility Graph
+    for (ORB_SLAM3::KeyFrame* keyFrame : currentMap->GetAllKeyFrames()) {
+      // keyFrame->UpdateConnections();
+    }
+
+    delete newMap;
   }
 
-  // Move keyframes to current map
-  for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
-    newMap->EraseKeyFrame(keyFrame);
-    currentMap->AddKeyFrame(keyFrame);
-    keyFrame->UpdateMap(currentMap);
-
-    pSLAM->GetLocalMapper()->InsertKeyFrame(keyFrame);
-    // // Run bundle adjustment for new KFs and a local window around them
-    // bool mbAbortBA = false; // no idea what this is used for
-    // int num_FixedKF_BA = 0;
-    // int num_OptKF_BA = 0;
-    // int num_MPs_BA = 0;
-    // int num_edges_BA = 0;
-    // ORB_SLAM3::Optimizer::LocalBundleAdjustment(
-    //   keyFrame, &mbAbortBA, currentMap, num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+  // Delete any culled keyframes
+  for (interfaces::msg::Uuid culledKeyFrameUuid : msg->culled_keyframes) {
+    ORB_SLAM3::KeyFrame* culledKeyFrame
+      = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(arrayToUuid(culledKeyFrameUuid.uuid));
+    if (culledKeyFrame) {
+      culledKeyFrame->SetBadFlag();
+      cout << "culled keyframe";
+    }
   }
-
-  // Update links in the Covisibility Graph
-  for (ORB_SLAM3::KeyFrame* keyFrame : currentMap->GetAllKeyFrames()) {
-    // keyFrame->UpdateConnections();
-  }
-
-  delete newMap;
 }
 
 void OrbSlam3Wrapper::sendNewKeyFrameBows() {

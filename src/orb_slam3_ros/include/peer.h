@@ -2,8 +2,8 @@
 
 #include "KeyFrame.h"
 #include "interfaces/msg/is_lost_from_base_map.hpp"
+#include "interfaces/msg/key_frame_update.hpp"
 #include "interfaces/msg/new_key_frame_bows.hpp"
-#include "interfaces/msg/new_key_frames.hpp"
 #include "interfaces/msg/successfully_merged.hpp"
 #include "interfaces/srv/get_current_map.hpp"
 #include "interfaces/srv/get_map_points.hpp"
@@ -24,6 +24,7 @@ public:
   bool getLocalSuccessfullyMerged();
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
+  set<boost::uuids::uuid> getSentCulledKeyFrameUuids();
   ORB_SLAM3::KeyFrame* getReferenceKeyFrame();
 
   bool getIsLostFromBaseMap();
@@ -38,8 +39,9 @@ public:
   void addSentKeyFrameBowUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameBowUuid(boost::uuids::uuid uuid);
+  void addSentCulledKeyFrameUuid(boost::uuids::uuid uuid);
 
-  rclcpp::Publisher<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesPub;
+  rclcpp::Publisher<interfaces::msg::KeyFrameUpdate>::SharedPtr keyFrameUpdatePub;
   rclcpp::Publisher<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsPub;
   rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedPub;
   rclcpp::Publisher<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapPub;
@@ -53,6 +55,7 @@ protected:
 
   set<boost::uuids::uuid> sentKeyFrameUuids;
   set<boost::uuids::uuid> sentKeyFrameBowUuids;
+  set<boost::uuids::uuid> sentCulledKeyFrameUuids;
   ORB_SLAM3::KeyFrame* referenceKeyFrame;
 
   bool remoteSuccessfullyMerged; // Remote map is successfully merged together

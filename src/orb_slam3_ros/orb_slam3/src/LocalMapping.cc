@@ -856,6 +856,8 @@ bool LocalMapping::SetNotStop(bool flag) {
 void LocalMapping::InterruptBA() { mbAbortBA = true; }
 
 void LocalMapping::KeyFrameCulling() {
+  return;
+
   // Check redundant keyframes (only local keyframes)
   // A keyframe is considered redundant if the 90% of the MapPoints it sees, are
   // seen in at least other 3 keyframes (in the same or finer scale) We only
@@ -967,6 +969,7 @@ void LocalMapping::KeyFrameCulling() {
             pKF->mNextKF = NULL;
             pKF->mPrevKF = NULL;
             pKF->SetBadFlag();
+            mpSystem->GetKeyFrameDatabase()->InsertCulledKeyFrame(pKF);
           }
           else if (!mpCurrentKeyFrame->GetMap()->GetIniertialBA2()
             && ((pKF->GetImuPosition() - pKF->mPrevKF->GetImuPosition()).norm() < 0.02) && (t < 3)) {
@@ -976,11 +979,13 @@ void LocalMapping::KeyFrameCulling() {
             pKF->mNextKF = NULL;
             pKF->mPrevKF = NULL;
             pKF->SetBadFlag();
+            mpSystem->GetKeyFrameDatabase()->InsertCulledKeyFrame(pKF);
           }
         }
       }
       else {
         pKF->SetBadFlag();
+        mpSystem->GetKeyFrameDatabase()->InsertCulledKeyFrame(pKF);
       }
     }
     if ((count > 20 && mbAbortBA) || count > 100) {

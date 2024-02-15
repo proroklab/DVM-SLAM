@@ -152,6 +152,8 @@ public:
   void AddSuccessfullyMergedAgentId(unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids);
   map<uint, vector<boost::uuids::uuid>> GetSuccessfullyMergedAgentIds();
 
+  // void AddLoopConnection(boost::uuids::uuid currentKeyFrameUuid, boost::uuids::uuid matchedKeyFrameUuid);
+
 protected:
   unsigned int agentId;
 

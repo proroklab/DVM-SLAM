@@ -12,7 +12,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Uuid.msg"
   "msg/KeyFrameBowVector.msg"
-  "msg/NewKeyFrames.msg"
+  "msg/KeyFrameUpdate.msg"
   "msg/NewKeyFrameBows.msg"
   "msg/SuccessfullyMerged.msg"
   "msg/MapPoint.msg"

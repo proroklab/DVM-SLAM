@@ -8,8 +8,8 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "image_transport/image_transport.hpp"
 #include "interfaces/msg/is_lost_from_base_map.hpp"
+#include "interfaces/msg/key_frame_update.hpp"
 #include "interfaces/msg/new_key_frame_bows.hpp"
-#include "interfaces/msg/new_key_frames.hpp"
 #include "interfaces/msg/successfully_merged.hpp"
 #include "interfaces/msg/uuid.hpp"
 #include "interfaces/srv/get_current_map.hpp"
@@ -70,13 +70,13 @@ protected:
   rclcpp::Service<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsService;
 
   // ROS subscriptions
-  rclcpp::Subscription<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesSub;
+  rclcpp::Subscription<interfaces::msg::KeyFrameUpdate>::SharedPtr keyFrameUpdateSub;
   rclcpp::Subscription<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsSub;
   rclcpp::Subscription<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedSub;
   rclcpp::Subscription<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapSub;
 
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
-  rclcpp::TimerBase::SharedPtr shareNewKeyFramesTimer;
+  rclcpp::TimerBase::SharedPtr shareKeyFrameUpdateTimer;
   rclcpp::TimerBase::SharedPtr updateMapScaleTimer;
 
   string world_frame_id = "/world";
@@ -92,8 +92,8 @@ protected:
     std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response);
   void handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedFuture future);
 
-  void sendNewKeyFrames();
-  void receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::SharedPtr msg);
+  void sendKeyFrameUpdate();
+  void receiveKeyFrameUpdate(const interfaces::msg::KeyFrameUpdate::SharedPtr msg);
 
   void sendNewKeyFrameBows();
   void receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameBows::SharedPtr msg);
