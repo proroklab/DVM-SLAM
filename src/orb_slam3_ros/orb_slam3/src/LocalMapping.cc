@@ -856,6 +856,8 @@ bool LocalMapping::SetNotStop(bool flag) {
 void LocalMapping::InterruptBA() { mbAbortBA = true; }
 
 void LocalMapping::KeyFrameCulling() {
+  return; // Dont to any keyframe culling, makes things too difficult!
+
   // Check redundant keyframes (only local keyframes)
   // A keyframe is considered redundant if the 90% of the MapPoints it sees, are
   // seen in at least other 3 keyframes (in the same or finer scale) We only
