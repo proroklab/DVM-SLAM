@@ -26,6 +26,7 @@ Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
 uint Peer::getId() { return agentId; }
 bool Peer::getRemoteSuccessfullyMerged() { return remoteSuccessfullyMerged; }
 bool Peer::getLocalSuccessfullyMerged() { return localSuccessfullyMerged; }
+set<boost::uuids::uuid> Peer::getTentativeSentKeyFrameUuids() { return tentativeSentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameUuids() { return sentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameBowUuids() { return sentKeyFrameBowUuids; }
 ORB_SLAM3::KeyFrame* Peer::getReferenceKeyFrame() { return referenceKeyFrame; }
@@ -40,6 +41,11 @@ void Peer::setRemoteSuccessfullyMerged(bool remoteSuccessfullyMerged) {
 }
 void Peer::setLocalSuccessfullyMerged(bool localSuccessfullyMerged) {
   this->localSuccessfullyMerged = localSuccessfullyMerged;
+}
+
+void Peer::addTentativeSentKeyFrameUuids(
+  _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last) {
+  tentativeSentKeyFrameUuids.insert(first, last);
 }
 
 void Peer::addSentKeyFrameUuids(

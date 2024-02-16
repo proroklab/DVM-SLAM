@@ -151,6 +151,15 @@ void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interface
     }
   }
 
+  // Set tentative sent keyframes
+  connectedPeers[request->sender_agent_id]->getTentativeSentKeyFrameUuids().clear();
+  set<boost::uuids::uuid> currentMapKeyFrameUuids;
+  for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
+    currentMapKeyFrameUuids.insert(keyFrame->uuid);
+  }
+  connectedPeers[request->sender_agent_id]->addTentativeSentKeyFrameUuids(
+    currentMapKeyFrameUuids.begin(), currentMapKeyFrameUuids.end());
+
   response->next_reference_key_frame_uuid = uuidToArray(latestKeyFrame->uuid);
   response->sender_agent_id = agentId;
   response->serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
@@ -474,9 +483,8 @@ void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::Succes
   cout << "Recieved successful merge message from peer, now requesting its map" << endl;
 
   // Add keyframes to sent keyframes map
-  for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
-    connectedPeers[msg->sender_agent_id]->addSentKeyFrameUuid(keyFrame->uuid);
-  }
+  set<boost::uuids::uuid> sentKeyFrameUuids = connectedPeers[msg->sender_agent_id]->getTentativeSentKeyFrameUuids();
+  connectedPeers[msg->sender_agent_id]->addSentKeyFrameUuids(sentKeyFrameUuids.begin(), sentKeyFrameUuids.end());
 
   if (!connectedPeers[msg->sender_agent_id]->getLocalSuccessfullyMerged()) {
     // Request map from that peer

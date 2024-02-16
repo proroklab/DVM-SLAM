@@ -22,6 +22,7 @@ public:
   uint getId();
   bool getRemoteSuccessfullyMerged();
   bool getLocalSuccessfullyMerged();
+  set<boost::uuids::uuid> getTentativeSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
   ORB_SLAM3::KeyFrame* getReferenceKeyFrame();
@@ -32,6 +33,8 @@ public:
   void setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame);
   void setRemoteSuccessfullyMerged(bool remoteSuccessfullyMerged);
   void setLocalSuccessfullyMerged(bool localSuccessfullyMerged);
+  void addTentativeSentKeyFrameUuids(
+    _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameUuid(boost::uuids::uuid uuid);
@@ -51,6 +54,7 @@ public:
 protected:
   uint agentId;
 
+  set<boost::uuids::uuid> tentativeSentKeyFrameUuids; // Sent keyframes that are not yet confirmed (pre map merge)
   set<boost::uuids::uuid> sentKeyFrameUuids;
   set<boost::uuids::uuid> sentKeyFrameBowUuids;
   ORB_SLAM3::KeyFrame* referenceKeyFrame;
