@@ -37,10 +37,12 @@ class System;
 
 class OrbSlam3Wrapper : public rclcpp::Node {
 public:
-  OrbSlam3Wrapper(string node_name, string voc_file, string settings_file, ORB_SLAM3::System::eSensor sensor_type);
+  OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::System::eSensor sensor_type);
 
 protected:
   uint agentId;
+
+  string settings_file;
 
   map<uint, Peer*> connectedPeers;
 

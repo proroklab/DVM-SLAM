@@ -30,14 +30,19 @@
 
 using namespace std;
 
-OrbSlam3Wrapper::OrbSlam3Wrapper(
-  string node_name, string voc_file, string settings_file, ORB_SLAM3::System::eSensor sensor_type)
+OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::System::eSensor sensor_type)
   : Node("robot" + to_string(agentId))
   , node_handle_(std::shared_ptr<OrbSlam3Wrapper>(this, [](auto*) {}))
   , image_transport(node_handle_) {
   // Create parameters
   this->declare_parameter("agentId", 1);
   agentId = this->get_parameter("agentId").as_int();
+
+  this->declare_parameter("config",
+    "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/"
+    "ubuntuSharedFolder/part_II_project/src/webots_sim/"
+    "worlds/webots.yaml");
+  settings_file = this->get_parameter("config").as_string();
 
   node_name = "robot" + to_string(agentId);
   cout << node_name << endl;

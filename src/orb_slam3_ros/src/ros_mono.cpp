@@ -9,8 +9,8 @@ using namespace std;
 
 class OrbSlam3Mono : public OrbSlam3Wrapper {
 public:
-  OrbSlam3Mono(string voc_file, string settings_file)
-    : OrbSlam3Wrapper("orb_slam3_mono", voc_file, settings_file, ORB_SLAM3::System::MONOCULAR) {
+  OrbSlam3Mono(string voc_file)
+    : OrbSlam3Wrapper("orb_slam3_mono", voc_file, ORB_SLAM3::System::MONOCULAR) {
 
     image_subscriber
       = this->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color", 1,
@@ -49,10 +49,7 @@ int main(int argc, char** argv) {
 
   string voc_file = "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/ubuntuSharedFolder/"
                     "part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/ORBvoc.txt";
-  string settings_file = "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/"
-                         "ubuntuSharedFolder/part_II_project/src/webots_sim/"
-                         "worlds/webots.yaml";
-  auto node = std::make_shared<OrbSlam3Mono>(voc_file, settings_file);
+  auto node = std::make_shared<OrbSlam3Mono>(voc_file);
 
   rclcpp::spin(node);
   rclcpp::shutdown();
