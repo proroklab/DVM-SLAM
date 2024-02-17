@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QHBoxLayout, QWidget, QVBoxLayout, QSlider, QCheckBox, QPushButton, QLineEdit
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QHBoxLayout, QWidget, QVBoxLayout, QSlider, QCheckBox, QPushButton, QLineEdit, QSizePolicy
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap, QImage, QCursor
 from sensor_msgs.msg import Image
@@ -17,63 +17,46 @@ import subprocess
 from pathlib import Path
 
 
-class Ros2BagRecorder():
-    def __init__(self, robot_names):
-        self.image_stream_topics = []
-        self.trajectory_topics = []
-        for robot_name in robot_names:
-            self.image_stream_topics.append(
-                f"/{robot_name}/camera/image_color")
-            self.image_stream_topics.append(
-                f"/{robot_name}/ground_truth_pose")
-
-            self.trajectory_topics.append(
-                f"/{robot_name}/ground_truth_pose")
-            self.trajectory_topics.append(
-                f"/{robot_name}/camera_pose")
-
+class Ros2BagAPI():
+    def __init__(self, recording_topics=None):
+        self.recording_topics = recording_topics
         self.process = None
-        self.image_stream_bag_file_name = None
-        self.trajectory_bag_file_name = None
+        self.bag_file_name = None
 
-    def start_recording_image_stream(self):
+        self.playback_remapping_old_topic = None
+        self.playback_remapping_new_topic = None
+
+    def start_recording(self):
         self.process = subprocess.Popen(
-            ["ros2", "bag", "record", *self.image_stream_topics, "-o", self.image_stream_bag_file_name, "--compression-mode", "message", "--compression-format", "zstd"])
+            ["ros2", "bag", "record", *self.recording_topics, "-o", self.bag_file_name, "--compression-mode", "message", "--compression-format", "zstd"])
 
-    def stop_recording_image_stream(self):
+    def stop_recording(self):
         if self.process:
             self.process.terminate()
-            self.process.wait()
+            # self.process.wait()
         else:
             print('No recording to stop.')
 
-    def start_playback_image_stream(self):
+    def start_playback(self):
+        print("adw")
         self.process = subprocess.Popen(
-            ["ros2", "bag", "play", self.image_stream_bag_file_name])
+            ["ros2", "bag", "play", self.bag_file_name, "--remap", f"{self.playback_remapping_old_topic}:={self.playback_remapping_new_topic}"])
 
-    def stop_playback_image_stream(self):
+    def stop_playback(self):
         if self.process:
             self.process.terminate()
-            self.process.wait()
+            # self.process.wait()
         else:
             print('No playback to stop.')
 
-    def set_image_stream_bag_file_name(self, text):
-        self.image_stream_bag_file_name = text
+    def set_bag_file_name(self, text):
+        self.bag_file_name = text
 
-    def start_recording_trajectory(self):
-        self.process = subprocess.Popen(
-            ["ros2", "bag", "record", *self.trajectory_topics, "-o", self.trajectory_bag_file_name, "--compression-mode", "message", "--compression-format", "zstd"])
+    def set_playback_remapping_old_topic(self, text):
+        self.playback_remapping_old_topic = text
 
-    def stop_recording_trajectory(self):
-        if self.process:
-            self.process.terminate()
-            self.process.wait()
-        else:
-            print('No recording to stop.')
-
-    def set_trajectory_bag_file_name(self, text):
-        self.trajectory_bag_file_name = text
+    def set_playback_remapping_new_topic(self, text):
+        self.playback_remapping_new_topic = text
 
     def shutdown(self):
         if self.process:
@@ -196,14 +179,6 @@ class MainWindow(QMainWindow):
 
         self.robot_viewers = []
 
-        self.ros2_bag_recorder = Ros2BagRecorder(self.robot_names)
-        image_stream_bag_name = str(Path.home()) + "/Desktop/image_stream1"
-        self.ros2_bag_recorder.set_image_stream_bag_file_name(
-            image_stream_bag_name)
-        trajectory_bag_name = str(Path.home()) + "/Desktop/trajectory1"
-        self.ros2_bag_recorder.set_trajectory_bag_file_name(
-            trajectory_bag_name)
-
         ### Create interface ###
         self.setWindowTitle('Image Viewer')
         central_widget = QWidget()
@@ -247,6 +222,12 @@ class MainWindow(QMainWindow):
         layout.addSpacing(10)
 
         # Image stream recorder
+        self.ros2_bag_image_stream_recorder = Ros2BagAPI([f'{robot_name}/camera/image_color' for robot_name in self.robot_names] + [
+                                                         f'{robot_name}/ground_truth_pose' for robot_name in self.robot_names])
+        image_stream_bag_name = str(Path.home()) + "/Desktop/image_stream1"
+        self.ros2_bag_image_stream_recorder.set_bag_file_name(
+            image_stream_bag_name)
+
         image_stream_bag_file_name_layout = QHBoxLayout()
         image_stream_bag_file_name_label = QLabel(
             "Image Stream Bag File Name:", self)
@@ -255,7 +236,7 @@ class MainWindow(QMainWindow):
         self.image_stream_bag_file_name_input = QLineEdit(self)
         self.image_stream_bag_file_name_input.setText(image_stream_bag_name)
         self.image_stream_bag_file_name_input.textChanged.connect(
-            self.ros2_bag_recorder.set_image_stream_bag_file_name)
+            self.ros2_bag_image_stream_recorder.set_bag_file_name)
         image_stream_bag_file_name_layout.addWidget(
             self.image_stream_bag_file_name_input)
         layout.addLayout(image_stream_bag_file_name_layout)
@@ -265,34 +246,89 @@ class MainWindow(QMainWindow):
         record_image_stream_layout.addWidget(record_image_stream_label)
         start_recording_image_stream_button = QPushButton("Start")
         start_recording_image_stream_button.clicked.connect(
-            self.ros2_bag_recorder.start_recording_image_stream)
+            self.ros2_bag_image_stream_recorder.start_recording)
         record_image_stream_layout.addWidget(
             start_recording_image_stream_button)
         stop_recording_image_stream_button = QPushButton("Stop")
         stop_recording_image_stream_button.clicked.connect(
-            self.ros2_bag_recorder.stop_recording_image_stream)
+            self.ros2_bag_image_stream_recorder.stop_recording)
         record_image_stream_layout.addWidget(
             stop_recording_image_stream_button)
         layout.addLayout(record_image_stream_layout)
 
-        playback_image_stream_layout = QHBoxLayout()
-        playback_image_stream_label = QLabel("Playback image stream", self)
-        playback_image_stream_layout.addWidget(playback_image_stream_label)
-        start_playback_image_stream_button = QPushButton("Start")
-        start_playback_image_stream_button.clicked.connect(
-            self.ros2_bag_recorder.start_playback_image_stream)
-        playback_image_stream_layout.addWidget(
-            start_playback_image_stream_button)
-        stop_playback_image_stream_button = QPushButton("Stop")
-        stop_playback_image_stream_button.clicked.connect(
-            self.ros2_bag_recorder.stop_playback_image_stream)
-        playback_image_stream_layout.addWidget(
-            stop_playback_image_stream_button)
-        layout.addLayout(playback_image_stream_layout)
-
         layout.addSpacing(16)
 
+        # Ros2bag playback
+        self.ros2_bag_playback_apis = []
+        for i, robot_name in enumerate(self.robot_names):
+            ros2_bag_playback = Ros2BagAPI()
+            ros2_bag_playback.set_bag_file_name(
+                "/home/joshuabird/Desktop/MH_01")
+            ros2_bag_playback.set_playback_remapping_old_topic(
+                "cam0/image_raw")
+            ros2_bag_playback.set_playback_remapping_new_topic(
+                f'{robot_name}/camera/image_color')
+            self.ros2_bag_playback_apis.append(ros2_bag_playback)
+
+            playback_file_name_layout = QHBoxLayout()
+            playback_file_name_label = QLabel(
+                "Playback Bag File Name:", self)
+            playback_file_name_layout.addWidget(
+                playback_file_name_label)
+            self.playback_file_name_input = QLineEdit(self)
+            self.playback_file_name_input.setText(image_stream_bag_name)
+            self.playback_file_name_input.textChanged.connect(
+                self.ros2_bag_playback_apis[i].set_bag_file_name)
+            playback_file_name_layout.addWidget(
+                self.playback_file_name_input)
+            layout.addLayout(playback_file_name_layout)
+
+            playback_image_stream_layout = QHBoxLayout()
+            playback_image_stream_label = QLabel("Playback image stream", self)
+            playback_image_stream_layout.addWidget(playback_image_stream_label)
+            start_playback_image_stream_button = QPushButton("Start")
+            start_playback_image_stream_button.clicked.connect(
+                self.ros2_bag_playback_apis[i].start_playback)
+            playback_image_stream_layout.addWidget(
+                start_playback_image_stream_button)
+            stop_playback_image_stream_button = QPushButton("Stop")
+            stop_playback_image_stream_button.clicked.connect(
+                self.ros2_bag_playback_apis[i].stop_playback)
+            playback_image_stream_layout.addWidget(
+                stop_playback_image_stream_button)
+            layout.addLayout(playback_image_stream_layout)
+
+            playback_topic_remap_layout = QHBoxLayout()
+            playback_topic_remap_label = QLabel(
+                "Topic Remap (Old --> New)", self)
+            playback_topic_remap_label.setSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Expanding)
+            playback_topic_remap_layout.addWidget(playback_topic_remap_label)
+            playback_old_topic_input = QLineEdit(self)
+            playback_old_topic_input.setText(
+                f'{robot_name}/camera/image_color')
+            playback_old_topic_input.textChanged.connect(
+                self.ros2_bag_playback_apis[i].set_playback_remapping_old_topic)
+            playback_topic_remap_layout.addWidget(
+                playback_old_topic_input)
+            playback_new_topic_input = QLineEdit(self)
+            playback_new_topic_input.setText(
+                f'{robot_name}/camera/image_color')
+            playback_new_topic_input.textChanged.connect(
+                self.ros2_bag_playback_apis[i].set_playback_remapping_old_topic)
+            playback_topic_remap_layout.addWidget(
+                playback_new_topic_input)
+            layout.addLayout(playback_topic_remap_layout)
+
+            layout.addSpacing(16)
+
         # Trajectory recorder
+        self.ros2_bag_trajectory_recorder = Ros2BagAPI([f'{robot_name}/ground_truth_pose' for robot_name in self.robot_names] + [
+                                                       f'{robot_name}/camera_pose' for robot_name in self.robot_names])
+        trajectory_bag_name = str(Path.home()) + "/Desktop/trajectory1"
+        self.ros2_bag_trajectory_recorder.set_bag_file_name(
+            trajectory_bag_name)
+
         trajectory_bag_file_name_layout = QHBoxLayout()
         trajectory_bag_file_name_label = QLabel(
             "Trajectory Bag File Name:", self)
@@ -301,7 +337,7 @@ class MainWindow(QMainWindow):
         self.trajectory_bag_file_name_input = QLineEdit(self)
         self.trajectory_bag_file_name_input.setText(trajectory_bag_name)
         self.trajectory_bag_file_name_input.textChanged.connect(
-            self.ros2_bag_recorder.set_trajectory_bag_file_name)
+            self.ros2_bag_trajectory_recorder.set_bag_file_name)
         trajectory_bag_file_name_layout.addWidget(
             self.trajectory_bag_file_name_input)
         layout.addLayout(trajectory_bag_file_name_layout)
@@ -311,12 +347,12 @@ class MainWindow(QMainWindow):
         record_trajectory_layout.addWidget(record_trajectory_label)
         start_record_trajectory_button = QPushButton("Start")
         start_record_trajectory_button.clicked.connect(
-            self.ros2_bag_recorder.start_recording_trajectory)
+            self.ros2_bag_trajectory_recorder.start_recording)
         record_trajectory_layout.addWidget(
             start_record_trajectory_button)
         stop_record_trajectory_button = QPushButton("Stop")
         stop_record_trajectory_button.clicked.connect(
-            self.ros2_bag_recorder.stop_recording_trajectory)
+            self.ros2_bag_trajectory_recorder.stop_recording)
         record_trajectory_layout.addWidget(
             stop_record_trajectory_button)
         layout.addLayout(record_trajectory_layout)
@@ -333,14 +369,8 @@ class MainWindow(QMainWindow):
         self.timer.start(10)
         print("Started timer")
 
-        # create timer for spining
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.timer_update)
-        self.timer.start(10)
-        print("Started timer")
-
     def timer_update(self):
-        rclpy.spin_once(self.node, timeout_sec=0.01)
+        rclpy.spin_once(self.node, timeout_sec=0)
         self.timer.start(10)
 
     def update_speed(self, value):
@@ -359,7 +389,10 @@ class MainWindow(QMainWindow):
 
     def shutdown(self):
         self.node.destroy_node()
-        self.ros2_bag_recorder.shutdown()
+        self.ros2_bag_image_stream_recorder.shutdown()
+        self.ros2_bag_trajectory_recorder.shutdown()
+        for ros2_bag_playback in self.ros2_bag_playback_apis:
+            ros2_bag_playback.shutdown()
 
 
 def sigint_handler(sig, frame, window):
