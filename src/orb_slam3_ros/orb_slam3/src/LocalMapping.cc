@@ -23,6 +23,7 @@
 #include "Converter.h"
 #include "GeometricTools.h"
 #include "LoopClosing.h"
+#include "MapPoint.h"
 #include "ORBmatcher.h"
 #include "Optimizer.h"
 
@@ -79,6 +80,8 @@ void LocalMapping::Run() {
   while (1) {
     // Tracking will see that Local Mapping is busy
     SetAcceptKeyFrames(false);
+
+    ProcessExternalKeyFrame();
 
     // Check if there are keyframes in the queue
     if (CheckNewKeyFrames() && !mbBadImu) {
@@ -286,6 +289,56 @@ void LocalMapping::Run() {
   }
 
   SetFinish();
+}
+
+void LocalMapping::InsertExternalKeyFrame(KeyFrame* pKF) {
+  unique_lock<mutex> lock(mMutexNewKFs);
+  externalKeyFrames.push_back(pKF);
+  mbAbortBA = true;
+}
+
+void LocalMapping::ProcessExternalKeyFrame() {
+  if (externalKeyFrames.empty())
+    return;
+
+  KeyFrame* keyFrame;
+  {
+    unique_lock<mutex> lock(mMutexNewKFs);
+    keyFrame = externalKeyFrames.front();
+    externalKeyFrames.pop_front();
+  }
+
+  // Compute Bags of Words structures
+  keyFrame->ComputeBoW();
+
+  // Associate MapPoints to the new keyframe and update normal and descriptor
+  const vector<MapPoint*> vpMapPointMatches = keyFrame->GetMapPointMatches();
+
+  for (size_t i = 0; i < vpMapPointMatches.size(); i++) {
+    MapPoint* pMP = vpMapPointMatches[i];
+    if (pMP) {
+      if (!pMP->isBad()) {
+        mpAtlas->AddMapPoint(pMP);
+      }
+    }
+  }
+
+  // Update links in the Covisibility Graph
+  keyFrame->UpdateConnections();
+
+  // Insert Keyframe in Map
+  mpAtlas->AddKeyFrame(keyFrame);
+
+  if (externalKeyFrames.empty() && !stopRequested()) {
+    bool b_doneLBA = false;
+    int num_FixedKF_BA = 0;
+    int num_OptKF_BA = 0;
+    int num_MPs_BA = 0;
+    int num_edges_BA = 0;
+    Optimizer::LocalBundleAdjustment(
+      keyFrame, &mbAbortBA, keyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+    b_doneLBA = true;
+  }
 }
 
 void LocalMapping::InsertKeyFrame(KeyFrame* pKF) {

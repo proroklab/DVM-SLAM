@@ -978,13 +978,25 @@ void KeyFrame::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::u
 
   // Restore parent KeyFrame
   if (mBackupParentUuid != boost::uuids::nil_uuid())
-    mpParent = mpKFid[mBackupParentUuid];
+    if (mpKFid[mBackupParentUuid]) {
+      mpParent = mpKFid[mBackupParentUuid];
+      mpParent->AddChild(this);
+    }
+    else
+      cout << "ERROR: There is not a parent KF in KF " << mnId << endl;
+  else
+    cout << "ERROR: There is not a parent KF in KF 2: " << mnId << endl;
 
   // KeyFrame childrens
   mspChildrens.clear();
   for (vector<boost::uuids::uuid>::const_iterator it = mvBackupChildrensUuid.begin(), end = mvBackupChildrensUuid.end();
        it != end; ++it) {
-    mspChildrens.insert(mpKFid[*it]);
+    if (mpKFid[*it]) {
+      mspChildrens.insert(mpKFid[*it]);
+      mpKFid[*it]->ChangeParent(this);
+    }
+    else
+      cout << "ERROR: There is not a children KF in KF " << mnId << endl;
   }
 
   // Loop edge KeyFrame

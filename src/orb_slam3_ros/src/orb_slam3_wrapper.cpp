@@ -97,7 +97,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   }
 
   shareNewKeyFrameBowsTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
-  shareNewKeyFramesTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
+  shareNewKeyFramesTimer = this->create_wall_timer(200s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
   updateMapScaleTimer = this->create_wall_timer(10s, std::bind(&OrbSlam3Wrapper::updateMapScale, this));
 
   resetVisualization();
@@ -205,13 +205,27 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       continue;
     }
 
+    // Check if we have enough keyframes to send update
+    int newKeyFrames = 0;
+    for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
+      if (connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) == 0 && keyFrame->creatorAgentId == agentId
+        && !keyFrame->isBad())
+        newKeyFrames++;
+    }
+    if (newKeyFrames < MIN_KEY_FRAME_SHARE_SIZE)
+      continue;
+
     unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
 
     // Remove keyframes not from this agent or have already been sent
     // keep all keyframe connections to reconnect later
     vector<ORB_SLAM3::KeyFrame*> keyFramesToDelete;
+    int a = currentMapCopy->GetMaxKFid();
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
-      if (keyFrame->creatorAgentId != agentId || connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0) {
+      if (keyFrame->creatorAgentId != agentId
+        || connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0
+        // only send keyframes once they are outside of the mappoint culling window
+        || keyFrame->isBad()) {
         currentMapCopy->EraseKeyFrame(keyFrame);
         keyFramesToDelete.push_back(keyFrame);
       }
@@ -221,17 +235,11 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     vector<ORB_SLAM3::KeyFrame*> remainingKeyFramesVec = currentMapCopy->GetAllKeyFrames();
     set<ORB_SLAM3::KeyFrame*> remainingKeyFramesSet = set(remainingKeyFramesVec.begin(), remainingKeyFramesVec.end());
     for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
-      if (!mapPoint->GetReferenceKeyFrame() || remainingKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0) {
+      if (!mapPoint->GetReferenceKeyFrame() || remainingKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0
+        || mapPoint->isBad()) {
         mapPoint->SetBadFlag();
         delete mapPoint;
       }
-    }
-    for (ORB_SLAM3::KeyFrame* keyFrame : keyFramesToDelete) { // TODO: REALLY REALLY should move to smart pointers
-      delete keyFrame;
-    }
-
-    if (currentMapCopy->GetAllKeyFrames().size() < MIN_KEY_FRAME_SHARE_SIZE) {
-      continue;
     }
 
     // Transform keyframes and map points to move the reference keyframe to the origin
@@ -279,6 +287,10 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     // Actually set referenceKeyFrameUuid
     connectedPeer->setReferenceKeyFrame(nextReferenceKeyFrame);
 
+    for (ORB_SLAM3::KeyFrame* keyFrame : keyFramesToDelete) { // TODO: REALLY REALLY should move to smart pointers
+      delete keyFrame;
+    }
+
     cout << "Sent new key frames" << endl;
   }
 }
@@ -289,21 +301,25 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
   RCLCPP_INFO(this->get_logger(), "Received new key frames. Size: %d", msg->serialized_map.size());
 
   ORB_SLAM3::Map* newMap = pSLAM->GetAtlas()->DeserializeMap(msg->serialized_map, true);
-
-  // Transform keyframes and map points to move origin to the reference keyframe
   ORB_SLAM3::KeyFrame* referenceKeyFrame
     = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(arrayToUuid(msg->reference_key_frame_uuid));
-  Sophus::SE3f referenceKeyFramePose = referenceKeyFrame->GetPose();
-  for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
-    Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePose;
-    keyFrame->SetPose(newPose);
-  }
-  for (ORB_SLAM3::MapPoint* mapPoint : newMap->GetAllMapPoints()) {
-    Eigen::Vector3f newWorldPos = referenceKeyFramePose.translation() + mapPoint->GetWorldPos();
-    mapPoint->SetWorldPos(newWorldPos);
 
-    Eigen::Vector3f newNormal = referenceKeyFramePose.rotationMatrix() * mapPoint->GetNormal();
-    mapPoint->SetNormalVector(newNormal);
+  {
+    unique_lock<mutex> lock2(pSLAM->GetAtlas()->GetCurrentMap()->mMutexMapUpdate);
+
+    // Transform keyframes and map points to move origin to the reference keyframe
+    Sophus::SE3f referenceKeyFramePose = referenceKeyFrame->GetPose();
+    for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
+      Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePose;
+      keyFrame->SetPose(newPose);
+    }
+    for (ORB_SLAM3::MapPoint* mapPoint : newMap->GetAllMapPoints()) {
+      Eigen::Vector3f newWorldPos = referenceKeyFramePose.translation() + mapPoint->GetWorldPos();
+      mapPoint->SetWorldPos(newWorldPos);
+
+      Eigen::Vector3f newNormal = referenceKeyFramePose.rotationMatrix() * mapPoint->GetNormal();
+      mapPoint->SetNormalVector(newNormal);
+    }
   }
 
   // Allow reference KF to be erased and stop next reference KF from being erased
@@ -319,17 +335,16 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
     }
 
     newMap->EraseMapPoint(mapPoint);
-    currentMap->AddMapPoint(mapPoint);
+    // currentMap->AddMapPoint(mapPoint);
     mapPoint->UpdateMap(currentMap);
   }
 
   // Move keyframes to current map
   for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
     newMap->EraseKeyFrame(keyFrame);
-    currentMap->AddKeyFrame(keyFrame);
     keyFrame->UpdateMap(currentMap);
 
-    pSLAM->GetLocalMapper()->InsertKeyFrame(keyFrame);
+    pSLAM->GetLocalMapper()->InsertExternalKeyFrame(keyFrame);
     // // Run bundle adjustment for new KFs and a local window around them
     // bool mbAbortBA = false; // no idea what this is used for
     // int num_FixedKF_BA = 0;
@@ -699,6 +714,7 @@ void OrbSlam3Wrapper::processedNewFrame(rclcpp::Time msg_time) {
   publish_topics(msg_time);
   updateSuccessfullyMerged();
   updateIsLostFromBaseMap();
+  sendNewKeyFrames();
 }
 
 void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb) {

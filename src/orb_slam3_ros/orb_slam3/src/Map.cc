@@ -441,6 +441,16 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB,
 
   std::copy(mvpBackupKeyFrames.begin(), mvpBackupKeyFrames.end(), std::inserter(mspKeyFrames, mspKeyFrames.begin()));
 
+  // Need to make ids consistant with the other already generated maps
+  // TODO: does this break loading maps from a file?
+  vector<KeyFrame*> keyFrameVector(mspKeyFrames.begin(), mspKeyFrames.end());
+  std::sort(keyFrameVector.begin(), keyFrameVector.end(),
+    [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
+  for (KeyFrame* pKFi : keyFrameVector) {
+    pKFi->mnId = KeyFrame::nNextId++;
+  }
+  mnMaxKFid = keyFrameVector.back()->mnId;
+
   for (MapPoint* mapPoint : mvpBackupMapPoints) {
     if (!mapPoint || mapPoint->isBad())
       continue;
@@ -453,6 +463,7 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB,
       mspMapPoints.insert(mapPoint);
       mapPoint->UpdateMap(this);
       mpMapPointUuid[mapPoint->uuid] = mapPoint;
+      mapPoint->mnId = MapPoint::nNextId++;
     }
   }
 
@@ -465,22 +476,6 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB,
     pKFi->SetKeyFrameDatabase(pKFDB);
     mpKeyFrameUuid[pKFi->uuid] = pKFi;
   }
-
-  // Need to make ids consistant with the other already generated maps
-  // TODO: does this break loading maps from a file?
-  vector<MapPoint*> mapPointsVector(mspMapPoints.begin(), mspMapPoints.end());
-  std::sort(mapPointsVector.begin(), mapPointsVector.end(),
-    [](const MapPoint* a, const MapPoint* b) { return a->mnId < b->mnId; });
-  for (MapPoint* pMPi : mapPointsVector) {
-    pMPi->mnId = MapPoint::nNextId++;
-  }
-  vector<KeyFrame*> keyFrameVector(mspKeyFrames.begin(), mspKeyFrames.end());
-  std::sort(keyFrameVector.begin(), keyFrameVector.end(),
-    [](const KeyFrame* a, const KeyFrame* b) { return a->mnId < b->mnId; });
-  for (KeyFrame* pKFi : keyFrameVector) {
-    pKFi->mnId = KeyFrame::nNextId++;
-  }
-  mnMaxKFid = keyFrameVector.back()->mnId;
 
   // References reconstruction between different instances
   for (MapPoint* pMPi : mspMapPoints) {

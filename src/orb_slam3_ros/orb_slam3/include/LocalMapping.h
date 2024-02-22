@@ -53,6 +53,9 @@ public:
   void InsertKeyFrame(KeyFrame* pKF);
   void EmptyQueue();
 
+  void InsertExternalKeyFrame(KeyFrame* pKF);
+  void ProcessExternalKeyFrame();
+
   // Thread Synch
   void RequestStop();
   void RequestReset();
@@ -159,8 +162,10 @@ protected:
   Tracking* mpTracker;
 
   std::list<KeyFrame*> mlNewKeyFrames;
+  std::list<KeyFrame*> externalKeyFrames;
 
   KeyFrame* mpCurrentKeyFrame;
+  KeyFrame* mpCurrentExternalKeyFrame = nullptr;
 
   std::list<MapPoint*> mlpRecentAddedMapPoints;
 
