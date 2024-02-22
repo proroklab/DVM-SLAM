@@ -26,6 +26,8 @@ class Ros2BagAPI():
         self.playback_remapping_old_topic = None
         self.playback_remapping_new_topic = None
 
+        self.playback_rate = 1.0
+
     def start_recording(self):
         self.process = subprocess.Popen(
             ["ros2", "bag", "record", *self.recording_topics, "-o", self.bag_file_name, "--compression-mode", "message", "--compression-format", "zstd"])
@@ -38,9 +40,8 @@ class Ros2BagAPI():
             print('No recording to stop.')
 
     def start_playback(self):
-        print("adw")
         self.process = subprocess.Popen(
-            ["ros2", "bag", "play", self.bag_file_name, "--remap", f"{self.playback_remapping_old_topic}:={self.playback_remapping_new_topic}"])
+            ["ros2", "bag", "play", self.bag_file_name, "--remap", f"{self.playback_remapping_old_topic}:={self.playback_remapping_new_topic}", "--rate", str(self.playback_rate)])
 
     def stop_playback(self):
         if self.process:
@@ -57,6 +58,9 @@ class Ros2BagAPI():
 
     def set_playback_remapping_new_topic(self, text):
         self.playback_remapping_new_topic = text
+
+    def set_playback_rate(self, rate):
+        self.playback_rate = rate/10
 
     def shutdown(self):
         if self.process:
@@ -319,6 +323,19 @@ class MainWindow(QMainWindow):
             playback_topic_remap_layout.addWidget(
                 playback_new_topic_input)
             layout.addLayout(playback_topic_remap_layout)
+
+            playback_rate_layout = QHBoxLayout()
+            playback_rate_label = QLabel("Playback rate (0-100%)")
+            playback_rate_layout.addWidget(playback_rate_label)
+            playback_rate_slider = QSlider(Qt.Horizontal)
+            playback_rate_slider.setMinimum(0)
+            playback_rate_slider.setMaximum(10)
+            playback_rate_slider.setValue(10)
+            playback_rate_slider.setTickInterval(1)
+            playback_rate_slider.valueChanged.connect(
+                self.ros2_bag_playback_apis[i].set_playback_rate)
+            playback_rate_layout.addWidget(playback_rate_slider)
+            layout.addLayout(playback_rate_layout)
 
             layout.addSpacing(16)
 
