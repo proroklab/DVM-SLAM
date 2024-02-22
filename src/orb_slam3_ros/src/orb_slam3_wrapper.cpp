@@ -81,6 +81,9 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   isLostFromBaseMapSub
     = this->create_subscription<interfaces::msg::IsLostFromBaseMap>(node_name + "/is_lost_from_base_map", 1,
       std::bind(&OrbSlam3Wrapper::receiveIsLostFromBaseMapMsg, this, std::placeholders::_1));
+  loopClosureTriggersSub
+    = this->create_subscription<interfaces::msg::LoopClosureTriggers>(node_name + "/loop_closure_triggers", 1,
+      std::bind(&OrbSlam3Wrapper::receiveLoopClosureTriggers, this, std::placeholders::_1));
 
   // TODO: create a proper topic handler that handles nodes connecting/disconnecting
   vector<uint> connectedPeerIds;
@@ -600,6 +603,55 @@ void OrbSlam3Wrapper::handleGetMapPointsRequest(const std::shared_ptr<interfaces
   }
 
   cout << "Sent map points" << endl;
+}
+
+void OrbSlam3Wrapper::sendLoopClosureTriggers() {
+  unique_lock<mutex> lock(mutexWrapper);
+
+  if (isLostFromBaseMap)
+    return;
+
+  set<boost::uuids::uuid> loopClosureTriggers = pSLAM->GetAtlas()->GetLoopClosureTriggers();
+
+  for (auto& pair : connectedPeers) {
+    Peer* connectedPeer = pair.second;
+
+    // If the peer has not successfully merged, we dont need to send loop closure triggers
+    if (!connectedPeer->getRemoteSuccessfullyMerged()) {
+      connectedPeer->addSentLoopClosureTriggerUuids(loopClosureTriggers.begin(), loopClosureTriggers.end());
+      continue;
+    }
+
+    if (connectedPeer->getIsLostFromBaseMap()) {
+      continue;
+    }
+
+    vector<interfaces::msg::Uuid> loopClosureTriggerUuids;
+    for (boost::uuids::uuid triggerKeyFrameUuid : loopClosureTriggers) {
+      if (connectedPeer->getSentLoopClosureTriggerUuids().count(triggerKeyFrameUuid) == 0) {
+        connectedPeer->addSentLoopClosureTriggerUuid(triggerKeyFrameUuid);
+        interfaces::msg::Uuid uuidMsg;
+        uuidMsg.uuid = uuidToArray(triggerKeyFrameUuid);
+        loopClosureTriggerUuids.push_back(uuidMsg);
+      }
+    }
+
+    // Send loop closure triggers to peer
+    interfaces::msg::LoopClosureTriggers msg;
+    msg.sender_agent_id = agentId;
+    msg.trigger_key_frame_uuids = loopClosureTriggerUuids;
+    connectedPeer->loopClosureTriggersPub->publish(msg);
+  }
+}
+
+void OrbSlam3Wrapper::receiveLoopClosureTriggers(const interfaces::msg::LoopClosureTriggers::SharedPtr msg) {
+  unique_lock<mutex> lock(mutexWrapper);
+
+  for (interfaces::msg::Uuid uuidMsg : msg->trigger_key_frame_uuids) {
+    boost::uuids::uuid uuid = arrayToUuid(uuidMsg.uuid);
+    ORB_SLAM3::KeyFrame* keyFrame = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(uuid);
+    pSLAM->GetLoopCloser()->InsertKeyFrame(keyFrame);
+  }
 }
 
 boost::uuids::uuid OrbSlam3Wrapper::arrayToUuid(array<unsigned char, 16> array) {

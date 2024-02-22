@@ -438,4 +438,10 @@ map<uint, vector<boost::uuids::uuid>> Atlas::GetSuccessfullyMergedAgentIds() {
   return successfullyMergedAgentIdsAndMergedKeyFrameUuids;
 }
 
+void Atlas::AddLoopClosureTrigger(boost::uuids::uuid triggerKeyFrameUuid) {
+  loopClosureTriggers.insert(triggerKeyFrameUuid);
+}
+
+set<boost::uuids::uuid> Atlas::GetLoopClosureTriggers() { return loopClosureTriggers; }
+
 } // namespace ORB_SLAM3

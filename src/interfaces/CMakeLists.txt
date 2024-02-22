@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SuccessfullyMerged.msg"
   "msg/MapPoint.msg"
   "msg/IsLostFromBaseMap.msg"
+  "msg/LoopClosureTriggers.msg"
   "srv/GetCurrentMap.srv"
   "srv/AddMap.srv"
   "srv/GetMapPoints.srv"

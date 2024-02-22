@@ -152,10 +152,15 @@ public:
   void AddSuccessfullyMergedAgentId(unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids);
   map<uint, vector<boost::uuids::uuid>> GetSuccessfullyMergedAgentIds();
 
+  void AddLoopClosureTrigger(boost::uuids::uuid triggerKeyFrameUuid);
+  set<boost::uuids::uuid> GetLoopClosureTriggers();
+
 protected:
   unsigned int agentId;
 
   map<uint, vector<boost::uuids::uuid>> successfullyMergedAgentIdsAndMergedKeyFrameUuids;
+
+  set<boost::uuids::uuid> loopClosureTriggers;
 
   std::set<Map*> mspMaps;
   std::set<Map*> mspBadMaps;

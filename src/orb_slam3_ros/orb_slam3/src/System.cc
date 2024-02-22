@@ -23,6 +23,7 @@
 #include "Converter.h"
 #include "KeyFrameDatabase.h"
 #include "LocalMapping.h"
+#include "LoopClosing.h"
 #include "ORBVocabulary.h"
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -1432,6 +1433,8 @@ unsigned int System::GetAgentId() { return agentId; }
 KeyFrameDatabase* System::GetKeyFrameDatabase() { return mpKeyFrameDatabase; }
 
 LocalMapping* System::GetLocalMapper() { return mpLocalMapper; }
+
+LoopClosing* System::GetLoopCloser() { return mpLoopCloser; }
 
 void System::SaveAtlas(int type) {
   if (!mStrSaveAtlasToFile.empty()) {

@@ -302,6 +302,8 @@ void LoopClosing::Run() {
             vdLoopTotal_ms.push_back(timeLoopTotal);
 #endif
 
+            mpAtlas->AddLoopClosureTrigger(mpCurrentKF->uuid);
+
             mnNumCorrection += 1;
           }
 

@@ -216,6 +216,8 @@ public:
 
   LocalMapping* GetLocalMapper();
 
+  LoopClosing* GetLoopCloser();
+
 private:
   void SaveAtlas(int type);
   bool LoadAtlas(int type);

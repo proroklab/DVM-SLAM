@@ -8,6 +8,7 @@
 #include "interfaces/srv/get_current_map.hpp"
 #include "interfaces/srv/get_map_points.hpp"
 #include <boost/uuid/uuid.hpp>
+#include <interfaces/msg/loop_closure_triggers.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/service.hpp>
@@ -25,6 +26,7 @@ public:
   set<boost::uuids::uuid> getTentativeSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
+  set<boost::uuids::uuid> getSentLoopClosureTriggerUuids();
   ORB_SLAM3::KeyFrame* getReferenceKeyFrame();
 
   bool getIsLostFromBaseMap();
@@ -41,11 +43,15 @@ public:
   void addSentKeyFrameBowUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameBowUuid(boost::uuids::uuid uuid);
+  void addSentLoopClosureTriggerUuids(
+    _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
+  void addSentLoopClosureTriggerUuid(boost::uuids::uuid uuid);
 
   rclcpp::Publisher<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesPub;
   rclcpp::Publisher<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsPub;
   rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedPub;
   rclcpp::Publisher<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapPub;
+  rclcpp::Publisher<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersPub;
   rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr getCurrentMapClient;
   rclcpp::Client<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsClient;
 
@@ -57,6 +63,7 @@ protected:
   set<boost::uuids::uuid> tentativeSentKeyFrameUuids; // Sent keyframes that are not yet confirmed (pre map merge)
   set<boost::uuids::uuid> sentKeyFrameUuids;
   set<boost::uuids::uuid> sentKeyFrameBowUuids;
+  set<boost::uuids::uuid> sentLoopClosureTriggerUuids;
   ORB_SLAM3::KeyFrame* referenceKeyFrame;
 
   bool remoteSuccessfullyMerged; // Remote map is successfully merged together

@@ -8,6 +8,7 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "image_transport/image_transport.hpp"
 #include "interfaces/msg/is_lost_from_base_map.hpp"
+#include "interfaces/msg/loop_closure_triggers.hpp"
 #include "interfaces/msg/new_key_frame_bows.hpp"
 #include "interfaces/msg/new_key_frames.hpp"
 #include "interfaces/msg/successfully_merged.hpp"
@@ -76,6 +77,7 @@ protected:
   rclcpp::Subscription<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsSub;
   rclcpp::Subscription<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedSub;
   rclcpp::Subscription<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapSub;
+  rclcpp::Subscription<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersSub;
 
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
   rclcpp::TimerBase::SharedPtr shareNewKeyFramesTimer;
@@ -110,6 +112,9 @@ protected:
 
   void handleGetMapPointsRequest(const std::shared_ptr<interfaces::srv::GetMapPoints::Request> request,
     std::shared_ptr<interfaces::srv::GetMapPoints::Response> response);
+
+  void sendLoopClosureTriggers();
+  void receiveLoopClosureTriggers(const interfaces::msg::LoopClosureTriggers::SharedPtr msg);
 
   boost::uuids::uuid arrayToUuid(array<unsigned char, 16> array);
   array<unsigned char, 16> uuidToArray(boost::uuids::uuid uuid);

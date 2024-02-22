@@ -1,5 +1,6 @@
 #include "peer.h"
 #include "KeyFrame.h"
+#include <interfaces/msg/loop_closure_triggers.hpp>
 #include <rclcpp/node.hpp>
 
 Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
@@ -17,6 +18,8 @@ Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
     "robot" + to_string(agentId) + "/successfully_merged", 1);
   newKeyFramesPub
     = rosNode->create_publisher<interfaces::msg::NewKeyFrames>("robot" + to_string(agentId) + "/new_key_frames", 1);
+  loopClosureTriggersPub = rosNode->create_publisher<interfaces::msg::LoopClosureTriggers>(
+    "robot" + to_string(agentId) + "/loop_closure_triggers", 1);
   getMapPointsClient
     = rosNode->create_client<interfaces::srv::GetMapPoints>("robot" + to_string(agentId) + "/get_map_points");
   isLostFromBaseMapPub = rosNode->create_publisher<interfaces::msg::IsLostFromBaseMap>(
@@ -29,6 +32,7 @@ bool Peer::getLocalSuccessfullyMerged() { return localSuccessfullyMerged; }
 set<boost::uuids::uuid> Peer::getTentativeSentKeyFrameUuids() { return tentativeSentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameUuids() { return sentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameBowUuids() { return sentKeyFrameBowUuids; }
+set<boost::uuids::uuid> Peer::getSentLoopClosureTriggerUuids() { return sentLoopClosureTriggerUuids; }
 ORB_SLAM3::KeyFrame* Peer::getReferenceKeyFrame() { return referenceKeyFrame; }
 
 bool Peer::getIsLostFromBaseMap() { return isLostFromBaseMap; }
@@ -60,3 +64,10 @@ void Peer::addSentKeyFrameBowUuids(
 }
 
 void Peer::addSentKeyFrameBowUuid(boost::uuids::uuid uuid) { sentKeyFrameBowUuids.insert(uuid); }
+
+void Peer::addSentLoopClosureTriggerUuids(
+  _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last) {
+  sentLoopClosureTriggerUuids.insert(first, last);
+}
+
+void Peer::addSentLoopClosureTriggerUuid(boost::uuids::uuid uuid) { sentLoopClosureTriggerUuids.insert(uuid); }
