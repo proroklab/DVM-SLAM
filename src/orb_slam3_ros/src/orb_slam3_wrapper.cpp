@@ -134,15 +134,13 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
 
 void OrbSlam3Wrapper::run() {
   while (true) {
-    if (newFrameProcessed.first) {
-      rclcpp::Time msgTime = newFrameProcessed.second;
-
-      publish_topics(msgTime);
+    if (newFrameProcessed) {
+      publish_topics(lastFrameTimestamp);
       updateSuccessfullyMerged();
       updateIsLostFromBaseMap();
       sendNewKeyFrames();
 
-      newFrameProcessed.first = false;
+      newFrameProcessed = false;
     }
 
     rclcpp::spin_some(this->node_handle_);
@@ -231,9 +229,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     if (newKeyFrames < MIN_KEY_FRAME_SHARE_SIZE)
       continue;
 
-    RCLCPP_INFO(this->get_logger(), "start copy");
     unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
-    RCLCPP_INFO(this->get_logger(), "end copy");
 
     // Remove keyframes not from this agent or have already been sent
     // keep all keyframe connections to reconnect later
@@ -292,6 +288,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
 
     // Send new frames to peer
     interfaces::msg::NewKeyFrames msg;
+    msg.header.stamp = lastFrameTimestamp;
     msg.sender_agent_id = agentId;
     msg.serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
     msg.reference_key_frame_uuid = uuidToArray(connectedPeer->getReferenceKeyFrame()->uuid);
@@ -429,6 +426,7 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
     // Send new keyframes message to agent
     cout << "sent new key frame bows" << endl;
     interfaces::msg::NewKeyFrameBows msg;
+    msg.header.stamp = lastFrameTimestamp;
     msg.key_frame_bow_vectors = keyFrameBowVectorMsgs;
     msg.sender_agent_id = agentId;
     connectedPeer->newKeyFrameBowsPub->publish(msg);
@@ -499,6 +497,7 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
 
       // Tell this agent that we are successfully merged
       interfaces::msg::SuccessfullyMerged msg;
+      msg.header.stamp = lastFrameTimestamp;
       msg.successfully_merged = successfullyMerged;
       msg.sender_agent_id = agentId;
       for (boost::uuids::uuid mergedKeyFrameUuid :
@@ -546,6 +545,7 @@ void OrbSlam3Wrapper::updateIsLostFromBaseMap() {
 
     // Update peers on if we are lost or not
     interfaces::msg::IsLostFromBaseMap msg;
+    msg.header.stamp = lastFrameTimestamp;
     msg.sender_agent_id = agentId;
     msg.is_lost_from_base_map = isLostFromBaseMap;
 
@@ -671,6 +671,7 @@ void OrbSlam3Wrapper::sendLoopClosureTriggers() {
 
     // Send loop closure triggers to peer
     interfaces::msg::LoopClosureTriggers msg;
+    msg.header.stamp = lastFrameTimestamp;
     msg.sender_agent_id = agentId;
     msg.trigger_key_frame_uuids = loopClosureTriggerUuids;
     connectedPeer->loopClosureTriggersPub->publish(msg);
