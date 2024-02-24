@@ -33,6 +33,7 @@
 #include <rclcpp/logging.hpp>
 #include <rclcpp/service.hpp>
 #include <rclcpp/subscription.hpp>
+#include <rclcpp/time.hpp>
 
 class System;
 
@@ -80,8 +81,6 @@ protected:
   rclcpp::Subscription<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersSub;
 
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
-  rclcpp::TimerBase::SharedPtr shareNewKeyFramesTimer;
-  rclcpp::TimerBase::SharedPtr updateMapScaleTimer;
 
   string world_frame_id = "/world";
   string origin_frame_id = "/origin";
@@ -91,6 +90,10 @@ protected:
   vector<geometry_msgs::msg::Point> cameraWireframe;
 
   ORB_SLAM3::KeyFrameDatabase* dummyKFDB;
+
+  std::pair<bool, rclcpp::Time> newFrameProcessed;
+
+  void run();
 
   void handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
     std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response);
@@ -120,8 +123,6 @@ protected:
   array<unsigned char, 16> uuidToArray(boost::uuids::uuid uuid);
 
   unique_ptr<ORB_SLAM3::Map> deepCopyMap(ORB_SLAM3::Map* targetMap);
-
-  void processedNewFrame(rclcpp::Time msg_time);
 
   // Publish data to ros topics
   void publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb = Eigen::Vector3f::Zero());

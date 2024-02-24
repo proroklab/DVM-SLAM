@@ -20,6 +20,7 @@
 #include <interfaces/srv/get_map_points.hpp>
 #include <memory>
 #include <mutex>
+#include <rclcpp/executors.hpp>
 #include <shared_mutex>
 #include <vector>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -97,8 +98,6 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   }
 
   shareNewKeyFrameBowsTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
-  shareNewKeyFramesTimer = this->create_wall_timer(200s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrames, this));
-  updateMapScaleTimer = this->create_wall_timer(10s, std::bind(&OrbSlam3Wrapper::updateMapScale, this));
 
   resetVisualization();
 
@@ -132,6 +131,23 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
     cameraWireframe.push_back(point);
   }
 };
+
+void OrbSlam3Wrapper::run() {
+  while (true) {
+    if (newFrameProcessed.first) {
+      rclcpp::Time msgTime = newFrameProcessed.second;
+
+      publish_topics(msgTime);
+      updateSuccessfullyMerged();
+      updateIsLostFromBaseMap();
+      sendNewKeyFrames();
+
+      newFrameProcessed.first = false;
+    }
+
+    rclcpp::spin_some(this->node_handle_);
+  }
+}
 
 void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
   std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
@@ -215,7 +231,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     if (newKeyFrames < MIN_KEY_FRAME_SHARE_SIZE)
       continue;
 
+    RCLCPP_INFO(this->get_logger(), "start copy");
     unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
+    RCLCPP_INFO(this->get_logger(), "end copy");
 
     // Remove keyframes not from this agent or have already been sent
     // keep all keyframe connections to reconnect later
@@ -710,13 +728,6 @@ unique_ptr<ORB_SLAM3::Map> OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMa
   return unique_ptr<ORB_SLAM3::Map>(mapCopy);
 }
 
-void OrbSlam3Wrapper::processedNewFrame(rclcpp::Time msg_time) {
-  publish_topics(msg_time);
-  updateSuccessfullyMerged();
-  updateIsLostFromBaseMap();
-  sendNewKeyFrames();
-}
-
 void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb) {
   unique_lock<mutex> lock(mutexWrapper);
 
@@ -738,7 +749,6 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
   publish_tracked_points(pSLAM->GetTrackedMapPoints(), msg_time);
   publish_all_points(pSLAM->GetAllMapPoints(), msg_time);
   publish_keyframes(pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames(), msg_time);
-  publish_camera_pose(Twc, msg_time);
 
   // IMU-specific topics
   if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR || sensor_type == ORB_SLAM3::System::IMU_STEREO

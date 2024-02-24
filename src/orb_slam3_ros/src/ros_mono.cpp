@@ -4,6 +4,7 @@
 #include "orb_slam3_wrapper.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
+#include <utility>
 
 using namespace std;
 
@@ -12,14 +13,21 @@ public:
   OrbSlam3Mono(string voc_file)
     : OrbSlam3Wrapper("orb_slam3_mono", voc_file, ORB_SLAM3::System::MONOCULAR) {
 
-    image_subscriber
-      = this->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color", 1,
-        std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+    image_subscriber_thread = std::thread([this]() {
+      auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
+      image_subscriber
+        = sub_node->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color",
+          1, std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+      rclcpp::spin(sub_node);
+    });
+
+    run();
   };
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscriber;
   rclcpp::TimerBase::SharedPtr timer_;
+  std::thread image_subscriber_thread;
 
   void grab_image(const sensor_msgs::msg::Image::SharedPtr msg) {
     try {
@@ -36,7 +44,9 @@ private:
 
       rclcpp::Time msg_time = msg->header.stamp;
 
-      OrbSlam3Wrapper::processedNewFrame(msg_time);
+      publish_camera_pose(Tcw.inverse(), msg_time);
+
+      newFrameProcessed = make_pair(true, msg_time);
 
     } catch (cv_bridge::Exception& e) {
       RCLCPP_ERROR(this->get_logger(), "Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
@@ -51,7 +61,6 @@ int main(int argc, char** argv) {
                     "part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/ORBvoc.txt";
   auto node = std::make_shared<OrbSlam3Mono>(voc_file);
 
-  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }
