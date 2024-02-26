@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Uuid.msg"
@@ -19,10 +20,13 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MapPoint.msg"
   "msg/IsLostFromBaseMap.msg"
   "msg/LoopClosureTriggers.msg"
+  "msg/Sim3Transform.msg"
+  "msg/Sim3TransformStamped.msg"
   "srv/GetCurrentMap.srv"
   "srv/AddMap.srv"
   "srv/GetMapPoints.srv"
   DEPENDENCIES std_msgs
+  DEPENDENCIES geometry_msgs
 )
 
 if(BUILD_TESTING)
