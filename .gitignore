@@ -5,3 +5,4 @@ install/
 .vscode/
 src/webots_sim/worlds/.*
 .cache/
+.ipynb_checkpoints/
