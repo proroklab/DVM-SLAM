@@ -226,8 +226,8 @@ class MainWindow(QMainWindow):
         layout.addSpacing(10)
 
         # Image stream recorder
-        self.ros2_bag_image_stream_recorder = Ros2BagAPI([f'{robot_name}/camera/image_color' for robot_name in self.robot_names] + [
-                                                         f'{robot_name}/ground_truth_pose' for robot_name in self.robot_names])
+        self.ros2_bag_image_stream_recorder = Ros2BagAPI([f'/{robot_name}/camera/image_color' for robot_name in self.robot_names] +
+                                                         [f'/{robot_name}/ground_truth_pose' for robot_name in self.robot_names])
         image_stream_bag_name = str(Path.home()) + "/Desktop/image_stream1"
         self.ros2_bag_image_stream_recorder.set_bag_file_name(
             image_stream_bag_name)
@@ -280,7 +280,8 @@ class MainWindow(QMainWindow):
             playback_file_name_layout.addWidget(
                 playback_file_name_label)
             self.playback_file_name_input = QLineEdit(self)
-            self.playback_file_name_input.setText(image_stream_bag_name)
+            self.playback_file_name_input.setText(
+                "/home/joshuabird/Desktop/MH_01")
             self.playback_file_name_input.textChanged.connect(
                 self.ros2_bag_playback_apis[i].set_bag_file_name)
             playback_file_name_layout.addWidget(
@@ -309,8 +310,7 @@ class MainWindow(QMainWindow):
                 QSizePolicy.Expanding, QSizePolicy.Expanding)
             playback_topic_remap_layout.addWidget(playback_topic_remap_label)
             playback_old_topic_input = QLineEdit(self)
-            playback_old_topic_input.setText(
-                f'{robot_name}/camera/image_color')
+            playback_old_topic_input.setText(f'cam0/image_raw')
             playback_old_topic_input.textChanged.connect(
                 self.ros2_bag_playback_apis[i].set_playback_remapping_old_topic)
             playback_topic_remap_layout.addWidget(
@@ -340,9 +340,11 @@ class MainWindow(QMainWindow):
             layout.addSpacing(16)
 
         # Trajectory recorder
-        self.ros2_bag_trajectory_recorder = Ros2BagAPI([f'{robot_name}/ground_truth_pose' for robot_name in self.robot_names] + [
-                                                       f'{robot_name}/camera_pose' for robot_name in self.robot_names])
-        trajectory_bag_name = str(Path.home()) + "/Desktop/trajectory1"
+        self.ros2_bag_trajectory_recorder = Ros2BagAPI([f'/{robot_name}/ground_truth_pose' for robot_name in self.robot_names] +
+                                                       [f'/{robot_name}/camera_pose' for robot_name in self.robot_names] +
+                                                       [f'/{robot_name}/successfully_merged' for robot_name in self.robot_names] +
+                                                       ["/sim3_transform"])
+        trajectory_bag_name = str(Path.home()) + "/Desktop/trajectory"
         self.ros2_bag_trajectory_recorder.set_bag_file_name(
             trajectory_bag_name)
 
