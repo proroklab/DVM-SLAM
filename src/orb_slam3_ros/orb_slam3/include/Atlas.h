@@ -27,6 +27,8 @@
 #include "Map.h"
 #include "MapPoint.h"
 #include "Pinhole.h"
+#include "g2o/g2o/types/sim3.h"
+#include "sophus/sim3.hpp"
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -149,8 +151,9 @@ public:
 
   long unsigned int GetNumLivedMP();
 
-  void AddSuccessfullyMergedAgentId(unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids);
-  map<uint, vector<boost::uuids::uuid>> GetSuccessfullyMergedAgentIds();
+  void AddSuccessfullyMergedAgentId(
+    unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids, Sophus::Sim3d mergeWorldToCurrentWorld);
+  map<uint, pair<vector<boost::uuids::uuid>, Sophus::Sim3d>> GetSuccessfullyMergedAgentIds();
 
   void AddLoopClosureTrigger(boost::uuids::uuid triggerKeyFrameUuid);
   set<boost::uuids::uuid> GetLoopClosureTriggers();
@@ -158,7 +161,7 @@ public:
 protected:
   unsigned int agentId;
 
-  map<uint, vector<boost::uuids::uuid>> successfullyMergedAgentIdsAndMergedKeyFrameUuids;
+  map<uint, pair<vector<boost::uuids::uuid>, Sophus::Sim3d>> successfullyMergedAgentIds;
 
   set<boost::uuids::uuid> loopClosureTriggers;
 

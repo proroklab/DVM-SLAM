@@ -430,12 +430,13 @@ map<long unsigned int, KeyFrame*> Atlas::GetAtlasKeyframes() {
   return mpIdKFs;
 }
 
-void Atlas::AddSuccessfullyMergedAgentId(unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids) {
-  successfullyMergedAgentIdsAndMergedKeyFrameUuids[agentId] = mergedKeyFrameUuids;
+void Atlas::AddSuccessfullyMergedAgentId(
+  unsigned int agentId, vector<boost::uuids::uuid> mergedKeyFrameUuids, Sophus::Sim3d mergeWorldToCurrentWorld) {
+  successfullyMergedAgentIds[agentId] = make_pair(mergedKeyFrameUuids, mergeWorldToCurrentWorld);
 }
 
-map<uint, vector<boost::uuids::uuid>> Atlas::GetSuccessfullyMergedAgentIds() {
-  return successfullyMergedAgentIdsAndMergedKeyFrameUuids;
+map<uint, pair<vector<boost::uuids::uuid>, Sophus::Sim3d>> Atlas::GetSuccessfullyMergedAgentIds() {
+  return successfullyMergedAgentIds;
 }
 
 void Atlas::AddLoopClosureTrigger(boost::uuids::uuid triggerKeyFrameUuid) {

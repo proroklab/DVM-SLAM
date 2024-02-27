@@ -173,6 +173,13 @@ void LoopClosing::Run() {
 
             mg2oMergeScw = mg2oMergeSlw;
 
+            Sophus::SE3d currentWorldToCurrentKF = mpCurrentKF->GetPoseInverse().cast<double>();
+            g2o::Sim3 g2oCurrentWorldToCurrentKF(
+              currentWorldToCurrentKF.unit_quaternion(), currentWorldToCurrentKF.translation(), 1.0);
+            g2o::Sim3 g2oCurrentKFToMergeWorld = mg2oMergeScw;
+            g2o::Sim3 g2oCurrentWorldToMergeWorld = g2oCurrentWorldToCurrentKF * g2oCurrentKFToMergeWorld;
+            g2o::Sim3 mergeWorldToCurrentWorld = g2oCurrentWorldToMergeWorld.inverse();
+
             // mpTracker->SetStepByStep(true);
 
             Verbose::PrintMess("*Merge detected", Verbose::VERBOSITY_QUIET);
@@ -207,7 +214,10 @@ void LoopClosing::Run() {
                 ? mpCurrentKF->creatorAgentId
                 : mpMergeMatchedKF->creatorAgentId;
               vector<boost::uuids::uuid> mergedKFUuids = { mpCurrentKF->uuid, mpMergeMatchedKF->uuid };
-              mpAtlas->AddSuccessfullyMergedAgentId(peerAgentId, mergedKFUuids);
+              Sophus::Sim3d sophusMergeWorldToCurrentWorld
+                = Sophus::Sim3d(mergeWorldToCurrentWorld.rotation(), mergeWorldToCurrentWorld.translation());
+              sophusMergeWorldToCurrentWorld.setScale(mergeWorldToCurrentWorld.scale());
+              mpAtlas->AddSuccessfullyMergedAgentId(peerAgentId, mergedKFUuids, sophusMergeWorldToCurrentWorld);
             }
 
 #ifdef REGISTER_TIMES

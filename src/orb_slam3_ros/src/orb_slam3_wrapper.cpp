@@ -9,13 +9,17 @@
 #include "System.h"
 #include "peer.h"
 #include "sophus/se3.hpp"
+#include "sophus/sim3.hpp"
+#include "sophus/so3.hpp"
 #include "sophus/types.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Geometry/Quaternion.h>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <interfaces/msg/map_point.hpp>
+#include <interfaces/msg/sim3_transform_stamped.hpp>
 #include <interfaces/msg/uuid.hpp>
 #include <interfaces/srv/get_map_points.hpp>
 #include <memory>
@@ -48,6 +52,15 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   node_name = "robot" + to_string(agentId);
   cout << node_name << endl;
 
+  Eigen::Matrix3d rotation_matrix;
+  rotation_matrix << 1, 0, 0, 0, 0, 1, 0, -1, 0;
+  Eigen::Quaterniond quaternion(rotation_matrix);
+  Eigen::Vector3d translation(0, 0, 0);
+  world_to_origin = Sophus::Sim3d(quaternion, translation);
+  world_to_origin.setScale(1);
+  origin_frame_id = node_name + "/origin";
+  slam_system_frame_id = origin_frame_id;
+
   this->sensor_type = sensor_type;
   pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, agentId, true);
 
@@ -64,6 +77,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
     || sensor_type == ORB_SLAM3::System::IMU_RGBD) {
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>(node_name + "/body_odom", 1);
   }
+  sim3_transform_pub = this->create_publisher<interfaces::msg::Sim3TransformStamped>("/sim3_transform", 1);
 
   // Create services
   get_current_map_service = this->create_service<interfaces::srv::GetCurrentMap>(node_name + "/get_current_map",
@@ -135,10 +149,10 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
 void OrbSlam3Wrapper::run() {
   while (true) {
     if (newFrameProcessed) {
-      publish_topics(lastFrameTimestamp);
       updateSuccessfullyMerged();
       updateIsLostFromBaseMap();
       sendNewKeyFrames();
+      publish_topics(lastFrameTimestamp);
 
       newFrameProcessed = false;
     }
@@ -475,14 +489,14 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
 void OrbSlam3Wrapper::updateSuccessfullyMerged() {
   unique_lock<mutex> lock(mutexWrapper);
 
-  map<uint, vector<boost::uuids::uuid>> successfullyMergedAgentIdsAndMergedKeyFrameUuids
+  map<uint, pair<vector<boost::uuids::uuid>, Sophus::Sim3d>> successfullyMergedAgentIds
     = pSLAM->GetAtlas()->GetSuccessfullyMergedAgentIds();
 
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
 
     bool successfullyMerged = false;
-    for (auto pair : successfullyMergedAgentIdsAndMergedKeyFrameUuids) {
+    for (auto pair : successfullyMergedAgentIds) {
       uint successfullyMergedAgentId = pair.first;
       if (successfullyMergedAgentId == connectedPeer->getId())
         successfullyMerged = true;
@@ -493,15 +507,33 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
         baseMap = pSLAM->GetAtlas()->GetCurrentMap();
       } // TODO: handle else case. is there even an else case?
 
+      vector<boost::uuids::uuid> mergedKeyFrameUuid = successfullyMergedAgentIds[connectedPeer->getId()].first;
+      Sophus::Sim3d mergeWorldToCurrentWorld = successfullyMergedAgentIds[connectedPeer->getId()].second;
+
       connectedPeer->setLocalSuccessfullyMerged(successfullyMerged);
+
+      // Redefine our reference frame if we are moving to the other agents reference frame
+      if (connectedPeer->getId() < agentId) {
+        origin_frame_parent_id = "robot" + to_string(connectedPeer->getId()) + "/origin";
+        slam_system_frame_id = origin_frame_parent_id;
+
+        // Redefine our old reference frame
+        ORB_SLAM3::KeyFrame* originKeyFrame = nullptr;
+        for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
+          if (keyFrame->creatorAgentId == agentId) {
+            if (originKeyFrame == nullptr || keyFrame->mnId < originKeyFrame->mnId)
+              originKeyFrame = keyFrame;
+          }
+        }
+        world_to_origin = mergeWorldToCurrentWorld * world_to_origin;
+      }
 
       // Tell this agent that we are successfully merged
       interfaces::msg::SuccessfullyMerged msg;
       msg.header.stamp = lastFrameTimestamp;
       msg.successfully_merged = successfullyMerged;
       msg.sender_agent_id = agentId;
-      for (boost::uuids::uuid mergedKeyFrameUuid :
-        successfullyMergedAgentIdsAndMergedKeyFrameUuids[connectedPeer->getId()]) {
+      for (boost::uuids::uuid mergedKeyFrameUuid : successfullyMergedAgentIds[connectedPeer->getId()].first) {
         interfaces::msg::Uuid uuidMsg;
         uuidMsg.uuid = uuidToArray(mergedKeyFrameUuid);
         msg.merged_key_frame_uuids.push_back(uuidMsg);
@@ -738,15 +770,13 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
     return;
 
   // Publish origin transformation
-  Eigen::Matrix3f rotation_matrix;
-  rotation_matrix << 1, 0, 0, 0, 0, 1, 0, -1, 0;
-  Eigen::Vector3f translation(0, 0, 0);
-  Sophus::SE3f worldToOrigin(rotation_matrix, translation);
-  publish_tf_transform(worldToOrigin, world_frame_id, origin_frame_id, this->now());
+  Sophus::SE3d world_to_origin_se3d(world_to_origin.quaternion(), world_to_origin.translation());
+  publish_tf_transform(world_to_origin_se3d, origin_frame_parent_id, origin_frame_id, msg_time);
+  publish_sim3_transform(world_to_origin, origin_frame_parent_id, origin_frame_id, msg_time);
 
   // Common topics
-  publish_tf_transform(Twc, origin_frame_id, cam_frame_id, msg_time);
-  publish_tracking_img(pSLAM->GetCurrentFrame(), msg_time);
+  // publish_tf_transform(Twc, origin_frame_id, cam_frame_id, msg_time);
+  // publish_tracking_img(pSLAM->GetCurrentFrame(), msg_time);
   publish_tracked_points(pSLAM->GetTrackedMapPoints(), msg_time);
   publish_all_points(pSLAM->GetAllMapPoints(), msg_time);
   publish_keyframes(pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames(), msg_time);
@@ -770,7 +800,7 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
 
 void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Time msg_time) {
   visualization_msgs::msg::Marker cameraPoseWireframe;
-  cameraPoseWireframe.header.frame_id = origin_frame_id;
+  cameraPoseWireframe.header.frame_id = slam_system_frame_id;
   cameraPoseWireframe.header.stamp = msg_time;
   cameraPoseWireframe.ns = "cameraPoseWireframe";
   cameraPoseWireframe.type = visualization_msgs::msg::Marker::LINE_LIST;
@@ -798,7 +828,7 @@ void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Time ms
 
   geometry_msgs::msg::PoseStamped poseStampedMsg;
   poseStampedMsg.header.stamp = msg_time;
-  poseStampedMsg.header.frame_id = origin_frame_id;
+  poseStampedMsg.header.frame_id = slam_system_frame_id;
   poseStampedMsg.pose.position.x = Tcw_SE3f.translation().x();
   poseStampedMsg.pose.position.y = Tcw_SE3f.translation().y();
   poseStampedMsg.pose.position.z = Tcw_SE3f.translation().z();
@@ -810,7 +840,7 @@ void OrbSlam3Wrapper::publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Time ms
   pose_pub->publish(poseStampedMsg);
 }
 
-void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f& T_SE3f, const std::string& frame_id,
+void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3d& T_SE3d, const std::string& frame_id,
   const std::string& child_frame_id, const rclcpp::Time& msg_time) {
   static tf2_ros::TransformBroadcaster tf_broadcaster(*this);
 
@@ -819,8 +849,8 @@ void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f& T_SE3f, const std
   transform_stamped.header.frame_id = frame_id;
   transform_stamped.child_frame_id = child_frame_id;
 
-  auto translation = T_SE3f.translation();
-  auto quaternion = T_SE3f.unit_quaternion();
+  auto translation = T_SE3d.translation();
+  auto quaternion = T_SE3d.unit_quaternion();
 
   transform_stamped.transform.translation.x = translation[0];
   transform_stamped.transform.translation.y = translation[1];
@@ -831,6 +861,28 @@ void OrbSlam3Wrapper::publish_tf_transform(const Sophus::SE3f& T_SE3f, const std
   transform_stamped.transform.rotation.w = quaternion.w();
 
   tf_broadcaster.sendTransform(transform_stamped);
+}
+
+void OrbSlam3Wrapper::publish_sim3_transform(const Sophus::Sim3d& T_Sim3d, const std::string& frame_id,
+  const std::string& child_frame_id, const rclcpp::Time& msg_time) {
+  interfaces::msg::Sim3TransformStamped sim3_transform_stamped;
+  sim3_transform_stamped.header.stamp = msg_time;
+  sim3_transform_stamped.header.frame_id = frame_id;
+  sim3_transform_stamped.child_frame_id = child_frame_id;
+
+  auto translation = T_Sim3d.translation();
+  auto quaternion = T_Sim3d.quaternion();
+
+  sim3_transform_stamped.transform.translation.x = translation[0];
+  sim3_transform_stamped.transform.translation.y = translation[1];
+  sim3_transform_stamped.transform.translation.z = translation[2];
+  sim3_transform_stamped.transform.rotation.x = quaternion.x();
+  sim3_transform_stamped.transform.rotation.y = quaternion.y();
+  sim3_transform_stamped.transform.rotation.z = quaternion.z();
+  sim3_transform_stamped.transform.rotation.w = quaternion.w();
+  sim3_transform_stamped.transform.scale = T_Sim3d.scale();
+
+  sim3_transform_pub->publish(sim3_transform_stamped);
 }
 
 void OrbSlam3Wrapper::publish_tracking_img(cv::Mat image, rclcpp::Time msg_time) {
@@ -864,7 +916,7 @@ void OrbSlam3Wrapper::publish_keyframes(std::vector<ORB_SLAM3::KeyFrame*> keyFra
       continue;
 
     visualization_msgs::msg::Marker keyFrameWireframe;
-    keyFrameWireframe.header.frame_id = origin_frame_id;
+    keyFrameWireframe.header.frame_id = slam_system_frame_id;
     keyFrameWireframe.ns = "keyFrameWireframes";
     keyFrameWireframe.type = visualization_msgs::msg::Marker::LINE_LIST;
     keyFrameWireframe.action = visualization_msgs::msg::Marker::ADD;
@@ -903,7 +955,7 @@ void OrbSlam3Wrapper::publish_keyframes(std::vector<ORB_SLAM3::KeyFrame*> keyFra
     vector<ORB_SLAM3::KeyFrame*> connectedKeyFrames = keyFrame->GetCovisiblesByWeight(100);
 
     visualization_msgs::msg::Marker connectedKeyFrameLines;
-    connectedKeyFrameLines.header.frame_id = origin_frame_id;
+    connectedKeyFrameLines.header.frame_id = slam_system_frame_id;
     connectedKeyFrameLines.ns = "connectedKeyFrameLines";
     connectedKeyFrameLines.type = visualization_msgs::msg::Marker::LINE_LIST;
     connectedKeyFrameLines.action = visualization_msgs::msg::Marker::ADD;
@@ -996,7 +1048,7 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
   sensor_msgs::msg::PointCloud2 cloud;
 
   cloud.header.stamp = msg_time;
-  cloud.header.frame_id = origin_frame_id;
+  cloud.header.frame_id = slam_system_frame_id;
   cloud.height = 1;
   cloud.width = map_points.size();
   cloud.is_bigendian = false;

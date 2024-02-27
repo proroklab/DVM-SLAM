@@ -22,6 +22,7 @@
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "sophus/se3.hpp"
+#include "sophus/sim3.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Transform.h"
 #include "tf2_ros/transform_broadcaster.h"
@@ -29,6 +30,7 @@
 #include "visualization_msgs/msg/marker_array.hpp"
 #include <boost/uuid/uuid.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <interfaces/msg/sim3_transform_stamped.hpp>
 #include <memory>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/service.hpp>
@@ -68,6 +70,7 @@ protected:
   image_transport::Publisher tracking_img_pub;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr kf_markers_pub;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
+  rclcpp::Publisher<interfaces::msg::Sim3TransformStamped>::SharedPtr sim3_transform_pub;
 
   // ROS services
   rclcpp::Service<interfaces::srv::GetCurrentMap>::SharedPtr get_current_map_service;
@@ -83,7 +86,10 @@ protected:
   rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
 
   string world_frame_id = "/world";
-  string origin_frame_id = "/origin";
+  string origin_frame_parent_id = world_frame_id;
+  string origin_frame_id = "";
+  Sophus::Sim3d world_to_origin;
+  string slam_system_frame_id = "";
   string imu_frame_id = "/imu";
   string cam_frame_id = "camera";
 
@@ -91,7 +97,8 @@ protected:
 
   ORB_SLAM3::KeyFrameDatabase* dummyKFDB;
 
-  std::pair<bool, rclcpp::Time> newFrameProcessed;
+  bool newFrameProcessed;
+  rclcpp::Time lastFrameTimestamp;
 
   void run();
 
@@ -127,8 +134,10 @@ protected:
   // Publish data to ros topics
   void publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb = Eigen::Vector3f::Zero());
   void publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Time msg_time);
-  void publish_tf_transform(const Sophus::SE3f& T_SE3f, const std::string& frame_id, const std::string& child_frame_id,
+  void publish_tf_transform(const Sophus::SE3d& T_SE3d, const std::string& frame_id, const std::string& child_frame_id,
     const rclcpp::Time& msg_time);
+  void publish_sim3_transform(const Sophus::Sim3d& T_Sim3d, const std::string& frame_id,
+    const std::string& child_frame_id, const rclcpp::Time& msg_time);
   void publish_tracking_img(cv::Mat image, rclcpp::Time msg_time);
   void publish_tracked_points(std::vector<ORB_SLAM3::MapPoint*> tracked_points, rclcpp::Time msg_time);
   void publish_all_points(std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time);

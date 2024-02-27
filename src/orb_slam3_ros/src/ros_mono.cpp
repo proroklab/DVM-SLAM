@@ -46,7 +46,8 @@ private:
 
       publish_camera_pose(Tcw.inverse(), msg_time);
 
-      newFrameProcessed = make_pair(true, msg_time);
+      newFrameProcessed = true;
+      lastFrameTimestamp = msg_time;
 
     } catch (cv_bridge::Exception& e) {
       RCLCPP_ERROR(this->get_logger(), "Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
