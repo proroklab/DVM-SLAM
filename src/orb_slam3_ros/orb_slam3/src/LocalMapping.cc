@@ -722,7 +722,7 @@ void LocalMapping::CreateNewMapPoints() {
         continue;
 
       // Triangulation is succesfull
-      MapPoint* pMP = new MapPoint(x3D, mpCurrentKeyFrame, mpAtlas->GetCurrentMap());
+      MapPoint* pMP = new MapPoint(x3D, mpCurrentKeyFrame, mpAtlas->GetCurrentMap(), mpAtlas->GetAgentId());
       if (bPointStereo)
         countStereo++;
 
