@@ -66,8 +66,8 @@ protected:
   set<boost::uuids::uuid> sentLoopClosureTriggerUuids;
   ORB_SLAM3::KeyFrame* referenceKeyFrame;
 
-  bool remoteSuccessfullyMerged; // Remote map is successfully merged together
-  bool localSuccessfullyMerged; // Local map is successfully merged together
+  bool remoteSuccessfullyMerged = false; // Remote map is successfully merged together
+  bool localSuccessfullyMerged = false; // Local map is successfully merged together
 
   bool isLostFromBaseMap = false; // Peer is lost in its own map
 

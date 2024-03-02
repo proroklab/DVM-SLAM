@@ -26,6 +26,7 @@
 #include <mutex>
 #include <rclcpp/executors.hpp>
 #include <shared_mutex>
+#include <utility>
 #include <vector>
 #include <visualization_msgs/msg/marker_array.hpp>
 
@@ -525,7 +526,7 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
               originKeyFrame = keyFrame;
           }
         }
-        world_to_origin = mergeWorldToCurrentWorld * world_to_origin;
+        world_to_origin = world_to_origin * mergeWorldToCurrentWorld;
       }
 
       // Tell this agent that we are successfully merged
