@@ -51,7 +51,7 @@ MapPoint::MapPoint()
   mpReplaced = static_cast<MapPoint*>(NULL);
 }
 
-MapPoint::MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap)
+MapPoint::MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap, unsigned int creatorAgentId)
   : mnFirstKFid(pRefKF->mnId)
   , mnFirstFrame(pRefKF->mnFrameId)
   , nObs(0)
@@ -71,6 +71,7 @@ MapPoint::MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap)
   , mfMinDistance(0)
   , mfMaxDistance(0)
   , mpMap(pMap)
+  , creatorAgentId(creatorAgentId)
   , mnOriginMapId(pMap->GetId()) {
   SetWorldPos(Pos);
 
@@ -87,7 +88,8 @@ MapPoint::MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap)
   uuid = boost::uuids::random_generator()();
 }
 
-MapPoint::MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF, KeyFrame* pHostKF, Map* pMap)
+MapPoint::MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF, KeyFrame* pHostKF, Map* pMap,
+  unsigned int creatorAgentId)
   : mnFirstKFid(pRefKF->mnId)
   , mnFirstFrame(pRefKF->mnFrameId)
   , nObs(0)
@@ -107,6 +109,7 @@ MapPoint::MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF,
   , mfMinDistance(0)
   , mfMaxDistance(0)
   , mpMap(pMap)
+  , creatorAgentId(creatorAgentId)
   , mnOriginMapId(pMap->GetId()) {
   mInvDepth = invDepth;
   mInitU = (double)uv_init.x;
@@ -124,7 +127,8 @@ MapPoint::MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF,
   uuid = boost::uuids::random_generator()();
 }
 
-MapPoint::MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF, KeyFrame* pRefKF)
+MapPoint::MapPoint(
+  const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF, KeyFrame* pRefKF, unsigned int creatorAgentId)
   : mnFirstKFid(-1)
   , mnFirstFrame(pFrame->mnId)
   , nObs(0)
@@ -142,6 +146,7 @@ MapPoint::MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const i
   , mbBad(false)
   , mpReplaced(NULL)
   , mpMap(pMap)
+  , creatorAgentId(creatorAgentId)
   , mnOriginMapId(pMap->GetId()) {
   SetWorldPos(Pos);
 

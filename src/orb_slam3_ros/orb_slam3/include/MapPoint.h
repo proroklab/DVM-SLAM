@@ -49,6 +49,7 @@ class MapPoint {
   friend class boost::serialization::access;
   template <class Archive> void serialize(Archive& ar, const unsigned int version) {
     ar& mnId;
+    ar& creatorAgentId;
     ar& uuid;
     ar& mnFirstKFid;
     ar& mnFirstFrame;
@@ -105,9 +106,11 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   MapPoint();
 
-  MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap);
-  MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF, KeyFrame* pHostKF, Map* pMap);
-  MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF, KeyFrame* pRefKF);
+  MapPoint(const Eigen::Vector3f& Pos, KeyFrame* pRefKF, Map* pMap, unsigned int creatorAgentId);
+  MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF, KeyFrame* pHostKF, Map* pMap,
+    unsigned int creatorAgentId);
+  MapPoint(const Eigen::Vector3f& Pos, Map* pMap, Frame* pFrame, const int& idxF, KeyFrame* pRefKF,
+    unsigned int creatorAgentId);
 
   void SetWorldPos(const Eigen::Vector3f& Pos);
   Eigen::Vector3f GetWorldPos();
@@ -158,6 +161,7 @@ public:
 
 public:
   long unsigned int mnId;
+  long unsigned int creatorAgentId;
   boost::uuids::uuid uuid;
   static long unsigned int nNextId;
   long int mnFirstKFid;

@@ -2148,7 +2148,7 @@ void Tracking::StereoInitialization() {
         if (z > 0) {
           Eigen::Vector3f x3D;
           mCurrentFrame.UnprojectStereo(i, x3D);
-          MapPoint* pNewMP = new MapPoint(x3D, pKFini, mpAtlas->GetCurrentMap());
+          MapPoint* pNewMP = new MapPoint(x3D, pKFini, mpAtlas->GetCurrentMap(), mpAtlas->GetAgentId());
           pNewMP->AddObservation(pKFini, i);
           pKFini->AddMapPoint(pNewMP, i);
           pNewMP->ComputeDistinctiveDescriptors();
@@ -2165,7 +2165,7 @@ void Tracking::StereoInitialization() {
         if (rightIndex != -1) {
           Eigen::Vector3f x3D = mCurrentFrame.mvStereo3Dpoints[i];
 
-          MapPoint* pNewMP = new MapPoint(x3D, pKFini, mpAtlas->GetCurrentMap());
+          MapPoint* pNewMP = new MapPoint(x3D, pKFini, mpAtlas->GetCurrentMap(), mpAtlas->GetAgentId());
 
           pNewMP->AddObservation(pKFini, i);
           pNewMP->AddObservation(pKFini, rightIndex + mCurrentFrame.Nleft);
@@ -2298,7 +2298,7 @@ void Tracking::CreateInitialMapMonocular() {
     // Create MapPoint.
     Eigen::Vector3f worldPos;
     worldPos << mvIniP3D[i].x, mvIniP3D[i].y, mvIniP3D[i].z;
-    MapPoint* pMP = new MapPoint(worldPos, pKFcur, mpAtlas->GetCurrentMap());
+    MapPoint* pMP = new MapPoint(worldPos, pKFcur, mpAtlas->GetCurrentMap(), mpAtlas->GetAgentId());
 
     pKFini->AddMapPoint(pMP, i);
     pKFcur->AddMapPoint(pMP, mvIniMatches[i]);
@@ -2566,7 +2566,7 @@ void Tracking::UpdateLastFrame() {
         x3D = mLastFrame.UnprojectStereoFishEye(i);
       }
 
-      MapPoint* pNewMP = new MapPoint(x3D, mpAtlas->GetCurrentMap(), &mLastFrame, i, pRef);
+      MapPoint* pNewMP = new MapPoint(x3D, mpAtlas->GetCurrentMap(), &mLastFrame, i, pRef, mpAtlas->GetAgentId());
       mLastFrame.mvpMapPoints[i] = pNewMP;
 
       mlpTemporalPoints.push_back(pNewMP);
@@ -2998,7 +2998,7 @@ void Tracking::CreateNewKeyFrame() {
             x3D = mCurrentFrame.UnprojectStereoFishEye(i);
           }
 
-          MapPoint* pNewMP = new MapPoint(x3D, pKF, mpAtlas->GetCurrentMap());
+          MapPoint* pNewMP = new MapPoint(x3D, pKF, mpAtlas->GetCurrentMap(), mpAtlas->GetAgentId());
           pNewMP->AddObservation(pKF, i);
 
           // Check if it is a stereo observation in order to not
