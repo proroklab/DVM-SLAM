@@ -112,7 +112,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
     connectedPeers[connectedPeerId] = new Peer(this->shared_from_this(), connectedPeerId);
   }
 
-  shareNewKeyFrameBowsTimer = this->create_wall_timer(2s, std::bind(&OrbSlam3Wrapper::sendNewKeyFrameBows, this));
+  updateScaleTimer = this->create_wall_timer(5s, std::bind(&OrbSlam3Wrapper::updateMapScale, this));
 
   resetVisualization();
 
@@ -152,6 +152,7 @@ void OrbSlam3Wrapper::run() {
     if (newFrameProcessed) {
       updateSuccessfullyMerged();
       updateIsLostFromBaseMap();
+      sendNewKeyFrameBows();
       sendNewKeyFrames();
       publish_topics(lastFrameTimestamp);
 
