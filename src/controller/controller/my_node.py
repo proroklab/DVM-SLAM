@@ -23,8 +23,8 @@ class Ros2BagAPI():
         self.process = None
         self.bag_file_name = None
 
-        self.playback_remapping_old_topic = None
-        self.playback_remapping_new_topic = None
+        self.playback_remapping_old_topic = {}
+        self.playback_remapping_new_topic = {}
 
         self.playback_rate = 1.0
 
@@ -40,8 +40,13 @@ class Ros2BagAPI():
             print('No recording to stop.')
 
     def start_playback(self):
+        remaps = ["--remap"]
+        for key in self.playback_remapping_old_topic.keys():
+            remaps.append(
+                f"{self.playback_remapping_old_topic[key]}:={self.playback_remapping_new_topic[key]}")
+        print(remaps)
         self.process = subprocess.Popen(
-            ["ros2", "bag", "play", self.bag_file_name, "--remap", f"{self.playback_remapping_old_topic}:={self.playback_remapping_new_topic}", "--rate", str(self.playback_rate)])
+            ["ros2", "bag", "play", self.bag_file_name, "--rate", str(self.playback_rate)] + remaps)
 
     def stop_playback(self):
         if self.process:
@@ -53,11 +58,11 @@ class Ros2BagAPI():
     def set_bag_file_name(self, text):
         self.bag_file_name = text
 
-    def set_playback_remapping_old_topic(self, text):
-        self.playback_remapping_old_topic = text
+    def set_playback_remapping_old_topic(self, index, text):
+        self.playback_remapping_old_topic[index] = text
 
-    def set_playback_remapping_new_topic(self, text):
-        self.playback_remapping_new_topic = text
+    def set_playback_remapping_new_topic(self, index, text):
+        self.playback_remapping_new_topic[index] = text
 
     def set_playback_rate(self, rate):
         self.playback_rate = rate/10
@@ -268,10 +273,14 @@ class MainWindow(QMainWindow):
             ros2_bag_playback = Ros2BagAPI()
             ros2_bag_playback.set_bag_file_name(
                 "/home/joshuabird/Desktop/MH_01")
-            ros2_bag_playback.set_playback_remapping_old_topic(
-                "cam0/image_raw")
-            ros2_bag_playback.set_playback_remapping_new_topic(
-                f'{robot_name}/camera/image_color')
+            ros2_bag_playback.set_playback_remapping_old_topic(0,
+                                                               "cam0/image_raw")
+            ros2_bag_playback.set_playback_remapping_new_topic(0,
+                                                               f'{robot_name}/camera/image_color')
+            ros2_bag_playback.set_playback_remapping_old_topic(1,
+                                                               "/leica/position")
+            ros2_bag_playback.set_playback_remapping_new_topic(1,
+                                                               f'{robot_name}/ground_truth_pose')
             self.ros2_bag_playback_apis.append(ros2_bag_playback)
 
             playback_file_name_layout = QHBoxLayout()
@@ -303,6 +312,7 @@ class MainWindow(QMainWindow):
                 stop_playback_image_stream_button)
             layout.addLayout(playback_image_stream_layout)
 
+            # Topic remap 1
             playback_topic_remap_layout = QHBoxLayout()
             playback_topic_remap_label = QLabel(
                 "Topic Remap (Old --> New)", self)
@@ -312,14 +322,36 @@ class MainWindow(QMainWindow):
             playback_old_topic_input = QLineEdit(self)
             playback_old_topic_input.setText(f'cam0/image_raw')
             playback_old_topic_input.textChanged.connect(
-                self.ros2_bag_playback_apis[i].set_playback_remapping_old_topic)
+                partial(self.ros2_bag_playback_apis[i].set_playback_remapping_old_topic, 0))
             playback_topic_remap_layout.addWidget(
                 playback_old_topic_input)
             playback_new_topic_input = QLineEdit(self)
             playback_new_topic_input.setText(
                 f'{robot_name}/camera/image_color')
             playback_new_topic_input.textChanged.connect(
-                self.ros2_bag_playback_apis[i].set_playback_remapping_old_topic)
+                partial(self.ros2_bag_playback_apis[i].set_playback_remapping_new_topic, 0))
+            playback_topic_remap_layout.addWidget(
+                playback_new_topic_input)
+            layout.addLayout(playback_topic_remap_layout)
+
+            # Topic remap 2
+            playback_topic_remap_layout = QHBoxLayout()
+            playback_topic_remap_label = QLabel(
+                "Topic Remap (Old --> New)", self)
+            playback_topic_remap_label.setSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Expanding)
+            playback_topic_remap_layout.addWidget(playback_topic_remap_label)
+            playback_old_topic_input = QLineEdit(self)
+            playback_old_topic_input.setText(f'/leica/position')
+            playback_old_topic_input.textChanged.connect(
+                partial(self.ros2_bag_playback_apis[i].set_playback_remapping_old_topic, 1))
+            playback_topic_remap_layout.addWidget(
+                playback_old_topic_input)
+            playback_new_topic_input = QLineEdit(self)
+            playback_new_topic_input.setText(
+                f'{robot_name}/ground_truth_pose')
+            playback_new_topic_input.textChanged.connect(
+                partial(self.ros2_bag_playback_apis[i].set_playback_remapping_new_topic, 1))
             playback_topic_remap_layout.addWidget(
                 playback_new_topic_input)
             layout.addLayout(playback_topic_remap_layout)
