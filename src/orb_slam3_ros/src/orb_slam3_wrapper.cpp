@@ -1085,6 +1085,73 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
   return cloud;
 }
 
+tuple<Sophus::SE3f, float> OrbSlam3Wrapper::ransacPointSetAlignment(vector<Eigen::Vector3f> sourcePoints,
+  vector<Eigen::Vector3f> targetPoints, int numSamples, int iterations, float inlierThreshold) {
+  vector<pair<Eigen::Vector3f, Eigen::Vector3f>> sourceTargetPointPairs;
+  for (int i = 0; i < sourcePoints.size(); i++) {
+    sourceTargetPointPairs.push_back(make_pair(sourcePoints[i], targetPoints[i]));
+  }
+
+  float targetVariance = 0;
+  for (Eigen::Vector3f point : targetPoints) {
+    targetVariance += point.squaredNorm();
+  }
+  targetVariance /= targetPoints.size();
+
+  cout << "Target variance" << targetVariance << endl;
+
+  tuple<Sophus::SE3f, float> bestModel = pointSetAlignment(sourcePoints, targetPoints);
+  int maxNumInliers = 0;
+
+  for (int i = 0; i < iterations; i++) {
+    try {
+      // randomly select samples
+      std::vector<pair<Eigen::Vector3f, Eigen::Vector3f>> samples = sourceTargetPointPairs;
+      std::random_device rd;
+      std::mt19937 g(rd());
+      std::shuffle(samples.begin(), samples.end(), g);
+      samples.resize(std::min(numSamples, static_cast<int>(samples.size())));
+
+      vector<Eigen::Vector3f> sourceSamplePoints;
+      vector<Eigen::Vector3f> targetSamplePoints;
+      for (auto sample : samples) {
+        sourceSamplePoints.push_back(sample.first);
+        targetSamplePoints.push_back(sample.second);
+      }
+
+      auto [transformation, scale] = pointSetAlignment(sourceSamplePoints, targetSamplePoints);
+
+      int numInliers = 0;
+      for (auto pointPair : sourceTargetPointPairs) {
+        Eigen::Vector3f sourcePoint = pointPair.first;
+        Eigen::Vector3f targetPoint = pointPair.first;
+
+        Eigen::Vector3f transformedSourcePoint
+          = scale * transformation.rotationMatrix() * sourcePoint + transformation.translation();
+
+        float scaledDistance = (transformedSourcePoint - targetPoint).squaredNorm() / targetVariance;
+
+        if (scaledDistance < inlierThreshold)
+          numInliers++;
+      }
+
+      if (numInliers > maxNumInliers) {
+        maxNumInliers = numInliers;
+        bestModel = make_pair(transformation, scale);
+      }
+
+      cout << numInliers << ", ";
+    } catch (const std::exception& e) {
+      cout << "Error in ransac scale" << endl;
+    }
+  }
+
+  if (maxNumInliers == 0)
+    cout << "WARNING: no inliers in ransac scale";
+
+  return bestModel;
+}
+
 // Least-squares estimation of transformation parameters between two point patterns
 // DOI: 10.1109/34.88573
 // https://zpl.fi/aligning-point-patterns-with-kabsch-umeyama-algorithm/
