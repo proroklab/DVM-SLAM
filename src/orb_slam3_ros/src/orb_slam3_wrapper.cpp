@@ -623,7 +623,7 @@ void OrbSlam3Wrapper::updateMapScale() {
     if (sourcePoints.size() < MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT)
       return;
 
-    auto [transformation, scale] = pointSetAlignment(sourcePoints, targetPoints);
+    auto [transformation, scale] = ransacPointSetAlignment(sourcePoints, targetPoints, 50, 500, 1e-5);
 
     pSLAM->GetAtlas()->GetCurrentMap()->ApplyScaledRotation(transformation, scale);
 

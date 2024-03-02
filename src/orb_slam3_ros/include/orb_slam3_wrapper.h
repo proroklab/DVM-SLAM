@@ -83,7 +83,7 @@ protected:
   rclcpp::Subscription<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapSub;
   rclcpp::Subscription<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersSub;
 
-  rclcpp::TimerBase::SharedPtr shareNewKeyFrameBowsTimer;
+  rclcpp::TimerBase::SharedPtr updateScaleTimer;
 
   string world_frame_id = "/world";
   string origin_frame_parent_id = world_frame_id;
@@ -149,6 +149,9 @@ protected:
 
   sensor_msgs::msg::PointCloud2 mappoint_to_pointcloud(
     std::vector<ORB_SLAM3::MapPoint*> map_points, rclcpp::Time msg_time);
+
+  tuple<Sophus::SE3f, float> ransacPointSetAlignment(vector<Eigen::Vector3f> sourcePoints,
+    vector<Eigen::Vector3f> targetPoints, int numSamples, int iterations, float inlierThreshold);
 
   tuple<Sophus::SE3f, float> pointSetAlignment(
     vector<Eigen::Vector3f> sourcePoints, vector<Eigen::Vector3f> targetPoints);
