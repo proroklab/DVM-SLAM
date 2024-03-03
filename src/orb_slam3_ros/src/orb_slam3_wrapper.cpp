@@ -205,12 +205,6 @@ void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv
   }
 
   pSLAM->AddSerializedMapToTryMerge(response->serialized_map, mergeCandidateKeyFrameUuids);
-
-  // Set the next reference keyframe to not erase so it can be used as a reference
-  // TODO: actually set not erase for this kf
-  pSLAM->GetKeyFrameDatabase()
-    ->ConvertUuidToKeyFrame(arrayToUuid(response->next_reference_key_frame_uuid))
-    ->SetNotErase();
 }
 
 void OrbSlam3Wrapper::sendNewKeyFrames() {
@@ -319,10 +313,6 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
     connectedPeer->newKeyFramesPub->publish(msg);
 
-    // Set reference KF as erase and next reference KF as no erase
-    referenceKeyFrame->SetErase();
-    nextReferenceKeyFrame->SetNotErase();
-
     // Actually set referenceKeyFrameUuid
     connectedPeer->setReferenceKeyFrame(nextReferenceKeyFrame);
 
@@ -356,14 +346,7 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
       Eigen::Vector3f newWorldPos = referenceKeyFramePose.translation() + mapPoint->GetWorldPos();
       mapPoint->SetWorldPos(newWorldPos);
 
-      Eigen::Vector3f newNormal = referenceKeyFramePose.rotationMatrix() * mapPoint->GetNormal();
-      mapPoint->SetNormalVector(newNormal);
-    }
   }
-
-  // Allow reference KF to be erased and stop next reference KF from being erased
-  referenceKeyFrame->SetErase();
-  pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(arrayToUuid(msg->next_reference_key_frame_uuid))->SetNotErase();
 
   ORB_SLAM3::Map* currentMap = pSLAM->GetAtlas()->GetCurrentMap();
 
