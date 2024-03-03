@@ -447,6 +447,9 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
       }
     }
 
+    if (keyFrameBowVectorMsgs.size() == 0)
+      return;
+
     // Send new keyframes message to agent
     RCLCPP_INFO(this->get_logger(), "sent new key frame bows");
     interfaces::msg::NewKeyFrameBows msg;
