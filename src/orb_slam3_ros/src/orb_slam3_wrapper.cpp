@@ -288,6 +288,11 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       connectedPeer->addSentKeyFrameUuid(keyFrame->uuid);
     }
 
+    // Add map points to sent map points map
+    for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
+      connectedPeer->addSentMapPointUuid(mapPoint->uuid);
+    }
+
     // Get the lastest keyframe to later make as the reference keyframe uuid
     ORB_SLAM3::KeyFrame* latestKeyFrame = nullptr;
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {

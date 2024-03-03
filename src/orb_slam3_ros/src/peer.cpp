@@ -32,6 +32,7 @@ bool Peer::getLocalSuccessfullyMerged() { return localSuccessfullyMerged; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameUuids() { return sentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameBowUuids() { return sentKeyFrameBowUuids; }
 set<boost::uuids::uuid> Peer::getSentLoopClosureTriggerUuids() { return sentLoopClosureTriggerUuids; }
+set<boost::uuids::uuid> Peer::getSentMapPointUuids() { return sentMapPointUuids; }
 ORB_SLAM3::KeyFrame* Peer::getReferenceKeyFrame() { return referenceKeyFrame; }
 
 bool Peer::getIsLostFromBaseMap() { return isLostFromBaseMap; }
@@ -65,3 +66,5 @@ void Peer::addSentLoopClosureTriggerUuids(
 }
 
 void Peer::addSentLoopClosureTriggerUuid(boost::uuids::uuid uuid) { sentLoopClosureTriggerUuids.insert(uuid); }
+
+void Peer::addSentMapPointUuid(boost::uuids::uuid uuid) { sentMapPointUuids.insert(uuid); }

@@ -26,6 +26,7 @@ public:
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
   set<boost::uuids::uuid> getSentLoopClosureTriggerUuids();
+  set<boost::uuids::uuid> getSentMapPointUuids();
   ORB_SLAM3::KeyFrame* getReferenceKeyFrame();
 
   bool getIsLostFromBaseMap();
@@ -43,6 +44,7 @@ public:
   void addSentLoopClosureTriggerUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentLoopClosureTriggerUuid(boost::uuids::uuid uuid);
+  void addSentMapPointUuid(boost::uuids::uuid uuid);
 
   rclcpp::Publisher<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesPub;
   rclcpp::Publisher<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsPub;
@@ -58,7 +60,7 @@ protected:
   set<boost::uuids::uuid> sentKeyFrameUuids;
   set<boost::uuids::uuid> sentKeyFrameBowUuids;
   set<boost::uuids::uuid> sentLoopClosureTriggerUuids;
-  ORB_SLAM3::KeyFrame* referenceKeyFrame;
+  set<boost::uuids::uuid> sentMapPointUuids;
 
   bool remoteSuccessfullyMerged = false; // Remote map is successfully merged together
   bool localSuccessfullyMerged = false; // Local map is successfully merged together
