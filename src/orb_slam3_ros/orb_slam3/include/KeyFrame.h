@@ -303,6 +303,8 @@ public:
   void SetORBVocabulary(ORBVocabulary* pORBVoc);
   void SetKeyFrameDatabase(KeyFrameDatabase* pKFDB);
 
+  vector<KeyFrame*> GetSpatiallyClosestNonConnectedKeyFrames(const int& N);
+
   bool bImu;
 
   // The following variables are accesed from only 1 thread or never change (no

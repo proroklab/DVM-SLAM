@@ -22,6 +22,7 @@
 #include "KeyFrame.h"
 #include "Converter.h"
 #include "ImuTypes.h"
+#include "sophus/se3.hpp"
 #include <boost/uuid/nil_generator.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -1179,5 +1180,41 @@ Eigen::Vector3f KeyFrame::GetRightTranslation() {
 void KeyFrame::SetORBVocabulary(ORBVocabulary* pORBVoc) { mpORBvocabulary = pORBVoc; }
 
 void KeyFrame::SetKeyFrameDatabase(KeyFrameDatabase* pKFDB) { mpKeyFrameDB = pKFDB; }
+
+vector<KeyFrame*> KeyFrame::GetSpatiallyClosestNonConnectedKeyFrames(const int& N) {
+  vector<KeyFrame*> sortedKeyFrames = mpMap->GetAllKeyFrames();
+
+  // Remove connected keyframes from sortedKeyFrames
+  vector<KeyFrame*> connectedKeyFrames = GetCovisiblesByWeight(1);
+  sortedKeyFrames.erase(std::remove_if(sortedKeyFrames.begin(), sortedKeyFrames.end(),
+                          [&connectedKeyFrames](KeyFrame* x) {
+                            return std::find(connectedKeyFrames.begin(), connectedKeyFrames.end(), x)
+                              != connectedKeyFrames.end();
+                          }),
+    sortedKeyFrames.end());
+
+  auto se3Distance = [](const Sophus::SE3f& pose1, const Sophus::SE3f& pose2) -> double {
+    // Compute the difference in translation vectors
+    Eigen::Vector3f translationDiff = pose1.translation() - pose2.translation();
+    float translationDistance = translationDiff.norm();
+
+    // Compute the rotation difference using the geodesic distance
+    Eigen::Matrix3f relativeRotation = pose1.rotationMatrix().transpose() * pose2.rotationMatrix();
+    Eigen::Quaternionf relativeQuaternion(relativeRotation);
+    float angle = 2.0f * atan2(relativeQuaternion.vec().norm(), relativeQuaternion.w());
+
+    return translationDistance * pow(angle, 2); // Multiply, since scale is arbitrary
+  };
+
+  sort(sortedKeyFrames.begin(), sortedKeyFrames.end(), [this, se3Distance](KeyFrame* a, KeyFrame* b) {
+    return se3Distance(a->GetPoseInverse(), this->GetPoseInverse())
+      < se3Distance(b->GetPoseInverse(), this->GetPoseInverse());
+  });
+
+  if (sortedKeyFrames.size() > N)
+    return vector<KeyFrame*>(sortedKeyFrames.begin(), sortedKeyFrames.begin() + N);
+  else
+    return sortedKeyFrames;
+}
 
 } // namespace ORB_SLAM3

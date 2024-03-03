@@ -136,7 +136,7 @@ protected:
   void CreateNewMapPoints();
 
   void MapPointCulling();
-  void SearchInNeighbors();
+  void SearchInNeighbors(KeyFrame* keyFrame);
   void KeyFrameCulling();
 
   System* mpSystem;
