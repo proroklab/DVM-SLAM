@@ -90,8 +90,8 @@ WorldInfo {
   basicTimeStep 100
 }
 Viewpoint {
-  orientation 0.40388020432947885 -0.25547341306672494 -0.8784156850642052 4.327369172714287
-  position 3.6125231753891116 -31.676391019578958 26.374441477988196
+  orientation -0.19457626898071664 -0.6956970735440792 0.6914807715415866 5.2563147907529855
+  position -8.31583815039907 -3.056184654494146 5.011249605111976
   exposure 0.5
   ambientOcclusionRadius 1
 }
@@ -2014,6 +2014,7 @@ Robot {
   rotation 0 0 1 1.5708
   children [
     Pose {
+      translation -0.09 0 0
       children [
         Shape {
           appearance PBRAppearance {
@@ -2027,7 +2028,7 @@ Robot {
       ]
     }
     Pose {
-      translation 0.04 0 0
+      translation -0.05 0 0
       rotation 0 1 0 -1.57
       children [
         Shape {
@@ -2043,7 +2044,6 @@ Robot {
       ]
     }
     Camera {
-      translation 0.09 0 0
       fieldOfView 2.27
       width 640
       height 480
@@ -2059,6 +2059,7 @@ Robot {
   rotation 0 0 1 1.5708
   children [
     Pose {
+      translation -0.09 0 0
       children [
         Shape {
           appearance PBRAppearance {
@@ -2072,7 +2073,7 @@ Robot {
       ]
     }
     Pose {
-      translation 0.04 0 0
+      translation -0.05 0 0
       rotation 0 1 0 -1.57
       children [
         Shape {
@@ -2088,7 +2089,6 @@ Robot {
       ]
     }
     Camera {
-      translation 0.09 0 0
       fieldOfView 2.27
       width 640
       height 480
