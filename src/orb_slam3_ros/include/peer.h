@@ -61,6 +61,7 @@ protected:
   set<boost::uuids::uuid> sentKeyFrameBowUuids;
   set<boost::uuids::uuid> sentLoopClosureTriggerUuids;
   set<boost::uuids::uuid> sentMapPointUuids;
+  ORB_SLAM3::KeyFrame* referenceKeyFrame = nullptr;
 
   bool remoteSuccessfullyMerged = false; // Remote map is successfully merged together
   bool localSuccessfullyMerged = false; // Local map is successfully merged together

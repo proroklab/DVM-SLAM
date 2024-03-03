@@ -168,16 +168,7 @@ void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interface
   unique_lock<mutex> lock(mutexWrapper);
   unique_lock<mutex> lock2(pSLAM->GetAtlas()->GetCurrentMap()->mMutexMapUpdate); // Wait for map merge
 
-  cout << "Handling get current map request" << endl;
-
-  // Get the lastest keyframe as the reference keyframe uuid
-  ORB_SLAM3::KeyFrame* latestKeyFrame = nullptr;
-  for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
-    if (!latestKeyFrame || (keyFrame->mnId > latestKeyFrame->mnId && keyFrame->creatorAgentId == agentId)) {
-      latestKeyFrame = keyFrame;
-    }
-  }
-  connectedPeers[request->sender_agent_id]->setReferenceKeyFrame(latestKeyFrame);
+  RCLCPP_INFO(this->get_logger(), "Handling get current map request");
 
   // Clone current map
   unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
@@ -266,8 +257,20 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       }
     }
 
+    // Get refernece key frame
+    ORB_SLAM3::KeyFrame* referenceKeyFrame = connectedPeer->getReferenceKeyFrame();
+    // If no reference keyframe, get the latest sent keyframe
+    if (referenceKeyFrame == nullptr) {
+      for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
+        if (connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0
+          && (referenceKeyFrame == nullptr || keyFrame->mnId > referenceKeyFrame->mnId)) {
+          referenceKeyFrame = keyFrame;
+        }
+      }
+    }
+
     // Transform keyframes and map points to move the reference keyframe to the origin
-    Sophus::SE3f referenceKeyFramePoseInv = connectedPeer->getReferenceKeyFrame()->GetPoseInverse();
+    Sophus::SE3f referenceKeyFramePoseInv = referenceKeyFrame->GetPoseInverse();
 
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
       Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePoseInv;
@@ -306,12 +309,12 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     msg.header.stamp = lastFrameTimestamp;
     msg.sender_agent_id = agentId;
     msg.serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
-    msg.reference_key_frame_uuid = uuidToArray(connectedPeer->getReferenceKeyFrame()->uuid);
+    msg.reference_key_frame_uuid = uuidToArray(referenceKeyFrame->uuid);
     msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
     connectedPeer->newKeyFramesPub->publish(msg);
 
     // Set reference KF as erase and next reference KF as no erase
-    connectedPeer->getReferenceKeyFrame()->SetErase();
+    referenceKeyFrame->SetErase();
     nextReferenceKeyFrame->SetNotErase();
 
     // Actually set referenceKeyFrameUuid
