@@ -51,7 +51,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   settings_file = this->get_parameter("config").as_string();
 
   node_name = "robot" + to_string(agentId);
-  cout << node_name << endl;
+  RCLCPP_INFO(this->get_logger(), node_name.c_str());
 
   Eigen::Matrix3d rotation_matrix;
   rotation_matrix << 1, 0, 0, 0, 0, 1, 0, -1, 0;
@@ -322,7 +322,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       delete keyFrame;
     }
 
-    cout << "Sent new key frames" << endl;
+    RCLCPP_INFO(this->get_logger(), "Sent new key frames");
   }
 }
 
@@ -440,7 +440,7 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
     }
 
     // Send new keyframes message to agent
-    cout << "sent new key frame bows" << endl;
+    RCLCPP_INFO(this->get_logger(), "sent new key frame bows");
     interfaces::msg::NewKeyFrameBows msg;
     msg.header.stamp = lastFrameTimestamp;
     msg.key_frame_bow_vectors = keyFrameBowVectorMsgs;
@@ -456,7 +456,7 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
   unique_lock<mutex> lock(mutexWrapper);
 
   vector<interfaces::msg::KeyFrameBowVector> newKeyFramesBowVectors = msg->key_frame_bow_vectors;
-  cout << "received new key frame bow vectors";
+  RCLCPP_INFO(this->get_logger(), "received new key frame bow vectors");
 
   connectedPeers[msg->sender_agent_id]->mergeCandidateKeyFrameUuids = vector<boost::uuids::uuid>();
 
@@ -530,6 +530,11 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
         world_to_origin = world_to_origin * mergeWorldToCurrentWorld;
       }
 
+      RCLCPP_INFO(this->get_logger(),
+        ("Successfully merged with peer " + to_string(connectedPeer->getId()) + " "
+          + (successfullyMerged ? "true" : "false"))
+          .c_str());
+
       // Tell this agent that we are successfully merged
       interfaces::msg::SuccessfullyMerged msg;
       msg.header.stamp = lastFrameTimestamp;
@@ -575,6 +580,8 @@ void OrbSlam3Wrapper::updateIsLostFromBaseMap() {
   bool newIsLostFromBaseMap = baseMap != pSLAM->GetAtlas()->GetCurrentMap();
 
   if (isLostFromBaseMap != newIsLostFromBaseMap) {
+    RCLCPP_INFO(this->get_logger(), "Update lost from base map: %d", newIsLostFromBaseMap);
+
     isLostFromBaseMap = newIsLostFromBaseMap;
 
     // Update peers on if we are lost or not
@@ -601,7 +608,7 @@ void OrbSlam3Wrapper::updateMapScale() {
     unique_lock<mutex> lock(mutexWrapper);
     interfaces::srv::GetMapPoints::Response::SharedPtr response = future.get();
 
-    cout << "Received peer's map points" << endl;
+    RCLCPP_INFO(this->get_logger(), "Received peer's map points");
 
     map<boost::uuids::uuid, Eigen::Vector3f> peerMapPointUuidToPos;
     for (interfaces::msg::MapPoint peerMapPointMsg : response->map_points) {
@@ -620,7 +627,7 @@ void OrbSlam3Wrapper::updateMapScale() {
       }
     }
 
-    cout << sourcePoints.size() << " point matches" << endl;
+    RCLCPP_INFO(this->get_logger(), "Point matches: %d", sourcePoints.size());
 
     if (sourcePoints.size() < MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT)
       return;
@@ -629,11 +636,12 @@ void OrbSlam3Wrapper::updateMapScale() {
 
     pSLAM->GetAtlas()->GetCurrentMap()->ApplyScaledRotation(transformation, scale);
 
-    cout << "Applied translation: " << transformation.translation() << " rotation: " << transformation.rotationMatrix()
-         << " & scale: " << scale << endl;
+    RCLCPP_INFO(this->get_logger(), "Applied transformation");
+    cout << "translation: " << transformation.translation() << " rotation: " << transformation.rotationMatrix()
+         << " & scale: " << scale;
   };
 
-  cout << "Attempting to update map scale..." << endl;
+  RCLCPP_INFO(this->get_logger(), "Attempting to update map scale...");
 
   uint lowestConnectedPeerAgentId = connectedPeers.begin()->first;
   Peer* lowestConnectedPeer = connectedPeers[lowestConnectedPeerAgentId];
@@ -669,7 +677,7 @@ void OrbSlam3Wrapper::handleGetMapPointsRequest(const std::shared_ptr<interfaces
     response->map_points.push_back(mapPointMsg);
   }
 
-  cout << "Sent map points" << endl;
+  RCLCPP_INFO(this->get_logger(), "Sent map points");
 }
 
 void OrbSlam3Wrapper::sendLoopClosureTriggers() {
@@ -703,6 +711,8 @@ void OrbSlam3Wrapper::sendLoopClosureTriggers() {
       }
     }
 
+    RCLCPP_INFO(this->get_logger(), "Sent loop closure triggers");
+
     // Send loop closure triggers to peer
     interfaces::msg::LoopClosureTriggers msg;
     msg.header.stamp = lastFrameTimestamp;
@@ -714,6 +724,8 @@ void OrbSlam3Wrapper::sendLoopClosureTriggers() {
 
 void OrbSlam3Wrapper::receiveLoopClosureTriggers(const interfaces::msg::LoopClosureTriggers::SharedPtr msg) {
   unique_lock<mutex> lock(mutexWrapper);
+
+  RCLCPP_INFO(this->get_logger(), "Received loop closure triggers");
 
   for (interfaces::msg::Uuid uuidMsg : msg->trigger_key_frame_uuids) {
     boost::uuids::uuid uuid = arrayToUuid(uuidMsg.uuid);
@@ -1044,7 +1056,7 @@ sensor_msgs::msg::PointCloud2 OrbSlam3Wrapper::mappoint_to_pointcloud(
   const int num_channels = 3; // x y z
 
   if (map_points.size() == 0) {
-    std::cout << "Map point vector is empty!" << std::endl;
+    RCLCPP_INFO(this->get_logger(), "Map point vector is empty!");
   }
 
   sensor_msgs::msg::PointCloud2 cloud;
@@ -1100,7 +1112,7 @@ tuple<Sophus::SE3f, float> OrbSlam3Wrapper::ransacPointSetAlignment(vector<Eigen
   }
   targetVariance /= targetPoints.size();
 
-  cout << "Target variance" << targetVariance << endl;
+  RCLCPP_INFO(this->get_logger(), "Target variance: %f", targetVariance);
 
   tuple<Sophus::SE3f, float> bestModel = pointSetAlignment(sourcePoints, targetPoints);
   int maxNumInliers = 0;
@@ -1149,7 +1161,7 @@ tuple<Sophus::SE3f, float> OrbSlam3Wrapper::ransacPointSetAlignment(vector<Eigen
   }
 
   if (maxNumInliers == 0)
-    cout << "WARNING: no inliers in ransac scale";
+    RCLCPP_INFO(this->get_logger(), "WARNING: no inliers in ransac scale");
 
   return bestModel;
 }
