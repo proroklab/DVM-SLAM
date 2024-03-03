@@ -1118,46 +1118,42 @@ tuple<Sophus::SE3f, float> OrbSlam3Wrapper::ransacPointSetAlignment(vector<Eigen
   int maxNumInliers = 0;
 
   for (int i = 0; i < iterations; i++) {
-    try {
-      // randomly select samples
-      std::vector<pair<Eigen::Vector3f, Eigen::Vector3f>> samples = sourceTargetPointPairs;
-      std::random_device rd;
-      std::mt19937 g(rd());
-      std::shuffle(samples.begin(), samples.end(), g);
-      samples.resize(std::min(numSamples, static_cast<int>(samples.size())));
+    // randomly select samples
+    std::vector<pair<Eigen::Vector3f, Eigen::Vector3f>> samples = sourceTargetPointPairs;
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(samples.begin(), samples.end(), g);
+    samples.resize(std::min(numSamples, static_cast<int>(samples.size())));
 
-      vector<Eigen::Vector3f> sourceSamplePoints;
-      vector<Eigen::Vector3f> targetSamplePoints;
-      for (auto sample : samples) {
-        sourceSamplePoints.push_back(sample.first);
-        targetSamplePoints.push_back(sample.second);
-      }
-
-      auto [transformation, scale] = pointSetAlignment(sourceSamplePoints, targetSamplePoints);
-
-      int numInliers = 0;
-      for (auto pointPair : sourceTargetPointPairs) {
-        Eigen::Vector3f sourcePoint = pointPair.first;
-        Eigen::Vector3f targetPoint = pointPair.first;
-
-        Eigen::Vector3f transformedSourcePoint
-          = scale * transformation.rotationMatrix() * sourcePoint + transformation.translation();
-
-        float scaledDistance = (transformedSourcePoint - targetPoint).squaredNorm() / targetVariance;
-
-        if (scaledDistance < inlierThreshold)
-          numInliers++;
-      }
-
-      if (numInliers > maxNumInliers) {
-        maxNumInliers = numInliers;
-        bestModel = make_pair(transformation, scale);
-      }
-
-      cout << numInliers << ", ";
-    } catch (const std::exception& e) {
-      cout << "Error in ransac scale" << endl;
+    vector<Eigen::Vector3f> sourceSamplePoints;
+    vector<Eigen::Vector3f> targetSamplePoints;
+    for (auto sample : samples) {
+      sourceSamplePoints.push_back(sample.first);
+      targetSamplePoints.push_back(sample.second);
     }
+
+    auto [transformation, scale] = pointSetAlignment(sourceSamplePoints, targetSamplePoints);
+
+    int numInliers = 0;
+    for (auto pointPair : sourceTargetPointPairs) {
+      Eigen::Vector3f sourcePoint = pointPair.first;
+      Eigen::Vector3f targetPoint = pointPair.first;
+
+      Eigen::Vector3f transformedSourcePoint
+        = scale * transformation.rotationMatrix() * sourcePoint + transformation.translation();
+
+      float scaledDistance = (transformedSourcePoint - targetPoint).squaredNorm() / targetVariance;
+
+      if (scaledDistance < inlierThreshold)
+        numInliers++;
+    }
+
+    if (numInliers > maxNumInliers) {
+      maxNumInliers = numInliers;
+      bestModel = make_pair(transformation, scale);
+    }
+
+    cout << numInliers << ", ";
   }
 
   if (maxNumInliers == 0)
@@ -1171,7 +1167,6 @@ tuple<Sophus::SE3f, float> OrbSlam3Wrapper::ransacPointSetAlignment(vector<Eigen
 // https://zpl.fi/aligning-point-patterns-with-kabsch-umeyama-algorithm/
 tuple<Sophus::SE3f, float> OrbSlam3Wrapper::pointSetAlignment(
   vector<Eigen::Vector3f> sourcePoints, vector<Eigen::Vector3f> targetPoints) {
-
   // Center around centroid
   Eigen::Vector3f souceCentroid = Eigen::Vector3f::Zero();
   for (Eigen::Vector3f point : sourcePoints) {
@@ -1213,6 +1208,11 @@ tuple<Sophus::SE3f, float> OrbSlam3Wrapper::pointSetAlignment(
 
   // Compute rotation
   Eigen::Matrix3f R = svd.matrixV() * svd.matrixU().transpose();
+
+  if (R.determinant() < 0) {
+    RCLCPP_INFO(this->get_logger(), "point set alignemt failed");
+    return { Sophus::SE3f(), 1 };
+  }
 
   // Compute translation
   Eigen::Vector3f t = targetCentroid - R * souceCentroid;
