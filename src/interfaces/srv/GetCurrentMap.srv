@@ -1,5 +1,7 @@
 uint32 sender_agent_id
+Uuid[] merge_candidate_key_frame_uuids
 ---
 uint32 sender_agent_id
 byte[16] next_reference_key_frame_uuid
 byte[] serialized_map
+Uuid[] merge_candidate_key_frame_uuids

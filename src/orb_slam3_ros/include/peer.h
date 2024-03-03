@@ -23,7 +23,6 @@ public:
   uint getId();
   bool getRemoteSuccessfullyMerged();
   bool getLocalSuccessfullyMerged();
-  set<boost::uuids::uuid> getTentativeSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
   set<boost::uuids::uuid> getSentLoopClosureTriggerUuids();
@@ -35,8 +34,6 @@ public:
   void setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame);
   void setRemoteSuccessfullyMerged(bool remoteSuccessfullyMerged);
   void setLocalSuccessfullyMerged(bool localSuccessfullyMerged);
-  void addTentativeSentKeyFrameUuids(
-    _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameUuid(boost::uuids::uuid uuid);
@@ -55,12 +52,9 @@ public:
   rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr getCurrentMapClient;
   rclcpp::Client<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsClient;
 
-  vector<boost::uuids::uuid> mergeCandidateKeyFrameUuids;
-
 protected:
   uint agentId;
 
-  set<boost::uuids::uuid> tentativeSentKeyFrameUuids; // Sent keyframes that are not yet confirmed (pre map merge)
   set<boost::uuids::uuid> sentKeyFrameUuids;
   set<boost::uuids::uuid> sentKeyFrameBowUuids;
   set<boost::uuids::uuid> sentLoopClosureTriggerUuids;

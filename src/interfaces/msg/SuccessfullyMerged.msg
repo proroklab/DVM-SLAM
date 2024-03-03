@@ -1,4 +1,5 @@
 std_msgs/Header header
 uint32 sender_agent_id
 bool successfully_merged
-Uuid[] merged_key_frame_uuids
+Uuid[] merged_key_frame_uuids # Used so the receiver can try merge by looking at these keyframes
+Uuid[] all_key_frames_in_map # Used so the receiver knows which keyframes have already been sent, so we dont resend them
