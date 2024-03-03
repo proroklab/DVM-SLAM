@@ -186,9 +186,14 @@ void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interface
 }
 
 void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedFuture future) {
-  unique_lock<mutex> lock(mutexWrapper);
 
   interfaces::srv::GetCurrentMap::Response::SharedPtr response = future.get();
+
+  updateSuccessfullyMerged();
+  if (connectedPeers[response->sender_agent_id]->getLocalSuccessfullyMerged())
+    return;
+
+  unique_lock<mutex> lock(mutexWrapper);
 
   RCLCPP_INFO(this->get_logger(), "Handling get current map response. Received serialized map. Size: %d",
     response->serialized_map.size());
@@ -218,7 +223,8 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
 
-    if (!connectedPeer->getRemoteSuccessfullyMerged() || connectedPeer->getIsLostFromBaseMap()) {
+    if (!connectedPeer->getRemoteSuccessfullyMerged() || !connectedPeer->getLocalSuccessfullyMerged()
+      || connectedPeer->getIsLostFromBaseMap()) {
       continue;
     }
 
@@ -516,7 +522,7 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
         successfullyMerged = true;
     }
 
-    if (connectedPeer->getLocalSuccessfullyMerged() != successfullyMerged) {
+    if (connectedPeer->getLocalSuccessfullyMerged() != successfullyMerged && pSLAM->GetLoopCloser()->isFinishedGBA()) {
       if (successfullyMerged) {
         baseMap = pSLAM->GetAtlas()->GetCurrentMap();
       } // TODO: handle else case. is there even an else case?
@@ -751,7 +757,7 @@ void OrbSlam3Wrapper::receiveLoopClosureTriggers(const interfaces::msg::LoopClos
   for (interfaces::msg::Uuid uuidMsg : msg->trigger_key_frame_uuids) {
     boost::uuids::uuid uuid = arrayToUuid(uuidMsg.uuid);
     ORB_SLAM3::KeyFrame* keyFrame = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(uuid);
-    pSLAM->GetLoopCloser()->InsertKeyFrame(keyFrame);
+    pSLAM->GetLoopCloser()->InsertKeyFrame(keyFrame, keyFrame->GetMap());
   }
 }
 

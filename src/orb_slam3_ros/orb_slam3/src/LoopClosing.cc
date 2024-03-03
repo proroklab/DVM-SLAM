@@ -184,17 +184,6 @@ void LoopClosing::Run() {
 
             Verbose::PrintMess("*Merge detected", Verbose::VERBOSITY_QUIET);
 
-            // Remove all KFs in queue which were part of the map we
-            // are merging into the active map This prevents them
-            // from causing issues later, after the merge has
-            // occured
-            mlpLoopKeyFrameQueue.erase(std::remove_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
-                                         [this](pair<KeyFrame*, Map*> pair) {
-                                           return pair.first->GetMap()->GetId()
-                                             == mpMergeLastCurrentKF->GetMap()->GetId();
-                                         }),
-              mlpLoopKeyFrameQueue.end());
-
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartMerge = std::chrono::steady_clock::now();
 
@@ -219,6 +208,25 @@ void LoopClosing::Run() {
               sophusMergeWorldToCurrentWorld.setScale(mergeWorldToCurrentWorld.scale());
               mpAtlas->AddSuccessfullyMergedAgentId(peerAgentId, mergedKFUuids, sophusMergeWorldToCurrentWorld);
             }
+
+            // Remove kfs in queue from the same requesting map, deleting the map if it is the same map but a different
+            // instance
+            // Basically, if the map is the same, but the instance is different it means that we have two consecutive
+            // map merge attempts happening at the same time. The first one succeeded, so we need to delete the other
+            // attempt before it fucks stuff up
+            mlpLoopKeyFrameQueue.erase(std::remove_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
+                                         [this](pair<KeyFrame*, Map*> pair) {
+                                           Map* requestingMap = pair.second;
+                                           if (requestingMap->GetUuid() == currentRequestingMap->GetUuid()) {
+                                             if (requestingMap != currentRequestingMap)
+                                               mpAtlas->SetMapBad(requestingMap);
+
+                                             return true;
+                                           }
+                                           return false;
+                                         }),
+              mlpLoopKeyFrameQueue.end());
+            // mlpLoopKeyFrameQueue.clear();
 
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndMerge = std::chrono::steady_clock::now();
@@ -359,13 +367,11 @@ bool LoopClosing::NewDetectCommonRegions() {
   if (!mbActiveLC)
     return false;
 
-  Map* requestingMap; // External map that requested the merge. Null if request came from current map
-
   {
     unique_lock<mutex> lock(mMutexLoopQueue);
     auto pair = mlpLoopKeyFrameQueue.front();
     mpCurrentKF = pair.first;
-    requestingMap = pair.second;
+    currentRequestingMap = pair.second;
     mlpLoopKeyFrameQueue.pop_front();
     // Avoid that a keyframe can be erased while it is being process by this
     // thread
@@ -559,15 +565,15 @@ bool LoopClosing::NewDetectCommonRegions() {
   mpCurrentKF->SetErase();
   mpCurrentKF->mbCurrentPlaceRecognition = false;
 
-  if (requestingMap && requestingMap != mpAtlas->GetCurrentMap()) {
+  if (currentRequestingMap && currentRequestingMap != mpAtlas->GetCurrentMap()) {
     bool noMoreSiblingKFsinQueue
       = find_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
-          [this, requestingMap](pair<KeyFrame*, Map*> element) { return element.second == requestingMap; })
+          [this](pair<KeyFrame*, Map*> element) { return element.second == currentRequestingMap; })
       == mlpLoopKeyFrameQueue.end();
 
     if (noMoreSiblingKFsinQueue) {
-      cout << "External map merge unsucessful, deleting map with ID: " << requestingMap->GetId() << endl;
-      mpAtlas->SetMapBad(requestingMap);
+      cout << "External map merge unsucessful, deleting map with ID: " << currentRequestingMap->GetId() << endl;
+      mpAtlas->SetMapBad(currentRequestingMap);
     }
   }
 

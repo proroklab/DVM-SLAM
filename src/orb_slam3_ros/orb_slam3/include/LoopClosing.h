@@ -58,7 +58,7 @@ public:
   // Main function
   void Run();
 
-  void InsertKeyFrame(KeyFrame* pKF, Map* requestingMap = nullptr);
+  void InsertKeyFrame(KeyFrame* pKF, Map* requestingMap);
 
   void RequestReset();
   void RequestResetActiveMap(Map* pMap);
@@ -166,6 +166,7 @@ protected:
 
   // Loop detector variables
   KeyFrame* mpCurrentKF;
+  Map* currentRequestingMap; // External/internal map that requested the merge
   KeyFrame* mpLastCurrentKF;
   KeyFrame* mpMatchedKF;
   std::vector<ConsistentGroup> mvConsistentGroups;
