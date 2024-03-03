@@ -257,11 +257,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       }
     }
 
-    // Remove mappoints that dont have one of the remaning kfs as their reference kf
-    vector<ORB_SLAM3::KeyFrame*> remainingKeyFramesVec = currentMapCopy->GetAllKeyFrames();
-    set<ORB_SLAM3::KeyFrame*> remainingKeyFramesSet = set(remainingKeyFramesVec.begin(), remainingKeyFramesVec.end());
+    // Remove mappoints that have already been sent
     for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
-      if (!mapPoint->GetReferenceKeyFrame() || remainingKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0
+      if (mapPoint->creatorAgentId != agentId || connectedPeer->getSentMapPointUuids().count(mapPoint->uuid) != 0
         || mapPoint->isBad()) {
         mapPoint->SetBadFlag();
         delete mapPoint;
