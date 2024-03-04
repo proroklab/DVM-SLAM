@@ -3,7 +3,6 @@
 #include "System.h"
 #include "image_transport/image_transport.hpp"
 #include "rclcpp/publisher.hpp"
-#include "rclcpp/rclcpp.hpp"
 #include "reference_frame_manager.h"
 #include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"

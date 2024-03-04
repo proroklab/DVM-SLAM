@@ -1,9 +1,7 @@
 #include "System.h"
-#include "cv_bridge/cv_bridge.h"
+#include "cv_bridge/cv_bridge.h" // IWYU pragma: keep
 #include "opencv2/highgui/highgui.hpp"
 #include "orb_slam3_wrapper.h"
-#include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/image.hpp"
 #include <utility>
 
 using namespace std;

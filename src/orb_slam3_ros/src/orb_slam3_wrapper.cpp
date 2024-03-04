@@ -1,16 +1,13 @@
 #include "orb_slam3_wrapper.h"
 
 #include "DBoW2/DBoW2/BowVector.h"
-#include "Frame.h"
 #include "KeyFrame.h"
 #include "Map.h"
 #include "MapPoint.h"
-#include "Optimizer.h"
 #include "System.h"
 #include "peer.h"
 #include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"
-#include "sophus/so3.hpp"
 #include "sophus/types.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Geometry/Quaternion.h>

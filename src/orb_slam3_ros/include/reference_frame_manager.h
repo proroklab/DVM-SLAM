@@ -1,4 +1,3 @@
-#include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"
 
 class ReferenceFrameManager {
