@@ -44,7 +44,7 @@ private:
 
       rclcpp::Time msg_time = msg->header.stamp;
 
-      publish_camera_pose(Tcw.inverse(), msg_time);
+      publishRosVizTopics->publish_camera_pose(Tcw.inverse(), msg_time);
 
       newFrameProcessed = true;
       lastFrameTimestamp = msg_time;
