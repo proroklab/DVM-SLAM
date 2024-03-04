@@ -124,7 +124,7 @@ bool Map::isImuInitialized() {
 }
 
 void Map::EraseMapPoint(MapPoint* pMP) {
-  // unique_lock<mutex> lock(mMutexMap);
+  unique_lock<mutex> lock(mMutexMap);
   mspMapPoints.erase(pMP);
 
   // TODO: This only erase the pointer.

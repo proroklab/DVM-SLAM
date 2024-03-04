@@ -1723,6 +1723,7 @@ void LoopClosing::MergeLocal() {
     while (!mpLocalMapper->isStopped()) {
       usleep(1000);
     }
+    mpLocalMapper->EmptyQueue();
 
     // Optimize graph (and update the loop position for each element form
     // the begining to the end)

@@ -322,6 +322,10 @@ void LocalMapping::ProcessExternalKeyFrame() {
     if (pMP) {
       if (!pMP->isBad()) {
         mpAtlas->AddMapPoint(pMP);
+        if (pMP->GetObservations().count(keyFrame) == 0)
+          pMP->AddObservation(keyFrame, i);
+        pMP->UpdateNormalAndDepth();
+        pMP->ComputeDistinctiveDescriptors();
       }
     }
   }

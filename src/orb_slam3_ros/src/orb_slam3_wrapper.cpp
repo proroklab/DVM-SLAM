@@ -189,8 +189,10 @@ void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv
 
   interfaces::srv::GetCurrentMap::Response::SharedPtr response = future.get();
 
+  // Still doesnt cover the edge case of a new response coming in while in the MergeLocal() function
   updateSuccessfullyMerged();
-  if (connectedPeers[response->sender_agent_id]->getLocalSuccessfullyMerged())
+  if (connectedPeers[response->sender_agent_id]->getLocalSuccessfullyMerged()
+    || !pSLAM->GetLoopCloser()->isFinishedGBA())
     return;
 
   unique_lock<mutex> lock(mutexWrapper);
@@ -248,10 +250,12 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       }
     }
 
-    // Remove mappoints that have already been sent
+    // Remove mappoints that have already been sent, or who dont have a reference
+    vector<ORB_SLAM3::KeyFrame*> allKeyFrames = pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames();
+    set<ORB_SLAM3::KeyFrame*> allKeyFramesSet(allKeyFrames.begin(), allKeyFrames.end());
     for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
       if (mapPoint->creatorAgentId != agentId || connectedPeer->getSentMapPointUuids().count(mapPoint->uuid) != 0
-        || mapPoint->isBad()) {
+        || mapPoint->isBad() || allKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0) {
         mapPoint->SetBadFlag();
         delete mapPoint;
       }
@@ -481,7 +485,7 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
   }
 
   if (mergeCandidateKeyFrameUuids.size() > 0) {
-    RCLCPP_INFO(this->get_logger(), "Merge with peer possible!");
+    RCLCPP_INFO(this->get_logger(), "Merge with peer possible! Requesting full map");
 
     vector<interfaces::msg::Uuid> mergeCandidateKeyFrameUuidMsgs;
     for (boost::uuids::uuid uuid : mergeCandidateKeyFrameUuids) {
@@ -652,7 +656,7 @@ void OrbSlam3Wrapper::updateMapScale() {
     if (sourcePoints.size() < MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT)
       return;
 
-    auto [transformation, scale] = ransacPointSetAlignment(sourcePoints, targetPoints, 50, 500, 1e-5);
+    auto [transformation, scale] = ransacPointSetAlignment(sourcePoints, targetPoints, 4, 500, 1e-5);
 
     pSLAM->GetAtlas()->GetCurrentMap()->ApplyScaledRotation(transformation, scale);
 

@@ -310,8 +310,10 @@ void KeyFrame::UpdateBestCovisibles() {
   vector<pair<int, KeyFrame*>> vPairs;
   vPairs.reserve(mConnectedKeyFrameWeights.size());
   for (map<KeyFrame*, int>::iterator mit = mConnectedKeyFrameWeights.begin(), mend = mConnectedKeyFrameWeights.end();
-       mit != mend; mit++)
-    vPairs.push_back(make_pair(mit->second, mit->first));
+       mit != mend; mit++) {
+    if (mit->first != this)
+      vPairs.push_back(make_pair(mit->second, mit->first));
+  }
 
   sort(vPairs.begin(), vPairs.end());
   list<KeyFrame*> lKFs;
