@@ -272,6 +272,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     // Transform keyframes and map points to move the reference keyframe to the origin
     Sophus::SE3f referenceKeyFramePoseInv = referenceKeyFrame->GetPoseInverse();
 
+#ifdef USE_REF_KEY_FRAMES
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
       Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePoseInv;
       keyFrame->SetPose(newPose);
@@ -283,6 +284,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       Eigen::Vector3f newNormal = referenceKeyFramePoseInv.rotationMatrix() * mapPoint->GetNormal();
       mapPoint->SetNormalVector(newNormal);
     }
+#endif
 
     // Add keyframes to sent keyframes map
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
@@ -336,6 +338,7 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
   {
     unique_lock<mutex> lock2(pSLAM->GetAtlas()->GetCurrentMap()->mMutexMapUpdate);
 
+#ifdef USE_REF_KEY_FRAMES
     // Transform keyframes and map points to move origin to the reference keyframe
     Sophus::SE3f referenceKeyFramePose = referenceKeyFrame->GetPose();
     for (ORB_SLAM3::KeyFrame* keyFrame : newMap->GetAllKeyFrames()) {
@@ -346,6 +349,10 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
       Eigen::Vector3f newWorldPos = referenceKeyFramePose.translation() + mapPoint->GetWorldPos();
       mapPoint->SetWorldPos(newWorldPos);
 
+      Eigen::Vector3f newNormal = referenceKeyFramePose.rotationMatrix() * mapPoint->GetNormal();
+      mapPoint->SetNormalVector(newNormal);
+    }
+#endif
   }
 
   ORB_SLAM3::Map* currentMap = pSLAM->GetAtlas()->GetCurrentMap();
