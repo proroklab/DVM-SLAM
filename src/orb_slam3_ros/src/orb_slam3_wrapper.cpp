@@ -15,8 +15,12 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
+#include <interfaces/msg/change_coordinate_frame.hpp>
 #include <interfaces/msg/map_point.hpp>
 #include <interfaces/msg/sim3_transform_stamped.hpp>
+#include <interfaces/msg/successfully_merged.hpp>
 #include <interfaces/msg/uuid.hpp>
 #include <interfaces/srv/get_map_points.hpp>
 #include <memory>
@@ -55,6 +59,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   baseMap = pSLAM->GetAtlas()->GetCurrentMap();
 
   // Create publishers
+  successfullyMergedPub = this->create_publisher<interfaces::msg::SuccessfullyMerged>("/successfully_merged", 1);
 
   // Create services
   get_current_map_service = this->create_service<interfaces::srv::GetCurrentMap>(node_name + "/get_current_map",
@@ -65,9 +70,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   // Create subscriptions
   newKeyFrameBowsSub = this->create_subscription<interfaces::msg::NewKeyFrameBows>(node_name + "/new_key_frame_bows", 1,
     std::bind(&OrbSlam3Wrapper::receiveNewKeyFrameBows, this, std::placeholders::_1));
-  successfullyMergedSub
-    = this->create_subscription<interfaces::msg::SuccessfullyMerged>(node_name + "/successfully_merged", 1,
-      std::bind(&OrbSlam3Wrapper::receiveSuccessfullyMergedMsg, this, std::placeholders::_1));
+  successfullyMergedSub = this->create_subscription<interfaces::msg::SuccessfullyMerged>(
+    "/successfully_merged", 1, std::bind(&OrbSlam3Wrapper::receiveSuccessfullyMergedMsg, this, std::placeholders::_1));
   newKeyFramesSub = this->create_subscription<interfaces::msg::NewKeyFrames>(
     node_name + "/new_key_frames", 1, std::bind(&OrbSlam3Wrapper::receiveNewKeyFrames, this, std::placeholders::_1));
   isLostFromBaseMapSub
@@ -76,13 +80,18 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   loopClosureTriggersSub
     = this->create_subscription<interfaces::msg::LoopClosureTriggers>(node_name + "/loop_closure_triggers", 1,
       std::bind(&OrbSlam3Wrapper::receiveLoopClosureTriggers, this, std::placeholders::_1));
+  changeCoordinateFrameSub
+    = this->create_subscription<interfaces::msg::ChangeCoordinateFrame>(node_name + "/change_coordinate_frame", 1,
+      std::bind(&OrbSlam3Wrapper::receiveChangeCoordinateFrame, this, std::placeholders::_1));
 
   // TODO: create a proper topic handler that handles nodes connecting/disconnecting
   vector<uint> connectedPeerIds;
   if (agentId == 1)
-    connectedPeerIds = { 2 };
-  else
-    connectedPeerIds = { 1 };
+    connectedPeerIds = { 2, 3 };
+  else if (agentId == 2)
+    connectedPeerIds = { 1, 3 };
+  else if (agentId == 3)
+    connectedPeerIds = { 1, 2 };
 
   for (uint connectedPeerId : connectedPeerIds) {
     connectedPeers[connectedPeerId] = new Peer(this->shared_from_this(), connectedPeerId);
@@ -140,8 +149,7 @@ void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv
 
   // Still doesnt cover the edge case of a new response coming in while in the MergeLocal() function
   updateSuccessfullyMerged();
-  if (connectedPeers[response->sender_agent_id]->getLocalSuccessfullyMerged()
-    || !pSLAM->GetLoopCloser()->isFinishedGBA())
+  if (isLocallySuccessfullyMerged(response->sender_agent_id) || !pSLAM->GetLoopCloser()->isFinishedGBA())
     return;
 
   unique_lock<mutex> lock(mutexWrapper);
@@ -168,7 +176,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
 
-    if (!connectedPeer->getRemoteSuccessfullyMerged() || !connectedPeer->getLocalSuccessfullyMerged()
+    if (!connectedPeer->isRemoteSuccessfullyMerged(agentId) || !isLocallySuccessfullyMerged(connectedPeer->getId())
       || connectedPeer->getIsLostFromBaseMap()) {
       continue;
     }
@@ -210,6 +218,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       }
     }
 
+#ifdef USE_REF_KEY_FRAMES
     // Get refernece key frame
     ORB_SLAM3::KeyFrame* referenceKeyFrame = connectedPeer->getReferenceKeyFrame();
     // If no reference keyframe, get the latest sent keyframe
@@ -225,7 +234,6 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     // Transform keyframes and map points to move the reference keyframe to the origin
     Sophus::SE3f referenceKeyFramePoseInv = referenceKeyFrame->GetPoseInverse();
 
-#ifdef USE_REF_KEY_FRAMES
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
       Sophus::SE3f newPose = keyFrame->GetPose() * referenceKeyFramePoseInv;
       keyFrame->SetPose(newPose);
@@ -264,7 +272,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     msg.header.stamp = lastFrameTimestamp;
     msg.sender_agent_id = agentId;
     msg.serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
+#ifdef USE_REF_KEY_FRAMES
     msg.reference_key_frame_uuid = uuidToArray(referenceKeyFrame->uuid);
+#endif
     msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
     connectedPeer->newKeyFramesPub->publish(msg);
 
@@ -360,15 +370,21 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
 
-    if (connectedPeer->getRemoteSuccessfullyMerged() || connectedPeer->getIsLostFromBaseMap()) {
+    if (connectedPeer->isRemoteSuccessfullyMerged(agentId) || connectedPeer->getIsLostFromBaseMap()) {
       continue;
     }
+
+    // Only send bow to peer if it is the lead node in its group and we are lead node in group
+    // ie. we both have the lowest agentId of all its connected peers
+    // if (!connectedPeer->isLeadNodeInGroup() || !isLeadNodeInGroup())
+    //   continue;
 
     set<boost::uuids::uuid> newKeyFrameBowUuids;
     vector<interfaces::msg::KeyFrameBowVector> keyFrameBowVectorMsgs;
 
     for (ORB_SLAM3::KeyFrame* keyFrame : keyFrames) {
-      if (keyFrame->creatorAgentId == agentId && connectedPeer->getSentKeyFrameBowUuids().count(keyFrame->uuid) == 0) {
+      if ((isLocallySuccessfullyMerged(keyFrame->creatorAgentId) || keyFrame->creatorAgentId == agentId)
+        && connectedPeer->getSentKeyFrameBowUuids().count(keyFrame->uuid) == 0) {
         interfaces::msg::KeyFrameBowVector keyFrameBowVectorMsg;
 
         // Set uuid
@@ -411,6 +427,16 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
 
   vector<interfaces::msg::KeyFrameBowVector> newKeyFramesBowVectors = msg->key_frame_bow_vectors;
   RCLCPP_INFO(this->get_logger(), "received new key frame bow vectors");
+
+  // Only attempt merge if we have the lowest agent id of all connected peers
+  for (uint locallySuccessfullyMergedAgentId : locallySuccessfullyMerged) {
+    if (locallySuccessfullyMergedAgentId < agentId)
+      return;
+  }
+
+  if (isLocallySuccessfullyMerged(msg->sender_agent_id)) {
+    return;
+  }
 
   vector<boost::uuids::uuid> mergeCandidateKeyFrameUuids;
 
@@ -468,20 +494,22 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
         successfullyMerged = true;
     }
 
-    if (connectedPeer->getLocalSuccessfullyMerged() != successfullyMerged && pSLAM->GetLoopCloser()->isFinishedGBA()) {
-      if (successfullyMerged) {
-        baseMap = pSLAM->GetAtlas()->GetCurrentMap();
-      } // TODO: handle else case. is there even an else case?
+    if (successfullyMerged && isLocallySuccessfullyMerged(connectedPeer->getId()) != successfullyMerged
+      && pSLAM->GetLoopCloser()->isFinishedGBA()) {
+      baseMap = pSLAM->GetAtlas()->GetCurrentMap();
 
       vector<boost::uuids::uuid> mergedKeyFrameUuid = successfullyMergedAgentIds[connectedPeer->getId()].first;
       Sophus::Sim3d mergeWorldToCurrentWorld = successfullyMergedAgentIds[connectedPeer->getId()].second;
 
-      connectedPeer->setLocalSuccessfullyMerged(successfullyMerged);
+      setLocalSuccessfullyMerged(connectedPeer->getId(), successfullyMerged);
 
       // Redefine our reference frame if we are moving to the other agents reference frame
       if (connectedPeer->getId() < agentId) {
         referenceFrameManager->setParentFrame(connectedPeer->getId(), mergeWorldToCurrentWorld);
       }
+
+      // Tell the connected peers to change their coordinate frame too
+      sendChangeCoordinateFrame(connectedPeer->getId(), mergeWorldToCurrentWorld);
 
       RCLCPP_INFO(this->get_logger(),
         ("Successfully merged with peer " + to_string(connectedPeer->getId()) + " "
@@ -493,6 +521,7 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
       msg.header.stamp = lastFrameTimestamp;
       msg.successfully_merged = successfullyMerged;
       msg.sender_agent_id = agentId;
+      msg.implicit_merge = false;
       for (boost::uuids::uuid mergedKeyFrameUuid : successfullyMergedAgentIds[connectedPeer->getId()].first) {
         interfaces::msg::Uuid uuidMsg;
         uuidMsg.uuid = uuidToArray(mergedKeyFrameUuid);
@@ -506,7 +535,24 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
           msg.all_key_frames_in_map.push_back(uuidMsg);
         }
       }
-      connectedPeer->successfullyMergedPub->publish(msg);
+      msg.receiver_agent_id = connectedPeer->getId();
+      successfullyMergedPub->publish(msg);
+
+      // Tell all of the agents connected peers that we are implicitly merged with them
+      for (uint peerAgentId : connectedPeer->getRemoteSuccessfullyMerged()) {
+        if (!isLocallySuccessfullyMerged(peerAgentId) && peerAgentId != agentId) {
+          setLocalSuccessfullyMerged(peerAgentId, true);
+
+          interfaces::msg::SuccessfullyMerged msg;
+          msg.header.stamp = lastFrameTimestamp;
+          msg.successfully_merged = true;
+          msg.sender_agent_id = agentId;
+          msg.implicit_merge = true;
+          msg.receiver_agent_id = peerAgentId;
+
+          successfullyMergedPub->publish(msg);
+        }
+      }
     }
   }
 }
@@ -514,25 +560,50 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged() {
 void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg) {
   unique_lock<mutex> lock(mutexWrapper);
 
-  connectedPeers[msg->sender_agent_id]->setRemoteSuccessfullyMerged(msg->successfully_merged);
+  if (msg->sender_agent_id == agentId)
+    return;
 
-  RCLCPP_INFO(this->get_logger(), "Recieved successful merge message from peer, now requesting its map");
+  connectedPeers[msg->sender_agent_id]->updateRemoteSuccessfullyMerged(
+    msg->receiver_agent_id, msg->successfully_merged);
 
-  // Add existing keyframes to sent keyframes map
-  set<boost::uuids::uuid> sentKeyFrameUuids;
-  for (interfaces::msg::Uuid uuidMsg : msg->all_key_frames_in_map)
-    sentKeyFrameUuids.insert(arrayToUuid(uuidMsg.uuid));
+  for (uint i : locallySuccessfullyMerged)
+    cout << "successfully merged locally: " << i << endl;
 
-  connectedPeers[msg->sender_agent_id]->addSentKeyFrameUuids(sentKeyFrameUuids.begin(), sentKeyFrameUuids.end());
+  if (msg->receiver_agent_id == agentId && !isLocallySuccessfullyMerged(msg->sender_agent_id)) {
+    // Implict merge means that we merged because the lead agent in our group merged with their group's lead agent
+    if (msg->implicit_merge) {
+      RCLCPP_INFO(this->get_logger(), "Recieved successful implicit merge message from peer");
 
-  if (!connectedPeers[msg->sender_agent_id]->getLocalSuccessfullyMerged()) {
-    // Request map from that peer
-    auto request = std::make_shared<interfaces::srv::GetCurrentMap::Request>();
-    request->sender_agent_id = agentId;
-    request->merge_candidate_key_frame_uuids
-      = msg->merged_key_frame_uuids; // Pass this state along with the request so we can use it later
-    auto future_result = connectedPeers[msg->sender_agent_id]->getCurrentMapClient->async_send_request(
-      request, bind(&OrbSlam3Wrapper::handleGetCurrentMapResponse, this, placeholders::_1));
+      setLocalSuccessfullyMerged(msg->sender_agent_id, msg->successfully_merged);
+
+      // Tell the map that we are successfully merged in response
+      interfaces::msg::SuccessfullyMerged responseMsg;
+      responseMsg.header.stamp = lastFrameTimestamp;
+      responseMsg.successfully_merged = true;
+      responseMsg.sender_agent_id = agentId;
+      responseMsg.implicit_merge = true;
+      responseMsg.receiver_agent_id = msg->sender_agent_id;
+
+      successfullyMergedPub->publish(responseMsg);
+    }
+    else {
+      RCLCPP_INFO(this->get_logger(), "Recieved successful merge message from peer, now requesting its map");
+
+      // Add existing keyframes to sent keyframes map
+      set<boost::uuids::uuid> sentKeyFrameUuids;
+      for (interfaces::msg::Uuid uuidMsg : msg->all_key_frames_in_map)
+        sentKeyFrameUuids.insert(arrayToUuid(uuidMsg.uuid));
+
+      connectedPeers[msg->sender_agent_id]->addSentKeyFrameUuids(sentKeyFrameUuids.begin(), sentKeyFrameUuids.end());
+
+      // Request map from that peer
+      auto request = std::make_shared<interfaces::srv::GetCurrentMap::Request>();
+      request->sender_agent_id = agentId;
+      request->merge_candidate_key_frame_uuids
+        = msg->merged_key_frame_uuids; // Pass this state along with the request so we can use it later
+      auto future_result = connectedPeers[msg->sender_agent_id]->getCurrentMapClient->async_send_request(
+        request, bind(&OrbSlam3Wrapper::handleGetCurrentMapResponse, this, placeholders::_1));
+    }
   }
 }
 
@@ -608,8 +679,9 @@ void OrbSlam3Wrapper::updateMapScale() {
   uint lowestConnectedPeerAgentId = connectedPeers.begin()->first;
   Peer* lowestConnectedPeer = connectedPeers[lowestConnectedPeerAgentId];
 
-  if (agentId < lowestConnectedPeerAgentId || lowestConnectedPeer->getRemoteSuccessfullyMerged() == false
-    || lowestConnectedPeer->getLocalSuccessfullyMerged() == false || lowestConnectedPeer->getIsLostFromBaseMap()) {
+  if (agentId < lowestConnectedPeerAgentId || lowestConnectedPeer->isRemoteSuccessfullyMerged(agentId) == false
+    || isLocallySuccessfullyMerged(lowestConnectedPeer->getId()) == false
+    || lowestConnectedPeer->getIsLostFromBaseMap()) {
     return;
   }
 
@@ -654,7 +726,7 @@ void OrbSlam3Wrapper::sendLoopClosureTriggers() {
     Peer* connectedPeer = pair.second;
 
     // If the peer has not successfully merged, we dont need to send loop closure triggers
-    if (!connectedPeer->getRemoteSuccessfullyMerged()) {
+    if (!connectedPeer->isRemoteSuccessfullyMerged(agentId)) {
       connectedPeer->addSentLoopClosureTriggerUuids(loopClosureTriggers.begin(), loopClosureTriggers.end());
       continue;
     }
@@ -693,6 +765,82 @@ void OrbSlam3Wrapper::receiveLoopClosureTriggers(const interfaces::msg::LoopClos
     boost::uuids::uuid uuid = arrayToUuid(uuidMsg.uuid);
     ORB_SLAM3::KeyFrame* keyFrame = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(uuid);
     pSLAM->GetLoopCloser()->InsertKeyFrame(keyFrame, keyFrame->GetMap());
+  }
+}
+
+void OrbSlam3Wrapper::sendChangeCoordinateFrame(uint parentCoordFrameAgentId, Sophus::Sim3d parentToCurrentTransform) {
+  RCLCPP_INFO(this->get_logger(), "Sent change coordinate frame messages");
+
+  // Send to all connected peers apart from the peer we just connected to
+  for (uint locallySuccessfullyMergedAgentId : locallySuccessfullyMerged) {
+    if (locallySuccessfullyMergedAgentId != parentCoordFrameAgentId) {
+      interfaces::msg::ChangeCoordinateFrame msg;
+
+      msg.header.stamp = lastFrameTimestamp;
+      msg.sender_agent_id = agentId;
+      msg.new_coord_frame_parent_agent_id = parentCoordFrameAgentId;
+      geometry_msgs::msg::Quaternion quaternionMsg;
+      quaternionMsg.w = parentToCurrentTransform.quaternion().w();
+      quaternionMsg.x = parentToCurrentTransform.quaternion().x();
+      quaternionMsg.y = parentToCurrentTransform.quaternion().y();
+      quaternionMsg.z = parentToCurrentTransform.quaternion().z();
+      msg.parent_to_current_transform.rotation = quaternionMsg;
+      geometry_msgs::msg::Vector3 translationMsg;
+      translationMsg.x = parentToCurrentTransform.translation().x();
+      translationMsg.y = parentToCurrentTransform.translation().y();
+      translationMsg.z = parentToCurrentTransform.translation().z();
+      msg.parent_to_current_transform.translation = translationMsg;
+      msg.parent_to_current_transform.scale = parentToCurrentTransform.scale();
+
+      connectedPeers[locallySuccessfullyMergedAgentId]->changeCoordinateFramePub->publish(msg);
+    }
+  }
+}
+
+void OrbSlam3Wrapper::receiveChangeCoordinateFrame(const interfaces::msg::ChangeCoordinateFrame::SharedPtr msg) {
+  RCLCPP_INFO(this->get_logger(), "Received change coordinate frame msg");
+
+  Eigen::Quaterniond quaternion(msg->parent_to_current_transform.rotation.w,
+    msg->parent_to_current_transform.rotation.x, msg->parent_to_current_transform.rotation.y,
+    msg->parent_to_current_transform.rotation.z);
+
+  Eigen::Vector3d translation(msg->parent_to_current_transform.translation.x,
+    msg->parent_to_current_transform.translation.y, msg->parent_to_current_transform.translation.z);
+
+  Sophus::Sim3d parentToCurrentTransform(quaternion, translation);
+  parentToCurrentTransform.setScale(msg->parent_to_current_transform.scale);
+
+  referenceFrameManager->setParentFrame(msg->new_coord_frame_parent_agent_id, parentToCurrentTransform);
+
+  Sophus::SE3f se3fTransformation(
+    parentToCurrentTransform.quaternion().cast<float>(), parentToCurrentTransform.translation().cast<float>());
+
+  pSLAM->GetAtlas()->GetCurrentMap()->ApplyScaledRotation(se3fTransformation, msg->parent_to_current_transform.scale);
+
+  // Tell parent that we are successfully merged
+  if (!isLocallySuccessfullyMerged(msg->new_coord_frame_parent_agent_id)) {
+    interfaces::msg::SuccessfullyMerged newMsg;
+    newMsg.header.stamp = lastFrameTimestamp;
+    newMsg.successfully_merged = true;
+    newMsg.sender_agent_id = agentId;
+    newMsg.implicit_merge = true;
+    newMsg.receiver_agent_id = msg->new_coord_frame_parent_agent_id;
+
+    successfullyMergedPub->publish(newMsg);
+  }
+
+  // Tell everyone in the parent's group that we are successfully merged
+  for (uint peerAgentId : connectedPeers[msg->new_coord_frame_parent_agent_id]->getRemoteSuccessfullyMerged()) {
+    if (!isLocallySuccessfullyMerged(peerAgentId)) {
+      interfaces::msg::SuccessfullyMerged msg;
+      msg.header.stamp = lastFrameTimestamp;
+      msg.successfully_merged = true;
+      msg.sender_agent_id = agentId;
+      msg.implicit_merge = true;
+      msg.receiver_agent_id = peerAgentId;
+
+      successfullyMergedPub->publish(msg);
+    }
   }
 }
 
@@ -897,4 +1045,13 @@ tuple<Sophus::SE3f, float> OrbSlam3Wrapper::pointSetAlignment(
 
   Sophus::SE3f sourceToTarget(R, t);
   return { sourceToTarget, s };
+}
+
+bool OrbSlam3Wrapper::isLeadNodeInGroup() {
+  for (uint successfullyMergedAgentId : locallySuccessfullyMerged) {
+    if (successfullyMergedAgentId < agentId)
+      return false;
+  }
+
+  return true;
 }

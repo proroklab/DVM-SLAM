@@ -22,6 +22,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/LoopClosureTriggers.msg"
   "msg/Sim3Transform.msg"
   "msg/Sim3TransformStamped.msg"
+  "msg/ChangeCoordinateFrame.msg"
   "srv/GetCurrentMap.srv"
   "srv/AddMap.srv"
   "srv/GetMapPoints.srv"

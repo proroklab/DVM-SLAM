@@ -8,7 +8,9 @@
 #include "sophus/se3.hpp"
 #include <boost/uuid/uuid.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <interfaces/msg/change_coordinate_frame.hpp>
 #include <interfaces/msg/sim3_transform_stamped.hpp>
+#include <interfaces/msg/successfully_merged.hpp>
 #include <memory>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/service.hpp>
@@ -41,6 +43,9 @@ protected:
   PublishRosVizTopics* publishRosVizTopics;
   ReferenceFrameManager* referenceFrameManager;
 
+  // ROS broadcast publishers
+  rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedPub;
+
   // ROS services
   rclcpp::Service<interfaces::srv::GetCurrentMap>::SharedPtr get_current_map_service;
   rclcpp::Service<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsService;
@@ -51,6 +56,7 @@ protected:
   rclcpp::Subscription<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedSub;
   rclcpp::Subscription<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapSub;
   rclcpp::Subscription<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersSub;
+  rclcpp::Subscription<interfaces::msg::ChangeCoordinateFrame>::SharedPtr changeCoordinateFrameSub;
 
   rclcpp::TimerBase::SharedPtr updateScaleTimer;
 
@@ -58,6 +64,8 @@ protected:
 
   bool newFrameProcessed;
   rclcpp::Time lastFrameTimestamp;
+
+  set<uint> locallySuccessfullyMerged;
 
   void run();
 
@@ -85,6 +93,9 @@ protected:
   void sendLoopClosureTriggers();
   void receiveLoopClosureTriggers(const interfaces::msg::LoopClosureTriggers::SharedPtr msg);
 
+  void sendChangeCoordinateFrame(uint parentAgentId, Sophus::Sim3d parentToCurrentTransform);
+  void receiveChangeCoordinateFrame(const interfaces::msg::ChangeCoordinateFrame::SharedPtr msg);
+
   boost::uuids::uuid arrayToUuid(array<unsigned char, 16> array);
   array<unsigned char, 16> uuidToArray(boost::uuids::uuid uuid);
 
@@ -101,4 +112,14 @@ protected:
 
   tuple<Sophus::SE3f, float> pointSetAlignment(
     vector<Eigen::Vector3f> sourcePoints, vector<Eigen::Vector3f> targetPoints);
+
+  bool isLocallySuccessfullyMerged(uint agentId) { return locallySuccessfullyMerged.count(agentId) != 0; };
+  void setLocalSuccessfullyMerged(uint agentId, bool successfullyMerged) {
+    if (successfullyMerged)
+      locallySuccessfullyMerged.insert(agentId);
+    else
+      locallySuccessfullyMerged.erase(agentId);
+  }
+
+  bool isLeadNodeInGroup();
 };

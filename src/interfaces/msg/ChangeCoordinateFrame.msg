@@ -1,0 +1,4 @@
+std_msgs/Header header
+uint32 sender_agent_id
+uint32 new_coord_frame_parent_agent_id
+Sim3Transform parent_to_current_transform

@@ -8,6 +8,7 @@
 #include "interfaces/srv/get_current_map.hpp"
 #include "interfaces/srv/get_map_points.hpp"
 #include <boost/uuid/uuid.hpp>
+#include <interfaces/msg/change_coordinate_frame.hpp>
 #include <interfaces/msg/loop_closure_triggers.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -21,20 +22,21 @@ public:
   Peer(rclcpp::Node::SharedPtr rosNode, uint agentId);
 
   uint getId();
-  bool getRemoteSuccessfullyMerged();
-  bool getLocalSuccessfullyMerged();
+  set<uint> getRemoteSuccessfullyMerged();
+  bool isRemoteSuccessfullyMerged(uint agentId);
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
   set<boost::uuids::uuid> getSentLoopClosureTriggerUuids();
   set<boost::uuids::uuid> getSentMapPointUuids();
   ORB_SLAM3::KeyFrame* getReferenceKeyFrame();
 
+  bool isLeadNodeInGroup();
+
   bool getIsLostFromBaseMap();
   void setIsLostFromBaseMap(bool isLost);
 
   void setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame);
-  void setRemoteSuccessfullyMerged(bool remoteSuccessfullyMerged);
-  void setLocalSuccessfullyMerged(bool localSuccessfullyMerged);
+  void updateRemoteSuccessfullyMerged(uint peerAgentId, bool successfullyMerged);
   void addSentKeyFrameUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameUuid(boost::uuids::uuid uuid);
@@ -48,9 +50,9 @@ public:
 
   rclcpp::Publisher<interfaces::msg::NewKeyFrames>::SharedPtr newKeyFramesPub;
   rclcpp::Publisher<interfaces::msg::NewKeyFrameBows>::SharedPtr newKeyFrameBowsPub;
-  rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedPub;
   rclcpp::Publisher<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapPub;
   rclcpp::Publisher<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersPub;
+  rclcpp::Publisher<interfaces::msg::ChangeCoordinateFrame>::SharedPtr changeCoordinateFramePub;
   rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr getCurrentMapClient;
   rclcpp::Client<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsClient;
 
@@ -63,8 +65,9 @@ protected:
   set<boost::uuids::uuid> sentMapPointUuids;
   ORB_SLAM3::KeyFrame* referenceKeyFrame = nullptr;
 
-  bool remoteSuccessfullyMerged = false; // Remote map is successfully merged together
-  bool localSuccessfullyMerged = false; // Local map is successfully merged together
+  // The agents which this peer has merged with
+  // Note that if agent1 is merged with agent2, that does not necessarily mean that agent2 is merged with agent1
+  set<uint> successfullyMergedAgentIds;
 
   bool isLostFromBaseMap = false; // Peer is lost in its own map
 
