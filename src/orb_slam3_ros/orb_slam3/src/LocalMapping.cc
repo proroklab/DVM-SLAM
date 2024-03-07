@@ -276,14 +276,14 @@ void LocalMapping::Run() {
         break;
     }
 
-    if (!CheckNewKeyFrames() && !stopRequested()) {
-      ProcessExternalKeyFrame();
-    }
-
     ResetIfRequested();
 
     // Tracking will see that Local Mapping is busy
     SetAcceptKeyFrames(true);
+
+    if (!CheckNewKeyFrames() && !stopRequested()) {
+      ProcessExternalKeyFrame();
+    }
 
     if (CheckFinish())
       break;
@@ -338,14 +338,16 @@ void LocalMapping::ProcessExternalKeyFrame() {
 
   SearchInNeighbors(keyFrame);
 
-  bool b_doneLBA = false;
-  int num_FixedKF_BA = 0;
-  int num_OptKF_BA = 0;
-  int num_MPs_BA = 0;
-  int num_edges_BA = 0;
-  Optimizer::LocalBundleAdjustment(
-    keyFrame, &mbAbortBA, keyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
-  b_doneLBA = true;
+  if (!CheckNewKeyFrames() && !stopRequested()) {
+    bool b_doneLBA = false;
+    int num_FixedKF_BA = 0;
+    int num_OptKF_BA = 0;
+    int num_MPs_BA = 0;
+    int num_edges_BA = 0;
+    Optimizer::LocalBundleAdjustment(
+      keyFrame, &mbAbortBA, keyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
+    b_doneLBA = true;
+  }
 }
 
 void LocalMapping::InsertKeyFrame(KeyFrame* pKF) {
