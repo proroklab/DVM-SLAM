@@ -2,6 +2,7 @@
 #include "KeyFrame.h"
 #include <interfaces/msg/detail/change_coordinate_frame__struct.hpp>
 #include <interfaces/msg/loop_closure_triggers.hpp>
+#include <interfaces/msg/map_to_attempt_merge.hpp>
 #include <rclcpp/node.hpp>
 
 Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
@@ -23,11 +24,13 @@ Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
     "robot" + to_string(agentId) + "/is_lost_from_base_map", 1);
   changeCoordinateFramePub = rosNode->create_publisher<interfaces::msg::ChangeCoordinateFrame>(
     "robot" + to_string(agentId) + "/change_coordinate_frame", 1);
+  mapToAttemptMergePub = rosNode->create_publisher<interfaces::msg::MapToAttemptMerge>(
+    "robot" + to_string(agentId) + "/map_to_attempt_merge", rclcpp::QoS(3));
 }
 
 uint Peer::getId() { return agentId; }
-set<uint> Peer::getRemoteSuccessfullyMerged() { return successfullyMergedAgentIds; }
-bool Peer::isRemoteSuccessfullyMerged(uint agentId) { return successfullyMergedAgentIds.count(agentId) != 0; }
+set<uint> Peer::getSuccessfullyMerged() { return successfullyMergedAgentIds; }
+bool Peer::isSuccessfullyMerged(uint agentId) { return successfullyMergedAgentIds.count(agentId) != 0; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameUuids() { return sentKeyFrameUuids; }
 set<boost::uuids::uuid> Peer::getSentKeyFrameBowUuids() { return sentKeyFrameBowUuids; }
 set<boost::uuids::uuid> Peer::getSentLoopClosureTriggerUuids() { return sentLoopClosureTriggerUuids; }
@@ -48,7 +51,7 @@ bool Peer::isLeadNodeInGroup() {
 
 void Peer::setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame) { this->referenceKeyFrame = referenceKeyFrame; }
 
-void Peer::updateRemoteSuccessfullyMerged(uint peerAgentId, bool successfullyMerged) {
+void Peer::updateSuccessfullyMerged(uint peerAgentId, bool successfullyMerged) {
   if (successfullyMerged) {
     successfullyMergedAgentIds.insert(peerAgentId);
   }

@@ -9,6 +9,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <interfaces/msg/change_coordinate_frame.hpp>
+#include <interfaces/msg/map_to_attempt_merge.hpp>
 #include <interfaces/msg/sim3_transform_stamped.hpp>
 #include <interfaces/msg/successfully_merged.hpp>
 #include <memory>
@@ -57,6 +58,7 @@ protected:
   rclcpp::Subscription<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapSub;
   rclcpp::Subscription<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersSub;
   rclcpp::Subscription<interfaces::msg::ChangeCoordinateFrame>::SharedPtr changeCoordinateFrameSub;
+  rclcpp::Subscription<interfaces::msg::MapToAttemptMerge>::SharedPtr mapToAttemptMergeSub;
 
   rclcpp::TimerBase::SharedPtr updateScaleTimer;
 
@@ -65,13 +67,13 @@ protected:
   bool newFrameProcessed;
   rclcpp::Time lastFrameTimestamp;
 
-  set<uint> locallySuccessfullyMerged;
-
   void run();
 
   void handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
     std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response);
   void handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedFuture future);
+
+  void receiveMapToAttemptMerge(interfaces::msg::MapToAttemptMerge::SharedPtr msg);
 
   void sendNewKeyFrames();
   void receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::SharedPtr msg);
@@ -113,13 +115,7 @@ protected:
   tuple<Sophus::SE3f, float> pointSetAlignment(
     vector<Eigen::Vector3f> sourcePoints, vector<Eigen::Vector3f> targetPoints);
 
-  bool isLocallySuccessfullyMerged(uint agentId) { return locallySuccessfullyMerged.count(agentId) != 0; };
-  void setLocalSuccessfullyMerged(uint agentId, bool successfullyMerged) {
-    if (successfullyMerged)
-      locallySuccessfullyMerged.insert(agentId);
-    else
-      locallySuccessfullyMerged.erase(agentId);
-  }
-
+  bool isSuccessfullyMerged(uint otherAgentId);
+  vector<Peer*> getSuccessfullyMergedPeers();
   bool isLeadNodeInGroup();
 };

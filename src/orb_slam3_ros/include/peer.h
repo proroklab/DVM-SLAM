@@ -10,6 +10,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <interfaces/msg/change_coordinate_frame.hpp>
 #include <interfaces/msg/loop_closure_triggers.hpp>
+#include <interfaces/msg/map_to_attempt_merge.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/service.hpp>
@@ -22,8 +23,8 @@ public:
   Peer(rclcpp::Node::SharedPtr rosNode, uint agentId);
 
   uint getId();
-  set<uint> getRemoteSuccessfullyMerged();
-  bool isRemoteSuccessfullyMerged(uint agentId);
+  set<uint> getSuccessfullyMerged();
+  bool isSuccessfullyMerged(uint agentId);
   set<boost::uuids::uuid> getSentKeyFrameUuids();
   set<boost::uuids::uuid> getSentKeyFrameBowUuids();
   set<boost::uuids::uuid> getSentLoopClosureTriggerUuids();
@@ -36,7 +37,7 @@ public:
   void setIsLostFromBaseMap(bool isLost);
 
   void setReferenceKeyFrame(ORB_SLAM3::KeyFrame* referenceKeyFrame);
-  void updateRemoteSuccessfullyMerged(uint peerAgentId, bool successfullyMerged);
+  void updateSuccessfullyMerged(uint peerAgentId, bool successfullyMerged);
   void addSentKeyFrameUuids(
     _Rb_tree_const_iterator<boost::uuids::uuid> first, _Rb_tree_const_iterator<boost::uuids::uuid> last);
   void addSentKeyFrameUuid(boost::uuids::uuid uuid);
@@ -53,6 +54,7 @@ public:
   rclcpp::Publisher<interfaces::msg::IsLostFromBaseMap>::SharedPtr isLostFromBaseMapPub;
   rclcpp::Publisher<interfaces::msg::LoopClosureTriggers>::SharedPtr loopClosureTriggersPub;
   rclcpp::Publisher<interfaces::msg::ChangeCoordinateFrame>::SharedPtr changeCoordinateFramePub;
+  rclcpp::Publisher<interfaces::msg::MapToAttemptMerge>::SharedPtr mapToAttemptMergePub;
   rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedPtr getCurrentMapClient;
   rclcpp::Client<interfaces::srv::GetMapPoints>::SharedPtr getMapPointsClient;
 
