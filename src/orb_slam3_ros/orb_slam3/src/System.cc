@@ -140,6 +140,9 @@ System::System(const string& strVocFile, const string& strSettingsFile, const eS
     // Create the Atlas
     cout << "Initialization of Atlas from scratch " << endl;
     mpAtlas = new Atlas(0, agentId);
+
+    mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
+    mpAtlas->SetORBVocabulary(mpVocabulary);
   }
   else {
     // Load ORB Vocabulary
@@ -1382,8 +1385,6 @@ vector<unsigned char> System::SerializeMap(Map* map) { return mpAtlas->Serialize
 
 Map* System::AddSerializedMapToTryMerge(
   vector<unsigned char> serialized_map, vector<boost::uuids::uuid> potentialMergeKeyFrameUuids) {
-  mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
-  mpAtlas->SetORBVocabulary(mpVocabulary);
   Map* newMap = mpAtlas->CreateNewMap(serialized_map);
 
   // Put keyframes from the map with the higher creatorAgentId into loopCloser queue, so that we merge into the map with
