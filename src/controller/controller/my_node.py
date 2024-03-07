@@ -176,7 +176,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.robot_names = ["robot1", "robot2"]
+        self.robot_names = ["robot1", "robot2", "robot3"]
 
         # ROS2 init
         rclpy.init(args=None)
