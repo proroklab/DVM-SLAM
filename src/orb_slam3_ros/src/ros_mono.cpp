@@ -2,6 +2,8 @@
 #include "cv_bridge/cv_bridge.h" // IWYU pragma: keep
 #include "opencv2/highgui/highgui.hpp"
 #include "orb_slam3_wrapper.h"
+#include <rclcpp/qos.hpp>
+#include <rmw/qos_profiles.h>
 #include <utility>
 
 using namespace std;
@@ -15,7 +17,7 @@ public:
       auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
       image_subscriber
         = sub_node->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color",
-          1, std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+          rclcpp::QoS(3), std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
       rclcpp::spin(sub_node);
     });
 
@@ -37,7 +39,7 @@ private:
 
       rclcpp::Time timestamp = msg->header.stamp;
       double seconds = timestamp.nanoseconds() * 1.e-9;
-      // RCLCPP_INFO(this->get_logger(), "New Image. Timestamp: %f", seconds);
+      RCLCPP_INFO(this->get_logger(), "New Image. Timestamp: %f", seconds);
       Sophus::SE3f Tcw = pSLAM->TrackMonocular(image_cpy, seconds);
 
       rclcpp::Time msg_time = msg->header.stamp;

@@ -11,19 +11,19 @@ Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
   , rosNode(rosNode) {
 
   newKeyFrameBowsPub = rosNode->create_publisher<interfaces::msg::NewKeyFrameBows>(
-    "robot" + to_string(agentId) + "/new_key_frame_bows", 1);
+    "robot" + to_string(agentId) + "/new_key_frame_bows", rclcpp::QoS(3));
   getCurrentMapClient
     = rosNode->create_client<interfaces::srv::GetCurrentMap>("robot" + to_string(agentId) + "/get_current_map");
-  newKeyFramesPub
-    = rosNode->create_publisher<interfaces::msg::NewKeyFrames>("robot" + to_string(agentId) + "/new_key_frames", 1);
+  newKeyFramesPub = rosNode->create_publisher<interfaces::msg::NewKeyFrames>(
+    "robot" + to_string(agentId) + "/new_key_frames", rclcpp::QoS(3));
   loopClosureTriggersPub = rosNode->create_publisher<interfaces::msg::LoopClosureTriggers>(
-    "robot" + to_string(agentId) + "/loop_closure_triggers", 1);
+    "robot" + to_string(agentId) + "/loop_closure_triggers", rclcpp::QoS(3));
   getMapPointsClient
     = rosNode->create_client<interfaces::srv::GetMapPoints>("robot" + to_string(agentId) + "/get_map_points");
   isLostFromBaseMapPub = rosNode->create_publisher<interfaces::msg::IsLostFromBaseMap>(
-    "robot" + to_string(agentId) + "/is_lost_from_base_map", 1);
+    "robot" + to_string(agentId) + "/is_lost_from_base_map", rclcpp::QoS(3));
   changeCoordinateFramePub = rosNode->create_publisher<interfaces::msg::ChangeCoordinateFrame>(
-    "robot" + to_string(agentId) + "/change_coordinate_frame", 1);
+    "robot" + to_string(agentId) + "/change_coordinate_frame", rclcpp::QoS(3));
   mapToAttemptMergePub = rosNode->create_publisher<interfaces::msg::MapToAttemptMerge>(
     "robot" + to_string(agentId) + "/map_to_attempt_merge", rclcpp::QoS(3));
 }

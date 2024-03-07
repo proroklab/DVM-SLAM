@@ -60,7 +60,8 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
   baseMap = pSLAM->GetAtlas()->GetCurrentMap();
 
   // Create publishers
-  successfullyMergedPub = this->create_publisher<interfaces::msg::SuccessfullyMerged>("/successfully_merged", 1);
+  successfullyMergedPub
+    = this->create_publisher<interfaces::msg::SuccessfullyMerged>("/successfully_merged", rclcpp::QoS(3));
 
   // Create services
   get_current_map_service = this->create_service<interfaces::srv::GetCurrentMap>(node_name + "/get_current_map",
@@ -69,21 +70,21 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
     std::bind(&OrbSlam3Wrapper::handleGetMapPointsRequest, this, std::placeholders::_1, std::placeholders::_2));
 
   // Create subscriptions
-  newKeyFrameBowsSub = this->create_subscription<interfaces::msg::NewKeyFrameBows>(node_name + "/new_key_frame_bows", 1,
-    std::bind(&OrbSlam3Wrapper::receiveNewKeyFrameBows, this, std::placeholders::_1));
-  successfullyMergedSub = this->create_subscription<interfaces::msg::SuccessfullyMerged>(
-    "/successfully_merged", 1, std::bind(&OrbSlam3Wrapper::receiveSuccessfullyMergedMsg, this, std::placeholders::_1));
-  newKeyFramesSub = this->create_subscription<interfaces::msg::NewKeyFrames>(
-    node_name + "/new_key_frames", 1, std::bind(&OrbSlam3Wrapper::receiveNewKeyFrames, this, std::placeholders::_1));
+  newKeyFrameBowsSub = this->create_subscription<interfaces::msg::NewKeyFrameBows>(node_name + "/new_key_frame_bows",
+    rclcpp::QoS(3), std::bind(&OrbSlam3Wrapper::receiveNewKeyFrameBows, this, std::placeholders::_1));
+  successfullyMergedSub = this->create_subscription<interfaces::msg::SuccessfullyMerged>("/successfully_merged",
+    rclcpp::QoS(3), std::bind(&OrbSlam3Wrapper::receiveSuccessfullyMergedMsg, this, std::placeholders::_1));
+  newKeyFramesSub = this->create_subscription<interfaces::msg::NewKeyFrames>(node_name + "/new_key_frames",
+    rclcpp::QoS(3), std::bind(&OrbSlam3Wrapper::receiveNewKeyFrames, this, std::placeholders::_1));
   isLostFromBaseMapSub
-    = this->create_subscription<interfaces::msg::IsLostFromBaseMap>(node_name + "/is_lost_from_base_map", 1,
-      std::bind(&OrbSlam3Wrapper::receiveIsLostFromBaseMapMsg, this, std::placeholders::_1));
+    = this->create_subscription<interfaces::msg::IsLostFromBaseMap>(node_name + "/is_lost_from_base_map",
+      rclcpp::QoS(3), std::bind(&OrbSlam3Wrapper::receiveIsLostFromBaseMapMsg, this, std::placeholders::_1));
   loopClosureTriggersSub
-    = this->create_subscription<interfaces::msg::LoopClosureTriggers>(node_name + "/loop_closure_triggers", 1,
-      std::bind(&OrbSlam3Wrapper::receiveLoopClosureTriggers, this, std::placeholders::_1));
+    = this->create_subscription<interfaces::msg::LoopClosureTriggers>(node_name + "/loop_closure_triggers",
+      rclcpp::QoS(3), std::bind(&OrbSlam3Wrapper::receiveLoopClosureTriggers, this, std::placeholders::_1));
   changeCoordinateFrameSub
-    = this->create_subscription<interfaces::msg::ChangeCoordinateFrame>(node_name + "/change_coordinate_frame", 1,
-      std::bind(&OrbSlam3Wrapper::receiveChangeCoordinateFrame, this, std::placeholders::_1));
+    = this->create_subscription<interfaces::msg::ChangeCoordinateFrame>(node_name + "/change_coordinate_frame",
+      rclcpp::QoS(3), std::bind(&OrbSlam3Wrapper::receiveChangeCoordinateFrame, this, std::placeholders::_1));
   mapToAttemptMergeSub
     = this->create_subscription<interfaces::msg::MapToAttemptMerge>(node_name + "/map_to_attempt_merge", rclcpp::QoS(3),
       std::bind(&OrbSlam3Wrapper::receiveMapToAttemptMerge, this, std::placeholders::_1));
