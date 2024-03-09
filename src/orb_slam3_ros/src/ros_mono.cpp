@@ -13,11 +13,13 @@ public:
   OrbSlam3Mono()
     : OrbSlam3Wrapper("orb_slam3_mono", ORB_SLAM3::System::MONOCULAR) {
 
-    image_subscriber_thread = std::thread([this]() {
+    this->declare_parameter("imageTopic", "robot" + to_string(agentId) + "/camera/image_color");
+    string imageTopic = this->get_parameter("imageTopic").as_string();
+
+    image_subscriber_thread = std::thread([this, imageTopic]() {
       auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
-      image_subscriber
-        = sub_node->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color",
-          rclcpp::QoS(3), std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(
+        imageTopic, rclcpp::QoS(3), std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
       rclcpp::spin(sub_node);
     });
 
