@@ -82,6 +82,8 @@ public:
   double GetCurrKFTime();
   KeyFrame* GetCurrKF();
 
+  vector<KeyFrame*> GetKeyFramesInQueue();
+
   std::mutex mMutexImuInit;
 
   Eigen::MatrixXd mcovInertial;

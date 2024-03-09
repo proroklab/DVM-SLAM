@@ -81,7 +81,7 @@ protected:
   void sendNewKeyFrameBows();
   void receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameBows::SharedPtr msg);
 
-  void updateSuccessfullyMerged();
+  void updateSuccessfullyMerged(bool mutexWrapperLockAlreadyHeld = false);
   void receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg);
 
   void updateIsLostFromBaseMap();

@@ -484,6 +484,15 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB,
 
     pMPi->PostLoad(mpKeyFrameUuid, mpMapPointUuid);
   }
+  // Some of them may have gone bad while post loading
+  for (auto it = mspMapPoints.begin(); it != mspMapPoints.end();) {
+    if (!*it || (*it)->isBad()) {
+      it = mspMapPoints.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
 
   for (KeyFrame* pKFi : mspKeyFrames) {
     if (!pKFi || pKFi->isBad())

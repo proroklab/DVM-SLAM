@@ -479,7 +479,7 @@ void KeyFrame::UpdateConnections(bool upParent) {
 
     for (map<KeyFrame*, tuple<int, int>>::iterator mit = observations.begin(), mend = observations.end(); mit != mend;
          mit++) {
-      if (mit->first->mnId == mnId || mit->first->isBad() || mit->first->GetMap() != mpMap)
+      if (!mit->first || mit->first->mnId == mnId || mit->first->isBad() || mit->first->GetMap() != mpMap)
         continue;
       KFcounter[mit->first]++;
     }
@@ -963,8 +963,13 @@ void KeyFrame::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::u
   mvpMapPoints.clear();
   mvpMapPoints.resize(N);
   for (int i = 0; i < N; ++i) {
-    if (mvBackupMapPointsUuid[i] != boost::uuids::nil_uuid())
-      mvpMapPoints[i] = mpMPid[mvBackupMapPointsUuid[i]];
+    if (mvBackupMapPointsUuid[i] != boost::uuids::nil_uuid()) {
+      MapPoint* mapPoint = mpMPid[mvBackupMapPointsUuid[i]];
+      if (mapPoint && !mapPoint->isBad())
+        mvpMapPoints[i] = mpMPid[mvBackupMapPointsUuid[i]];
+      else
+        mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
+    }
     else
       mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
   }

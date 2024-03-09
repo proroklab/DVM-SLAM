@@ -83,16 +83,24 @@ void PublishRosVizTopics::publish_camera_pose(Sophus::SE3f Tcw_SE3f, rclcpp::Tim
 
   pose_marker_pub->publish(cameraPoseWireframe);
 
+  // "forwards" points to the right for some reason, so need to correct
+  float angle = -M_PI / 2;
+  Eigen::Matrix4f rot_matrix;
+  rot_matrix << cos(angle), 0, sin(angle), 0, 0, 1, 0, 0, -sin(angle), 0, cos(angle), 0, 0, 0, 0, 1;
+  Sophus::SE3f rotation = Sophus::SE3f(rot_matrix);
+  Sophus::SE3f Tcw_SE3f_corrected
+    = Sophus::SE3f(rotation.unit_quaternion() * Tcw_SE3f.unit_quaternion(), Tcw_SE3f.translation());
+
   geometry_msgs::msg::PoseStamped poseStampedMsg;
   poseStampedMsg.header.stamp = msg_time;
   poseStampedMsg.header.frame_id = referenceFrameManager->slam_system_frame_id;
-  poseStampedMsg.pose.position.x = Tcw_SE3f.translation().x();
-  poseStampedMsg.pose.position.y = Tcw_SE3f.translation().y();
-  poseStampedMsg.pose.position.z = Tcw_SE3f.translation().z();
-  poseStampedMsg.pose.orientation.w = Tcw_SE3f.unit_quaternion().coeffs().w();
-  poseStampedMsg.pose.orientation.x = Tcw_SE3f.unit_quaternion().coeffs().x();
-  poseStampedMsg.pose.orientation.y = Tcw_SE3f.unit_quaternion().coeffs().y();
-  poseStampedMsg.pose.orientation.z = Tcw_SE3f.unit_quaternion().coeffs().z();
+  poseStampedMsg.pose.position.x = Tcw_SE3f_corrected.translation().x();
+  poseStampedMsg.pose.position.y = Tcw_SE3f_corrected.translation().y();
+  poseStampedMsg.pose.position.z = Tcw_SE3f_corrected.translation().z();
+  poseStampedMsg.pose.orientation.w = Tcw_SE3f_corrected.unit_quaternion().coeffs().w();
+  poseStampedMsg.pose.orientation.x = Tcw_SE3f_corrected.unit_quaternion().coeffs().x();
+  poseStampedMsg.pose.orientation.y = Tcw_SE3f_corrected.unit_quaternion().coeffs().y();
+  poseStampedMsg.pose.orientation.z = Tcw_SE3f_corrected.unit_quaternion().coeffs().z();
 
   pose_pub->publish(poseStampedMsg);
 }

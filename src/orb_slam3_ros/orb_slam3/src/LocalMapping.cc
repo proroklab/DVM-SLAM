@@ -276,14 +276,14 @@ void LocalMapping::Run() {
         break;
     }
 
+    if (!CheckNewKeyFrames() && !stopRequested()) {
+      ProcessExternalKeyFrame();
+    }
+
     ResetIfRequested();
 
     // Tracking will see that Local Mapping is busy
     SetAcceptKeyFrames(true);
-
-    if (!CheckNewKeyFrames() && !stopRequested()) {
-      ProcessExternalKeyFrame();
-    }
 
     if (CheckFinish())
       break;
@@ -329,9 +329,6 @@ void LocalMapping::ProcessExternalKeyFrame() {
       }
     }
   }
-
-  // Update links in the Covisibility Graph
-  keyFrame->UpdateConnections();
 
   // Insert Keyframe in Map
   mpAtlas->AddKeyFrame(keyFrame);
@@ -1484,5 +1481,16 @@ double LocalMapping::GetCurrKFTime() {
 }
 
 KeyFrame* LocalMapping::GetCurrKF() { return mpCurrentKeyFrame; }
+
+vector<KeyFrame*> LocalMapping::GetKeyFramesInQueue() {
+  unique_lock<mutex> lock(mMutexNewKFs);
+  vector<KeyFrame*> result(mlNewKeyFrames.begin(), mlNewKeyFrames.end());
+  result.insert(result.end(), externalKeyFrames.begin(), externalKeyFrames.end());
+  cout << "mlNewKeyFrames: " << mlNewKeyFrames.size() << endl;
+  cout << "externalKeyFrames: " << externalKeyFrames.size() << endl;
+  cout << "result: " << result.size() << endl;
+
+  return result;
+}
 
 } // namespace ORB_SLAM3

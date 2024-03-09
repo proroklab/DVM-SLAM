@@ -628,14 +628,22 @@ void MapPoint::PreSave(set<KeyFrame*>& spKF, set<MapPoint*>& spMP) {
 
   // Save the id of the reference KF
   mBackupRefKFUuid = mpRefKF->uuid;
+
+  if (mBackupRefKFUuid.is_nil())
+    cout << "ERROR: MP without KF reference when saving " << mBackupRefKFUuid
+         << "; Num obs: " << mBackupObservationsUuid1.size() << endl;
 }
 
 void MapPoint::PostLoad(map<boost::uuids::uuid, KeyFrame*>& mpKFid, map<boost::uuids::uuid, MapPoint*>& mpMPid) {
   mpRefKF = mpKFid[mBackupRefKFUuid];
   if (!mpRefKF) {
     cout << "ERROR: MP without KF reference " << mBackupRefKFUuid << "; Num obs: " << mBackupObservationsUuid1.size()
-         << endl;
+         << " Deleting..." << endl;
+    mbBad = true;
+    mObservations.clear();
+    return;
   }
+
   mpReplaced = static_cast<MapPoint*>(NULL);
   if (mBackupReplacedUuid != boost::uuids::nil_uuid()) {
     map<boost::uuids::uuid, MapPoint*>::iterator it = mpMPid.find(mBackupReplacedUuid);

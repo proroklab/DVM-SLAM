@@ -30,6 +30,7 @@
 #include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"
 
+#include <boost/uuid/uuid.hpp>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -183,6 +184,10 @@ void LoopClosing::Run() {
             // mpTracker->SetStepByStep(true);
 
             Verbose::PrintMess("*Merge detected", Verbose::VERBOSITY_QUIET);
+            cout << "map uuid: " << currentRequestingMap->GetUuid() << endl;
+            cout << "map creator: " << currentRequestingMap->creatorAgentId << endl;
+
+            Map* mpMergeMatchedMap = mpMergeMatchedKF->GetMap(); // Used later to delete KFs in queue from this map
 
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartMerge = std::chrono::steady_clock::now();
@@ -209,24 +214,34 @@ void LoopClosing::Run() {
               mpAtlas->AddSuccessfullyMergedAgentId(peerAgentId, mergedKFUuids, sophusMergeWorldToCurrentWorld);
             }
 
-            // Remove kfs in queue from the same requesting map, deleting the map if it is the same map but a different
+            // Remove kfs in queue from the current or merge map. Delete the map if it is the same map but a different
             // instance
             // Basically, if the map is the same, but the instance is different it means that we have two consecutive
             // map merge attempts happening at the same time. The first one succeeded, so we need to delete the other
             // attempt before it fucks stuff up
-            mlpLoopKeyFrameQueue.erase(std::remove_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
-                                         [this](pair<KeyFrame*, Map*> pair) {
-                                           Map* requestingMap = pair.second;
-                                           if (requestingMap->GetUuid() == currentRequestingMap->GetUuid()) {
-                                             if (requestingMap != currentRequestingMap)
-                                               mpAtlas->SetMapBad(requestingMap);
+            // mlpLoopKeyFrameQueue.erase(std::remove_if(mlpLoopKeyFrameQueue.begin(), mlpLoopKeyFrameQueue.end(),
+            //                              [this, mpMergeMatchedMapUuid](pair<KeyFrame*, Map*> pair) {
+            //                                Map* requestingMap = pair.second;
+            //                                if (requestingMap->GetUuid() == currentRequestingMap->GetUuid()) {
+            //                                  if (requestingMap != currentRequestingMap)
+            //                                    mpAtlas->SetMapBad(requestingMap);
 
-                                             return true;
-                                           }
-                                           return false;
-                                         }),
-              mlpLoopKeyFrameQueue.end());
-            // mlpLoopKeyFrameQueue.clear();
+            //                                  return true;
+            //                                }
+            //                                if (requestingMap->GetUuid() == mpMergeMatchedMapUuid) {
+            //                                  return true;
+            //                                }
+            //                                return false;
+            //                              }),
+            //   mlpLoopKeyFrameQueue.end());
+
+            for (pair<KeyFrame*, Map*> pair : mlpLoopKeyFrameQueue) {
+              Map* requestingMap = pair.second;
+              if (requestingMap != mpAtlas->GetCurrentMap()) // mpMergeMatchedMap
+                mpAtlas->SetMapBad(requestingMap);
+            }
+
+            mlpLoopKeyFrameQueue.clear();
 
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndMerge = std::chrono::steady_clock::now();
@@ -310,7 +325,8 @@ void LoopClosing::Run() {
             nLoop += 1;
 
 #endif
-            CorrectLoop();
+            // Disable loop closing for now
+            // CorrectLoop();
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndLoop = std::chrono::steady_clock::now();
 

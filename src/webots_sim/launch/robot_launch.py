@@ -14,7 +14,7 @@ def generate_launch_description():
         package_dir, 'resource', 'robot2.urdf')
 
     webots = WebotsLauncher(
-        world=os.path.join(package_dir, 'worlds', 'complete_apartment.wbt'),
+        world=os.path.join(package_dir, 'worlds', 'city.wbt'),
         simulation_server_ip="10.211.55.2",
     )
 

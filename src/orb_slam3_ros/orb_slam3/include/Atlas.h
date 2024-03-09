@@ -37,6 +37,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <mutex>
 #include <set>
+#include <vector>
 
 namespace ORB_SLAM3 {
 class Viewer;
@@ -84,7 +85,9 @@ public:
 
   void CreateNewMap();
   Map* CreateNewMap(vector<unsigned char> serializedMap);
-  Map* DeserializeMap(vector<unsigned char> serializedMap, bool connectToExistingMPandKFs);
+  Map* DeserializeMap(vector<unsigned char> serializedMap, bool connectToExistingMPandKFs,
+    vector<KeyFrame*> existingKeyframes = vector<KeyFrame*>(),
+    vector<MapPoint*> existingMapPoints = vector<MapPoint*>());
   void ChangeMap(Map* pMap);
 
   unsigned long int GetLastInitKFid();

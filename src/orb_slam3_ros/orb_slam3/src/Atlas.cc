@@ -21,6 +21,7 @@
 
 #include "Atlas.h"
 #include "Frame.h"
+#include "KeyFrame.h"
 #include "MapPoint.h"
 #include "Viewer.h"
 
@@ -86,7 +87,7 @@ Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
   Map* newMap = DeserializeMap(serializedMap, false);
 
   unique_lock<mutex> lock(mMutexAtlas);
-  cout << "Creation of new map from serialized data with id: " << Map::nNextId << endl;
+  cout << "Creation of new map from serialized data with uuid: " << newMap->GetUuid() << endl;
   if (mpCurrentMap) {
     if (!mspMaps.empty() && mnLastInitKFidMap < mpCurrentMap->GetMaxKFid())
       mnLastInitKFidMap = mpCurrentMap->GetMaxKFid() + 1; // The init KF is the next of current maximum
@@ -98,12 +99,13 @@ Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
 
   mspMaps.insert(newMap);
 
-  cout << "Successful creation of new map from serialized data with id: " << Map::nNextId << endl;
+  cout << "Successful creation of new map from serialized data with uuid: " << newMap->GetUuid() << endl;
 
   return newMap;
 }
 
-Map* Atlas::DeserializeMap(vector<unsigned char> serializedMap, bool connectToExistingMPandKFs) {
+Map* Atlas::DeserializeMap(vector<unsigned char> serializedMap, bool connectToExistingMPandKFs,
+  vector<KeyFrame*> existingKeyframes, vector<MapPoint*> existingMapPoints) {
   std::string serializedMapString(serializedMap.begin(), serializedMap.end());
   std::istringstream stream(serializedMapString);
   boost::archive::binary_iarchive ia(stream);
@@ -117,7 +119,7 @@ Map* Atlas::DeserializeMap(vector<unsigned char> serializedMap, bool connectToEx
   ia >> newMap;
 
   if (connectToExistingMPandKFs)
-    newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams, GetAllKeyFrames(), GetAllMapPoints());
+    newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams, existingKeyframes, existingMapPoints);
   else
     newMap->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpCams);
 
@@ -280,7 +282,7 @@ Map* Atlas::GetCurrentMap() {
   unique_lock<mutex> lock(mMutexAtlas);
   if (!mpCurrentMap)
     CreateNewMap();
-  while (mpCurrentMap->IsBad())
+  while (mpCurrentMap->IsBad()) // someone is setting the current map as bad
     usleep(3000);
 
   return mpCurrentMap;
