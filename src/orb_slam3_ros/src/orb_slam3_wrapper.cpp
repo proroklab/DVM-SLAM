@@ -38,7 +38,7 @@
 
 using namespace std;
 
-OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::System::eSensor sensor_type)
+OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, ORB_SLAM3::System::eSensor sensor_type)
   : Node("robot" + to_string(agentId))
   , node_handle_(std::shared_ptr<OrbSlam3Wrapper>(this, [](auto*) {})) {
   // Create parameters
