@@ -56,11 +56,14 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, ORB_SLAM3::System::eSensor se
     "orb_slam3/Vocabulary/ORBvoc.txt");
   voc_file = this->get_parameter("voc_file").as_string();
 
+  this->declare_parameter("useViewer", true);
+  bool useViewer = this->get_parameter("useViewer").as_bool();
+
   node_name = "robot" + to_string(agentId);
   RCLCPP_INFO(this->get_logger(), node_name.c_str());
 
   this->sensor_type = sensor_type;
-  pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, agentId, true);
+  pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, agentId, useViewer);
 
   baseMap = pSLAM->GetAtlas()->GetCurrentMap();
 
