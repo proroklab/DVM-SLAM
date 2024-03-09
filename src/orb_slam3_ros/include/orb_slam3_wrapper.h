@@ -28,6 +28,7 @@ protected:
   uint agentId;
 
   string settings_file;
+  string voc_file;
 
   map<uint, Peer*> connectedPeers;
 
