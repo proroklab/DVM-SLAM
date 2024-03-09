@@ -3,7 +3,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "orb_slam3_wrapper.h"
 #include <rclcpp/qos.hpp>
+#include <rclcpp/qos_overriding_options.hpp>
 #include <rmw/qos_profiles.h>
+#include <rmw/types.h>
 #include <utility>
 
 using namespace std;
@@ -18,8 +20,9 @@ public:
 
     image_subscriber_thread = std::thread([this, imageTopic]() {
       auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
-      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(
-        imageTopic, rclcpp::QoS(3), std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(imageTopic,
+        rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data),
+        std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
       rclcpp::spin(sub_node);
     });
 
