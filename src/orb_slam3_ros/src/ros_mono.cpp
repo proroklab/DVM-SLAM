@@ -10,8 +10,8 @@ using namespace std;
 
 class OrbSlam3Mono : public OrbSlam3Wrapper {
 public:
-  OrbSlam3Mono(string voc_file)
-    : OrbSlam3Wrapper("orb_slam3_mono", voc_file, ORB_SLAM3::System::MONOCULAR) {
+  OrbSlam3Mono()
+    : OrbSlam3Wrapper("orb_slam3_mono", ORB_SLAM3::System::MONOCULAR) {
 
     image_subscriber_thread = std::thread([this]() {
       auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
@@ -58,9 +58,7 @@ private:
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
 
-  string voc_file = "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/ubuntuSharedFolder/"
-                    "part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/ORBvoc.txt";
-  auto node = std::make_shared<OrbSlam3Mono>(voc_file);
+  auto node = std::make_shared<OrbSlam3Mono>();
 
   rclcpp::shutdown();
   return 0;

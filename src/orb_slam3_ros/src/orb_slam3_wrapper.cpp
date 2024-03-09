@@ -51,6 +51,11 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, string voc_file, ORB_SLAM3::S
     "worlds/webots.yaml");
   settings_file = this->get_parameter("config").as_string();
 
+  this->declare_parameter("voc_file",
+    "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/ubuntuSharedFolder/part_II_project/src/orb_slam3_ros/"
+    "orb_slam3/Vocabulary/ORBvoc.txt");
+  voc_file = this->get_parameter("voc_file").as_string();
+
   node_name = "robot" + to_string(agentId);
   RCLCPP_INFO(this->get_logger(), node_name.c_str());
 
