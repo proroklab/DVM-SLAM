@@ -1,5 +1,5 @@
 #include "publish_ros_viz_topics.h"
-#include <cv_bridge/cv_bridge.hpp>
+#include <cv_bridge/cv_bridge.h>
 #include <memory>
 #include <rclcpp/node.hpp>
 #include <tf2/LinearMath/Vector3.h>
