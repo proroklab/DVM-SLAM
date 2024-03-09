@@ -21,7 +21,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'collision_avoidance = motion_controller.collision_avoidance:main'
+            'collision_avoidance = motion_controller.collision_avoidance:main',
+            'follow_the_leader = motion_controller.follow_the_leader:main'
         ],
     },
 )

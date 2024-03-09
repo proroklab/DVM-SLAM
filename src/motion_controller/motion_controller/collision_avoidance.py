@@ -141,9 +141,10 @@ class CollisionAvoidance(Node):
             self.agents[self.agent_index].position, obstacles)
 
         rotation = self.agents[self.agent_index].rotation
-        rotation_matrix = Rotation.from_euler(
-            'zyx', [rotation, 0, 0]).as_matrix()
-        velocity = rotation_matrix @ np.array([velocity[0], velocity[1], 0])
+        inv_rotation_matrix = Rotation.from_euler(
+            'zyx', [rotation, 0, 0]).inv().as_matrix()
+        velocity = inv_rotation_matrix @ np.array(
+            [velocity[0], velocity[1], 0])
         # print(velocity)
 
         cmd_vel_msg = Twist()
