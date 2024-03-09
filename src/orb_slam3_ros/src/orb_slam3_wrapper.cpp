@@ -936,7 +936,8 @@ unique_ptr<ORB_SLAM3::Map> OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMa
   vector<ORB_SLAM3::GeometricCamera*> mvpCameras = pSLAM->GetAtlas()->GetAllCameras();
   set<ORB_SLAM3::GeometricCamera*> dummySCams(mvpCameras.begin(), mvpCameras.end());
   ORB_SLAM3::ORBVocabulary* dummyORBVoc = pSLAM->GetORBVocabulary();
-  delete dummyKFDB;
+  if (dummyKFDB != nullptr)
+    delete dummyKFDB;
   dummyKFDB = new ORB_SLAM3::KeyFrameDatabase(*dummyORBVoc);
   map<unsigned int, ORB_SLAM3::GeometricCamera*> dummyMCams;
   for (ORB_SLAM3::GeometricCamera* pCam : mvpCameras) {
