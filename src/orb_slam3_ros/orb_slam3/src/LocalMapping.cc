@@ -330,9 +330,6 @@ void LocalMapping::ProcessExternalKeyFrame() {
     }
   }
 
-  // Update links in the Covisibility Graph
-  keyFrame->UpdateConnections();
-
   // Insert Keyframe in Map
   mpAtlas->AddKeyFrame(keyFrame);
 

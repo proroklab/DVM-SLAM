@@ -183,6 +183,10 @@ void LoopClosing::Run() {
             // mpTracker->SetStepByStep(true);
 
             Verbose::PrintMess("*Merge detected", Verbose::VERBOSITY_QUIET);
+            cout << "map uuid: " << currentRequestingMap->GetUuid() << endl;
+            cout << "map creator: " << currentRequestingMap->creatorAgentId << endl;
+
+            Map* mpMergeMatchedMap = mpMergeMatchedKF->GetMap(); // Used later to delete KFs in queue from this map
 
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartMerge = std::chrono::steady_clock::now();

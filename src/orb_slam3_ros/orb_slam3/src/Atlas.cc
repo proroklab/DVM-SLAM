@@ -86,7 +86,7 @@ Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
   Map* newMap = DeserializeMap(serializedMap, false);
 
   unique_lock<mutex> lock(mMutexAtlas);
-  cout << "Creation of new map from serialized data with id: " << Map::nNextId << endl;
+  cout << "Creation of new map from serialized data with uuid: " << newMap->GetUuid() << endl;
   if (mpCurrentMap) {
     if (!mspMaps.empty() && mnLastInitKFidMap < mpCurrentMap->GetMaxKFid())
       mnLastInitKFidMap = mpCurrentMap->GetMaxKFid() + 1; // The init KF is the next of current maximum
@@ -98,7 +98,7 @@ Map* Atlas::CreateNewMap(vector<unsigned char> serializedMap) {
 
   mspMaps.insert(newMap);
 
-  cout << "Successful creation of new map from serialized data with id: " << Map::nNextId << endl;
+  cout << "Successful creation of new map from serialized data with uuid: " << newMap->GetUuid() << endl;
 
   return newMap;
 }
