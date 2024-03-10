@@ -5,6 +5,9 @@
 #include <tf2/LinearMath/Vector3.h>
 #include <tf2_ros/transform_broadcaster.h>
 
+#define BEST_EFFORT_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)
+#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_services_default)
+
 PublishRosVizTopics::PublishRosVizTopics(shared_ptr<rclcpp::Node> node, string node_name,
   ORB_SLAM3::System::eSensor sensor_type, uint agentId, ReferenceFrameManager* referenceFrameManager)
   : node(node)
@@ -12,17 +15,21 @@ PublishRosVizTopics::PublishRosVizTopics(shared_ptr<rclcpp::Node> node, string n
   , agentId(agentId)
   , referenceFrameManager(referenceFrameManager) {
   // Create publishers
-  pose_pub = node->create_publisher<geometry_msgs::msg::PoseStamped>(node_name + "/camera_pose", 1);
-  pose_marker_pub = node->create_publisher<visualization_msgs::msg::Marker>(node_name + "/camera_pose_marker", 1);
-  tracked_mappoints_pub = node->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/tracked_points", 1);
-  all_mappoints_pub = node->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/all_points", 1);
-  tracking_img_pub = image_transport.advertise(node_name + "/tracking_image", 1);
-  kf_markers_pub = node->create_publisher<visualization_msgs::msg::MarkerArray>(node_name + "/kf_markers", 1000);
+  pose_pub = node->create_publisher<geometry_msgs::msg::PoseStamped>(node_name + "/camera_pose", RELIABLE_QOS);
+  pose_marker_pub
+    = node->create_publisher<visualization_msgs::msg::Marker>(node_name + "/camera_pose_marker", BEST_EFFORT_QOS);
+  tracked_mappoints_pub
+    = node->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/tracked_points", BEST_EFFORT_QOS);
+  all_mappoints_pub = node->create_publisher<sensor_msgs::msg::PointCloud2>(node_name + "/all_points", BEST_EFFORT_QOS);
+  tracking_img_pub = image_transport.advertise(node_name + "/tracking_image", 10);
+  kf_markers_pub
+    = node->create_publisher<visualization_msgs::msg::MarkerArray>(node_name + "/kf_markers", BEST_EFFORT_QOS);
   if (sensor_type == ORB_SLAM3::System::IMU_MONOCULAR || sensor_type == ORB_SLAM3::System::IMU_STEREO
     || sensor_type == ORB_SLAM3::System::IMU_RGBD) {
-    odom_pub = node->create_publisher<nav_msgs::msg::Odometry>(node_name + "/body_odom", 1);
+    odom_pub = node->create_publisher<nav_msgs::msg::Odometry>(node_name + "/body_odom", BEST_EFFORT_QOS);
   }
-  sim3_transform_pub = node->create_publisher<interfaces::msg::Sim3TransformStamped>("/sim3_transform", 1);
+  sim3_transform_pub
+    = node->create_publisher<interfaces::msg::Sim3TransformStamped>("/sim3_transform", BEST_EFFORT_QOS);
 
   // Create camera wireframe
   float scaleX = 0.05;

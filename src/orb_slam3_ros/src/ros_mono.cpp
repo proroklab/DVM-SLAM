@@ -8,6 +8,8 @@
 #include <rmw/types.h>
 #include <utility>
 
+#define BEST_EFFORT_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)
+
 using namespace std;
 
 class OrbSlam3Mono : public OrbSlam3Wrapper {
@@ -20,9 +22,8 @@ public:
 
     image_subscriber_thread = std::thread([this, imageTopic]() {
       auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
-      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(imageTopic,
-        = sub_node->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color",
-          rclcpp::QoS(3), std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(
+        imageTopic, BEST_EFFORT_QOS, std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
       rclcpp::spin(sub_node);
     });
 
