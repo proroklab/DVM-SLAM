@@ -306,7 +306,8 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     connectedPeer->setReferenceKeyFrame(nextReferenceKeyFrame);
 
     for (ORB_SLAM3::KeyFrame* keyFrame : keyFramesToDelete) { // TODO: REALLY REALLY should move to smart pointers
-      delete keyFrame;
+      if (keyFrame)
+        delete keyFrame;
     }
 
     RCLCPP_INFO(this->get_logger(), "Sent new key frames");

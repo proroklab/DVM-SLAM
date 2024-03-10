@@ -63,7 +63,7 @@ protected:
 
   rclcpp::TimerBase::SharedPtr updateScaleTimer;
 
-  ORB_SLAM3::KeyFrameDatabase* dummyKFDB;
+  ORB_SLAM3::KeyFrameDatabase* dummyKFDB = nullptr;
 
   bool newFrameProcessed;
   rclcpp::Time lastFrameTimestamp;

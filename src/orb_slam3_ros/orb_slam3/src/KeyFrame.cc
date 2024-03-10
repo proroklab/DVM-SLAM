@@ -479,7 +479,7 @@ void KeyFrame::UpdateConnections(bool upParent) {
 
     for (map<KeyFrame*, tuple<int, int>>::iterator mit = observations.begin(), mend = observations.end(); mit != mend;
          mit++) {
-      if (mit->first->mnId == mnId || mit->first->isBad() || mit->first->GetMap() != mpMap)
+      if (!mit->first || mit->first->mnId == mnId || mit->first->isBad() || mit->first->GetMap() != mpMap)
         continue;
       KFcounter[mit->first]++;
     }
