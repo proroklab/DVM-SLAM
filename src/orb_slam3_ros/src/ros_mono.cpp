@@ -3,19 +3,24 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "orb_slam3_wrapper.h"
 #include <rclcpp/qos.hpp>
+#include <rclcpp/qos_overriding_options.hpp>
 #include <rmw/qos_profiles.h>
+#include <rmw/types.h>
 #include <utility>
 
 using namespace std;
 
 class OrbSlam3Mono : public OrbSlam3Wrapper {
 public:
-  OrbSlam3Mono(string voc_file)
-    : OrbSlam3Wrapper("orb_slam3_mono", voc_file, ORB_SLAM3::System::MONOCULAR) {
+  OrbSlam3Mono()
+    : OrbSlam3Wrapper("orb_slam3_mono", ORB_SLAM3::System::MONOCULAR) {
 
-    image_subscriber_thread = std::thread([this]() {
+    this->declare_parameter("imageTopic", "robot" + to_string(agentId) + "/camera/image_color");
+    string imageTopic = this->get_parameter("imageTopic").as_string();
+
+    image_subscriber_thread = std::thread([this, imageTopic]() {
       auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
-      image_subscriber
+      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(imageTopic,
         = sub_node->create_subscription<sensor_msgs::msg::Image>("robot" + to_string(agentId) + "/camera/image_color",
           rclcpp::QoS(3), std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
       rclcpp::spin(sub_node);
@@ -58,9 +63,7 @@ private:
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
 
-  string voc_file = "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/ubuntuSharedFolder/"
-                    "part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/ORBvoc.txt";
-  auto node = std::make_shared<OrbSlam3Mono>(voc_file);
+  auto node = std::make_shared<OrbSlam3Mono>();
 
   rclcpp::shutdown();
   return 0;
