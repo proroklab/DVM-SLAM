@@ -33,7 +33,7 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #define MIN_KEY_FRAME_SHARE_SIZE 5
-#define MIN_BOW_SHARE_SIZE 12
+#define MIN_BOW_SHARE_SIZE 5
 #define MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT 500
 #define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_services_default)
 
@@ -838,6 +838,7 @@ void OrbSlam3Wrapper::sendChangeCoordinateFrame(uint parentCoordFrameAgentId, So
 }
 
 void OrbSlam3Wrapper::receiveChangeCoordinateFrame(const interfaces::msg::ChangeCoordinateFrame::SharedPtr msg) {
+  unique_lock<mutex> lock(mutexWrapper);
   RCLCPP_INFO(this->get_logger(), "Received change coordinate frame msg");
 
   Eigen::Quaterniond quaternion(msg->parent_to_current_transform.rotation.w,
@@ -905,7 +906,8 @@ unique_ptr<ORB_SLAM3::Map> OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMa
   vector<ORB_SLAM3::GeometricCamera*> mvpCameras = pSLAM->GetAtlas()->GetAllCameras();
   set<ORB_SLAM3::GeometricCamera*> dummySCams(mvpCameras.begin(), mvpCameras.end());
   ORB_SLAM3::ORBVocabulary* dummyORBVoc = pSLAM->GetORBVocabulary();
-  delete dummyKFDB;
+  if (dummyKFDB != nullptr)
+    delete dummyKFDB;
   dummyKFDB = new ORB_SLAM3::KeyFrameDatabase(*dummyORBVoc);
   map<unsigned int, ORB_SLAM3::GeometricCamera*> dummyMCams;
   for (ORB_SLAM3::GeometricCamera* pCam : mvpCameras) {
