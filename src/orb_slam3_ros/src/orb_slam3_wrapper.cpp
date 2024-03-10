@@ -205,11 +205,18 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       continue;
     }
 
+    unsigned long largestKeyFrameId = 4;
+    for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
+      if (keyFrame->mnId > largestKeyFrameId) {
+        largestKeyFrameId = keyFrame->mnId;
+      }
+    }
+
     // Check if we have enough keyframes to send update
     int newKeyFrames = 0;
     for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
       if (connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) == 0 && keyFrame->creatorAgentId == agentId
-        && !keyFrame->isBad())
+        && !keyFrame->isBad() && keyFrame->mnId < largestKeyFrameId - 3)
         newKeyFrames++;
     }
     if (newKeyFrames < MIN_KEY_FRAME_SHARE_SIZE)
@@ -217,26 +224,41 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
 
     unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
 
+    largestKeyFrameId = 4;
+    for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
+      if (keyFrame->mnId > largestKeyFrameId) {
+        largestKeyFrameId = keyFrame->mnId;
+      }
+    }
+
     // Remove keyframes not from this agent or have already been sent
     // keep all keyframe connections to reconnect later
     vector<ORB_SLAM3::KeyFrame*> keyFramesToDelete;
+    vector<ORB_SLAM3::KeyFrame*> keyFramesToBeSent;
     int a = currentMapCopy->GetMaxKFid();
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
       if (keyFrame->creatorAgentId != agentId
         || connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0
         // only send keyframes once they are outside of the mappoint culling window
-        || keyFrame->isBad()) {
+        || keyFrame->isBad() || keyFrame->mnId >= largestKeyFrameId - 3) {
         currentMapCopy->EraseKeyFrame(keyFrame);
         keyFramesToDelete.push_back(keyFrame);
       }
+      else {
+        keyFramesToBeSent.push_back(keyFrame);
+      }
     }
 
+    cout << "keyFramesToBeSent.size(): " << keyFramesToBeSent.size() << "\n";
+    cout << "allKeyFrames.size(): " << currentMapCopy->GetAllKeyFrames().size() << "\n";
+
     // Remove mappoints that have already been sent, or who dont have a reference
-    vector<ORB_SLAM3::KeyFrame*> allKeyFrames = pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames();
-    set<ORB_SLAM3::KeyFrame*> allKeyFramesSet(allKeyFrames.begin(), allKeyFrames.end());
+    set<ORB_SLAM3::KeyFrame*> keyFramesToBeSentSet(keyFramesToBeSent.begin(), keyFramesToBeSent.end());
     for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
       if (mapPoint->creatorAgentId != agentId || connectedPeer->getSentMapPointUuids().count(mapPoint->uuid) != 0
-        || mapPoint->isBad() || allKeyFramesSet.count(mapPoint->GetReferenceKeyFrame()) == 0) {
+        || mapPoint->isBad() || (int)mapPoint->mnFirstKFid >= largestKeyFrameId - 3
+        || (connectedPeer->getSentKeyFrameUuids().count(mapPoint->GetReferenceKeyFrame()->uuid) == 0
+          && keyFramesToBeSentSet.count(mapPoint->GetReferenceKeyFrame()) == 0)) {
         mapPoint->SetBadFlag();
         delete mapPoint;
       }
