@@ -30,6 +30,7 @@
 #include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"
 
+#include <boost/uuid/uuid.hpp>
 #include <iostream>
 #include <mutex>
 #include <thread>
