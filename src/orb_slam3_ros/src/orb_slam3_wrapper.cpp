@@ -11,6 +11,7 @@
 #include "sophus/types.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Geometry/Quaternion.h>
+#include <algorithm>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstddef>
@@ -132,11 +133,14 @@ void OrbSlam3Wrapper::run() {
     }
 
     rclcpp::spin_some(this->node_handle_);
+
+    usleep(3000);
   }
 }
 
 void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interfaces::srv::GetCurrentMap::Request> request,
   std::shared_ptr<interfaces::srv::GetCurrentMap::Response> response) {
+  startTimer("handleGetCurrentMapRequest");
   unique_lock<mutex> lock(mutexWrapper);
   unique_lock<mutex> lock2(pSLAM->GetAtlas()->GetCurrentMap()->mMutexMapUpdate); // Wait for map merge
 
@@ -155,9 +159,11 @@ void OrbSlam3Wrapper::handleGetCurrentMapRequest(const std::shared_ptr<interface
   response->sender_agent_id = agentId;
   response->serialized_map = pSLAM->SerializeMap(currentMapCopy.get());
   response->merge_candidate_key_frame_uuids = request->merge_candidate_key_frame_uuids;
+  stopTimer("handleGetCurrentMapRequest");
 }
 
 void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv::GetCurrentMap>::SharedFuture future) {
+  startTimer("handleGetCurrentMapResponse");
   interfaces::srv::GetCurrentMap::Response::SharedPtr response = future.get();
 
   interfaces::msg::MapToAttemptMerge::SharedPtr mapToAttemptMergeMsg(new interfaces::msg::MapToAttemptMerge());
@@ -170,9 +176,11 @@ void OrbSlam3Wrapper::handleGetCurrentMapResponse(rclcpp::Client<interfaces::srv
   mapToAttemptMergeMsg->merge_candidate_key_frame_uuids = response->merge_candidate_key_frame_uuids;
 
   receiveMapToAttemptMerge(mapToAttemptMergeMsg);
+  stopTimer("handleGetCurrentMapResponse");
 }
 
 void OrbSlam3Wrapper::receiveMapToAttemptMerge(interfaces::msg::MapToAttemptMerge::SharedPtr msg) {
+  startTimer("receiveMapToAttemptMerge");
   unique_lock<mutex> lock(mutexWrapper);
 
   updateSuccessfullyMerged(true);
@@ -189,9 +197,11 @@ void OrbSlam3Wrapper::receiveMapToAttemptMerge(interfaces::msg::MapToAttemptMerg
     msg->serialized_map.size());
 
   pSLAM->AddSerializedMapToTryMerge(msg->serialized_map, mergeCandidateKeyFrameUuids);
+  stopTimer("receiveMapToAttemptMerge");
 }
 
 void OrbSlam3Wrapper::sendNewKeyFrames() {
+  startTimer("sendNewKeyFrames");
   unique_lock<mutex> lock(mutexWrapper);
 
   if (isLostFromBaseMap)
@@ -200,27 +210,35 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
   // Send new key frames to all peers
   for (auto& pair : connectedPeers) {
     Peer* connectedPeer = pair.second;
+    set<boost::uuids::uuid> sentKeyFrameUuids = connectedPeer->getSentKeyFrameUuids();
+    set<boost::uuids::uuid> sentMapPointUuids = connectedPeer->getSentMapPointUuids();
 
     if (!isSuccessfullyMerged(connectedPeer->getId()) || connectedPeer->getIsLostFromBaseMap()) {
       continue;
     }
 
+    startTimer("1");
     unsigned long largestKeyFrameId = 4;
     for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
       if (keyFrame->mnId > largestKeyFrameId) {
         largestKeyFrameId = keyFrame->mnId;
       }
     }
+    stopTimer("1");
 
+    startTimer("2");
     // Check if we have enough keyframes to send update
     int newKeyFrames = 0;
     for (ORB_SLAM3::KeyFrame* keyFrame : pSLAM->GetAtlas()->GetCurrentMap()->GetAllKeyFrames()) {
-      if (connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) == 0 && keyFrame->creatorAgentId == agentId
-        && !keyFrame->isBad() && keyFrame->mnId < largestKeyFrameId - 3)
+      if (sentKeyFrameUuids.count(keyFrame->uuid) == 0 && keyFrame->creatorAgentId == agentId && !keyFrame->isBad()
+        && keyFrame->mnId < largestKeyFrameId - 3)
         newKeyFrames++;
     }
     if (newKeyFrames < MIN_KEY_FRAME_SHARE_SIZE)
       continue;
+    stopTimer("2");
+
+    startTimer("3");
 
     unique_ptr<ORB_SLAM3::Map> currentMapCopy = deepCopyMap(pSLAM->GetAtlas()->GetCurrentMap());
 
@@ -230,6 +248,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
         largestKeyFrameId = keyFrame->mnId;
       }
     }
+    stopTimer("3");
+
+    startTimer("4");
 
     // Remove keyframes not from this agent or have already been sent
     // keep all keyframe connections to reconnect later
@@ -238,7 +259,7 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     int a = currentMapCopy->GetMaxKFid();
     for (ORB_SLAM3::KeyFrame* keyFrame : currentMapCopy->GetAllKeyFrames()) {
       if (keyFrame->creatorAgentId != agentId
-        || connectedPeer->getSentKeyFrameUuids().count(keyFrame->uuid) != 0
+        || sentKeyFrameUuids.count(keyFrame->uuid) != 0
         // only send keyframes once they are outside of the mappoint culling window
         || keyFrame->isBad() || keyFrame->mnId >= largestKeyFrameId - 3) {
         currentMapCopy->EraseKeyFrame(keyFrame);
@@ -248,6 +269,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
         keyFramesToBeSent.push_back(keyFrame);
       }
     }
+    stopTimer("4");
+
+    startTimer("5");
 
     cout << "keyFramesToBeSent.size(): " << keyFramesToBeSent.size() << "\n";
     cout << "allKeyFrames.size(): " << currentMapCopy->GetAllKeyFrames().size() << "\n";
@@ -255,14 +279,17 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     // Remove mappoints that have already been sent, or who dont have a reference
     set<ORB_SLAM3::KeyFrame*> keyFramesToBeSentSet(keyFramesToBeSent.begin(), keyFramesToBeSent.end());
     for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
-      if (mapPoint->creatorAgentId != agentId || connectedPeer->getSentMapPointUuids().count(mapPoint->uuid) != 0
-        || mapPoint->isBad() || (int)mapPoint->mnFirstKFid >= largestKeyFrameId - 3
-        || (connectedPeer->getSentKeyFrameUuids().count(mapPoint->GetReferenceKeyFrame()->uuid) == 0
+      if (mapPoint->creatorAgentId != agentId || sentMapPointUuids.count(mapPoint->uuid) != 0 || mapPoint->isBad()
+        || (int)mapPoint->mnFirstKFid >= largestKeyFrameId - 3
+        || (sentKeyFrameUuids.count(mapPoint->GetReferenceKeyFrame()->uuid) == 0
           && keyFramesToBeSentSet.count(mapPoint->GetReferenceKeyFrame()) == 0)) {
         mapPoint->SetBadFlag();
         delete mapPoint;
       }
     }
+    stopTimer("5");
+
+    startTimer("6");
 
 #ifdef USE_REF_KEY_FRAMES
     // Get refernece key frame
@@ -302,6 +329,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     for (ORB_SLAM3::MapPoint* mapPoint : currentMapCopy->GetAllMapPoints()) {
       connectedPeer->addSentMapPointUuid(mapPoint->uuid);
     }
+    stopTimer("6");
+
+    startTimer("7");
 
     // Get the lastest keyframe to later make as the reference keyframe uuid
     ORB_SLAM3::KeyFrame* latestKeyFrame = nullptr;
@@ -312,6 +342,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       }
     }
     ORB_SLAM3::KeyFrame* nextReferenceKeyFrame = latestKeyFrame;
+    stopTimer("7");
+
+    startTimer("8");
 
     // Send new frames to peer
     interfaces::msg::NewKeyFrames msg;
@@ -322,6 +355,9 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
     msg.reference_key_frame_uuid = uuidToArray(referenceKeyFrame->uuid);
 #endif
     msg.next_reference_key_frame_uuid = uuidToArray(nextReferenceKeyFrame->uuid);
+    stopTimer("8");
+
+    startTimer("9");
     connectedPeer->newKeyFramesPub->publish(msg);
 
     // Actually set referenceKeyFrameUuid
@@ -331,12 +367,15 @@ void OrbSlam3Wrapper::sendNewKeyFrames() {
       if (keyFrame)
         delete keyFrame;
     }
+    stopTimer("9");
 
     RCLCPP_INFO(this->get_logger(), "Sent new key frames");
   }
+  stopTimer("sendNewKeyFrames");
 }
 
 void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::SharedPtr msg) {
+  startTimer("receiveNewKeyFrames");
   unique_lock<mutex> lock(mutexWrapper);
 
   RCLCPP_INFO(this->get_logger(), "Received new key frames. Size: %d", msg->serialized_map.size());
@@ -403,9 +442,11 @@ void OrbSlam3Wrapper::receiveNewKeyFrames(const interfaces::msg::NewKeyFrames::S
   }
 
   delete newMap;
+  stopTimer("receiveNewKeyFrames");
 }
 
 void OrbSlam3Wrapper::sendNewKeyFrameBows() {
+  startTimer("sendNewKeyFrameBows");
   unique_lock<mutex> lock(mutexWrapper);
 
   if (isLostFromBaseMap)
@@ -480,9 +521,11 @@ void OrbSlam3Wrapper::sendNewKeyFrameBows() {
     // Add to sent key frames map
     connectedPeer->addSentKeyFrameBowUuids(newKeyFrameBowUuids.begin(), newKeyFrameBowUuids.end());
   }
+  stopTimer("sendNewKeyFrameBows");
 }
 
 void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameBows::SharedPtr msg) {
+  startTimer("receiveNewKeyFrameBows");
   unique_lock<mutex> lock(mutexWrapper);
 
   vector<interfaces::msg::KeyFrameBowVector> newKeyFramesBowVectors = msg->key_frame_bow_vectors;
@@ -559,9 +602,11 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
       connectedPeers[msg->sender_agent_id]->mapToAttemptMergePub->publish(mapToAttemptMergeMsg);
     }
   }
+  stopTimer("receiveNewKeyFrameBows");
 }
 
 void OrbSlam3Wrapper::updateSuccessfullyMerged(bool mutexWrapperLockAlreadyHeld) {
+  startTimer("updateSuccessfullyMerged");
   unique_lock<mutex> lock;
   if (!mutexWrapperLockAlreadyHeld) {
     lock = unique_lock<mutex>(mutexWrapper);
@@ -649,9 +694,11 @@ void OrbSlam3Wrapper::updateSuccessfullyMerged(bool mutexWrapperLockAlreadyHeld)
       }
     }
   }
+  stopTimer("updateSuccessfullyMerged");
 }
 
 void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::SuccessfullyMerged::SharedPtr msg) {
+  startTimer("receiveSuccessfullyMergedMsg");
   unique_lock<mutex> lock(mutexWrapper);
 
   if (msg->sender_agent_id != agentId)
@@ -668,9 +715,11 @@ void OrbSlam3Wrapper::receiveSuccessfullyMergedMsg(const interfaces::msg::Succes
 
     connectedPeers[msg->sender_agent_id]->addSentKeyFrameUuids(sentKeyFrameUuids.begin(), sentKeyFrameUuids.end());
   }
+  stopTimer("receiveSuccessfullyMergedMsg");
 }
 
 void OrbSlam3Wrapper::updateIsLostFromBaseMap() {
+  startTimer("updateIsLostFromBaseMap");
   unique_lock<mutex> lock(mutexWrapper);
 
   bool newIsLostFromBaseMap = baseMap != pSLAM->GetAtlas()->GetCurrentMap();
@@ -691,15 +740,19 @@ void OrbSlam3Wrapper::updateIsLostFromBaseMap() {
       connectedPeer->isLostFromBaseMapPub->publish(msg);
     }
   }
+  stopTimer("updateIsLostFromBaseMap");
 }
 
 void OrbSlam3Wrapper::receiveIsLostFromBaseMapMsg(const interfaces::msg::IsLostFromBaseMap::SharedPtr msg) {
+  startTimer("receiveIsLostFromBaseMapMsg");
   unique_lock<mutex> lock(mutexWrapper);
 
   connectedPeers[msg->sender_agent_id]->setIsLostFromBaseMap(msg->is_lost_from_base_map);
+  stopTimer("receiveIsLostFromBaseMapMsg");
 }
 
 void OrbSlam3Wrapper::updateMapScale() {
+  startTimer("updateMapScale");
   auto handleGetMapPointsResponse = [this](rclcpp::Client<interfaces::srv::GetMapPoints>::SharedFuture future) {
     unique_lock<mutex> lock(mutexWrapper);
     interfaces::srv::GetMapPoints::Response::SharedPtr response = future.get();
@@ -749,10 +802,12 @@ void OrbSlam3Wrapper::updateMapScale() {
 
   auto request = std::make_shared<interfaces::srv::GetMapPoints::Request>();
   auto future_result = lowestConnectedPeer->getMapPointsClient->async_send_request(request, handleGetMapPointsResponse);
+  stopTimer("updateMapScale");
 }
 
 void OrbSlam3Wrapper::handleGetMapPointsRequest(const std::shared_ptr<interfaces::srv::GetMapPoints::Request> request,
   std::shared_ptr<interfaces::srv::GetMapPoints::Response> response) {
+  startTimer("handleGetMapPointsRequest");
   unique_lock<mutex> lock(mutexWrapper);
 
   vector<ORB_SLAM3::MapPoint*> mapPoints = pSLAM->GetAtlas()->GetCurrentMap()->GetAllMapPoints();
@@ -774,9 +829,11 @@ void OrbSlam3Wrapper::handleGetMapPointsRequest(const std::shared_ptr<interfaces
   }
 
   RCLCPP_INFO(this->get_logger(), "Sent map points");
+  stopTimer("handleGetMapPointsRequest");
 }
 
 void OrbSlam3Wrapper::sendLoopClosureTriggers() {
+  startTimer("sendLoopClosureTriggers");
   unique_lock<mutex> lock(mutexWrapper);
 
   if (isLostFromBaseMap)
@@ -816,9 +873,11 @@ void OrbSlam3Wrapper::sendLoopClosureTriggers() {
     msg.trigger_key_frame_uuids = loopClosureTriggerUuids;
     connectedPeer->loopClosureTriggersPub->publish(msg);
   }
+  stopTimer("sendLoopClosureTriggers");
 }
 
 void OrbSlam3Wrapper::receiveLoopClosureTriggers(const interfaces::msg::LoopClosureTriggers::SharedPtr msg) {
+  startTimer("receiveLoopClosureTriggers");
   unique_lock<mutex> lock(mutexWrapper);
 
   RCLCPP_INFO(this->get_logger(), "Received loop closure triggers");
@@ -828,9 +887,11 @@ void OrbSlam3Wrapper::receiveLoopClosureTriggers(const interfaces::msg::LoopClos
     ORB_SLAM3::KeyFrame* keyFrame = pSLAM->GetKeyFrameDatabase()->ConvertUuidToKeyFrame(uuid);
     pSLAM->GetLoopCloser()->InsertKeyFrame(keyFrame, keyFrame->GetMap());
   }
+  stopTimer("receiveLoopClosureTriggers");
 }
 
 void OrbSlam3Wrapper::sendChangeCoordinateFrame(uint parentCoordFrameAgentId, Sophus::Sim3d parentToCurrentTransform) {
+  startTimer("sendChangeCoordinateFrame");
   RCLCPP_INFO(this->get_logger(), "Sent change coordinate frame messages");
 
   // Send to all connected peers apart from the peer we just connected to
@@ -857,9 +918,11 @@ void OrbSlam3Wrapper::sendChangeCoordinateFrame(uint parentCoordFrameAgentId, So
       successfullyMergedPeer->changeCoordinateFramePub->publish(msg);
     }
   }
+  stopTimer("sendChangeCoordinateFrame");
 }
 
 void OrbSlam3Wrapper::receiveChangeCoordinateFrame(const interfaces::msg::ChangeCoordinateFrame::SharedPtr msg) {
+  startTimer("receiveChangeCoordinateFrame");
   unique_lock<mutex> lock(mutexWrapper);
   RCLCPP_INFO(this->get_logger(), "Received change coordinate frame msg");
 
@@ -905,6 +968,7 @@ void OrbSlam3Wrapper::receiveChangeCoordinateFrame(const interfaces::msg::Change
       successfullyMergedPub->publish(msg);
     }
   }
+  stopTimer("receiveChangeCoordinateFrame");
 }
 
 boost::uuids::uuid OrbSlam3Wrapper::arrayToUuid(array<unsigned char, 16> array) {
@@ -920,10 +984,12 @@ array<unsigned char, 16> OrbSlam3Wrapper::uuidToArray(boost::uuids::uuid uuid) {
 }
 
 unique_ptr<ORB_SLAM3::Map> OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMap) {
+  startTimer("deepCopyMap");
   // Make a deep copy of the target map
   // TODO: make this less terrible!
   ORB_SLAM3::Map* mapCopy;
 
+  startTimer("deepCopyMap 1");
   // HACKY: create dummy objects for post load
   vector<ORB_SLAM3::GeometricCamera*> mvpCameras = pSLAM->GetAtlas()->GetAllCameras();
   set<ORB_SLAM3::GeometricCamera*> dummySCams(mvpCameras.begin(), mvpCameras.end());
@@ -935,21 +1001,34 @@ unique_ptr<ORB_SLAM3::Map> OrbSlam3Wrapper::deepCopyMap(ORB_SLAM3::Map* targetMa
   for (ORB_SLAM3::GeometricCamera* pCam : mvpCameras) {
     dummyMCams[pCam->GetId()] = pCam;
   }
+  stopTimer("deepCopyMap 1");
+  startTimer("deepCopyMap 2");
 
   // Copy using serialization / deserialization
   std::ostringstream oss;
   boost::archive::binary_oarchive oa(oss);
   targetMap->PreSave(dummySCams);
+  stopTimer("deepCopyMap 2");
+  startTimer("deepCopyMap 3");
   oa << targetMap;
+  stopTimer("deepCopyMap 3");
+  startTimer("deepCopyMap 4");
   std::istringstream iss(oss.str());
   boost::archive::binary_iarchive ia(iss);
+  stopTimer("deepCopyMap 4");
+  startTimer("deepCopyMap 5");
   ia >> mapCopy;
+  stopTimer("deepCopyMap 5");
+  startTimer("deepCopyMap 6");
   mapCopy->PostLoad(dummyKFDB, dummyORBVoc, dummyMCams);
+  stopTimer("deepCopyMap 6");
 
+  stopTimer("deepCopyMap");
   return unique_ptr<ORB_SLAM3::Map>(mapCopy);
 }
 
 void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb) {
+  startTimer("publish_topics");
   // unique_lock<mutex> lock(mutexWrapper);
 
   Sophus::SE3f Twc = pSLAM->GetCamTwc();
@@ -987,6 +1066,7 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
     // publish_tf_transform(Twb, origin_frame_id, imu_frame_id, msg_time);
     publishRosVizTopics->publish_body_odom(Twb, Vwb, Wwb, msg_time);
   }
+  stopTimer("publish_topics");
 }
 
 tuple<Sophus::SE3f, float> OrbSlam3Wrapper::ransacPointSetAlignment(vector<Eigen::Vector3f> sourcePoints,

@@ -7,6 +7,7 @@
 #include "publish_ros_viz_topics.h"
 #include "sophus/se3.hpp"
 #include <boost/uuid/uuid.hpp>
+#include <chrono>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <interfaces/msg/change_coordinate_frame.hpp>
 #include <interfaces/msg/map_to_attempt_merge.hpp>
@@ -119,4 +120,21 @@ protected:
   bool isSuccessfullyMerged(uint otherAgentId);
   vector<Peer*> getSuccessfullyMergedPeers();
   bool isLeadNodeInGroup();
+
+  std::map<std::string, chrono::system_clock::time_point> timings;
+  void startTimer(const std::string& name) { timings[name] = std::chrono::high_resolution_clock::now(); }
+
+  void stopTimer(const std::string& name) {
+    auto iter = timings.find(name);
+    if (iter != timings.end()) {
+      auto start_time = iter->second;
+      auto end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> duration = end - start_time;
+      if (duration > std::chrono::milliseconds(3))
+        std::cout << "Time taken for " << name << ": " << duration.count() << " seconds" << std::endl;
+    }
+    else {
+      std::cerr << "Error: No start time found for " << name << std::endl;
+    }
+  }
 };
