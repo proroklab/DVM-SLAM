@@ -82,6 +82,11 @@ void LocalMapping::Run() {
     // Tracking will see that Local Mapping is busy
     SetAcceptKeyFrames(false);
 
+    if (CheckNewKeyFrames() || !externalKeyFrames.empty()) {
+      cout << mlNewKeyFrames.size() << " KFs in the queue" << endl;
+      cout << externalKeyFrames.size() << " KFs in the external queue" << endl;
+    }
+
     // Check if there are keyframes in the queue
     if (CheckNewKeyFrames() && !mbBadImu) {
 #ifdef REGISTER_TIMES
@@ -335,7 +340,7 @@ void LocalMapping::ProcessExternalKeyFrame() {
 
   SearchInNeighbors(keyFrame);
 
-  if (!CheckNewKeyFrames() && !stopRequested()) {
+  if (externalKeyFrames.empty()) {
     bool b_doneLBA = false;
     int num_FixedKF_BA = 0;
     int num_OptKF_BA = 0;
@@ -344,6 +349,7 @@ void LocalMapping::ProcessExternalKeyFrame() {
     Optimizer::LocalBundleAdjustment(
       keyFrame, &mbAbortBA, keyFrame->GetMap(), num_FixedKF_BA, num_OptKF_BA, num_MPs_BA, num_edges_BA);
     b_doneLBA = true;
+    cout << "Ran local BA for external KFs" << endl;
   }
 }
 
