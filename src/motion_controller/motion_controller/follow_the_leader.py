@@ -59,6 +59,11 @@ class FollowTheLeader(Node):
         our_position = self.this_agent.position
         our_rotation = self.this_agent.rotation
 
+        print(f"Leader position: {leader_position}")
+        print(f"Leader rotation: {leader_rotation}")
+        print(f"Our position: {our_position}")
+        print(f"Our rotation: {our_rotation}")
+
         linear_velocity = (
             (target_position[0] - our_position[0]) * LINEAR_GAIN, (target_position[1] - our_position[1]) * LINEAR_GAIN)
         angular_velocity = target_rotation - our_rotation
