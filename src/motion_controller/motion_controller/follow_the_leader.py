@@ -15,7 +15,7 @@ ANGULAR_GAIN = 1.0
 
 
 class FollowTheLeader(Node):
-    def __init__(self, agent_names: list[str], leader_index: int, position_offset, rotation_offset: float):
+    def __init__(self, agent_names, leader_index: int, position_offset, rotation_offset: float):
         super().__init__('follow_the_leader')
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -33,7 +33,7 @@ class FollowTheLeader(Node):
         self.declare_parameter('cmdVelTopic', f'{self.node_name}/cmd_vel')
         self.cmd_vel_topic = self.get_parameter('cmdVelTopic').value
 
-        self.agents: list[Agent] = []
+        self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
                 Agent(self, agent_name, self.tf_buffer, use_ground_truth=False))
