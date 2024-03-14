@@ -10,8 +10,8 @@ import tf2_ros
 from .helpers.agent import Agent
 
 TIME_STEP = 1/20
-LINEAR_GAIN = 25.0
-ANGULAR_GAIN = 10.0
+LINEAR_GAIN = 1.0
+ANGULAR_GAIN = 1.0
 
 
 class FollowTheLeader(Node):
@@ -30,6 +30,9 @@ class FollowTheLeader(Node):
         self.declare_parameter('agentId', 1)
         self.node_name = f"robot{self.get_parameter('agentId').value}"
 
+        self.declare_parameter('cmdVelTopic', f'{self.node_name}/cmd_vel')
+        self.cmd_vel_topic = self.get_parameter('cmdVelTopic').value
+
         self.agents: list[Agent] = []
         for agent_name in self.agent_names:
             self.agents.append(
@@ -38,7 +41,7 @@ class FollowTheLeader(Node):
         self.this_agent = self.agents[self.agent_names.index(self.node_name)]
 
         self.cmd_vel_pub = self.create_publisher(
-            Twist, f'{self.node_name}/cmd_vel', 10)
+            Twist, self.cmd_vel_topic, 10)
 
     def follow_the_leader(self):
         if (any([agent.position is None for agent in self.agents])):
