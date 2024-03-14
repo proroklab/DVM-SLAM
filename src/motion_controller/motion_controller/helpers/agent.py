@@ -19,6 +19,7 @@ class Agent():
                 PoseStamped, f'{node_name}/camera_pose', self.received_agent_pose, 1)
 
         self.position: tuple[float, float] = (0, 0)
+        self.rotation = 0
         self.tf_buffer = tf_buffer
 
     def received_agent_pose(self, msg: PoseStamped):
