@@ -15,7 +15,7 @@ ANGULAR_GAIN = 1.0
 
 
 class FollowTheLeader(Node):
-    def __init__(self, agent_names: list[str], leader_index: int, position_offset: Tuple[float, float], rotation_offset: float):
+    def __init__(self, agent_names: list[str], leader_index: int, position_offset, rotation_offset: float):
         super().__init__('follow_the_leader')
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -89,8 +89,8 @@ def main(args=None):
 
     agent_names = ["robot1", "robot2"]
     leader_index = 0
-    position_offset = (-1, 0)
-    rotation_offset = np.pi
+    position_offset = (0, 1)
+    rotation_offset = 0
 
     follow_the_leader = FollowTheLeader(
         agent_names, leader_index, position_offset, rotation_offset)
