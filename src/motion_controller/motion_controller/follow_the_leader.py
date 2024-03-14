@@ -97,7 +97,7 @@ def main(args=None):
 
     agent_names = ["robot1", "robot2"]
     leader_index = 0
-    position_offset = (0, 1)
+    position_offset = (0, 0)
     rotation_offset = 0
 
     follow_the_leader = FollowTheLeader(
