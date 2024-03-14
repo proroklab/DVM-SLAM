@@ -86,6 +86,9 @@ class FollowTheLeader(Node):
         cmd_vel_msg.linear.y = linear_velocity[1]
         cmd_vel_msg.angular.z = angular_velocity
 
+        print(f"Linear velocity: {linear_velocity}")
+        print(f"Angular velocity: {angular_velocity}")
+
         self.cmd_vel_pub.publish(cmd_vel_msg)
 
 
