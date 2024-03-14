@@ -18,7 +18,7 @@ class Agent():
             self.agent_pose_sub = node.create_subscription(
                 PoseStamped, f'{node_name}/camera_pose', self.received_agent_pose, 1)
 
-        self.position: tuple[float, float] = None
+        self.position: tuple[float, float] = (0, 0)
         self.tf_buffer = tf_buffer
 
     def received_agent_pose(self, msg: PoseStamped):
