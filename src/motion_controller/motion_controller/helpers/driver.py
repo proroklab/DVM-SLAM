@@ -14,7 +14,7 @@ class Driver():
         self.robot_type = robot_type
 
         self.cmd_vel_pub = node.create_publisher(
-            Twist, self.cmd_vel_topic, 10)
+            Twist, cmd_vel_topic, 10)
 
     def set_velocity(self, linear_velocity, angular_velocity):
         # limit speeds
