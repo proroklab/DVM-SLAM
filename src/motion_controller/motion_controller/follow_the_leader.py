@@ -88,10 +88,13 @@ def main(args=None):
 
     try:
         while rclpy.ok():
+            rclpy.spin_once(follow_the_leader)
+            rclpy.spin_once(follow_the_leader)
+            rclpy.spin_once(follow_the_leader)
+
             if time.time() - last_step_time > TIME_STEP:
                 last_step_time = time.time()
                 follow_the_leader.follow_the_leader()
-            print("dwa")
 
             rclpy.spin_once(follow_the_leader)
 
