@@ -11,8 +11,10 @@ from .helpers.agent import Agent
 from .helpers.robot_types import RobotTypes
 
 TIME_STEP = 1/20
-LINEAR_GAIN = 1.0
-ANGULAR_GAIN = 1.0
+LINEAR_GAIN = 5.0
+ANGULAR_GAIN = 5.0
+MAX_LINEAR_SPEED = 5.0
+MAX_ANGULAR_SPEED = 5.0
 ROBOT_TYPE = RobotTypes.ROBOMASTER
 
 
@@ -45,12 +47,9 @@ class FollowTheLeader(Node):
         self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
-                Agent(self, agent_name, self.tf_buffer, robot_type=ROBOT_TYPE))
+                Agent(self, agent_name, self.cmd_vel_topic, self.tf_buffer, ROBOT_TYPE, LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED))
 
         self.this_agent = self.agents[self.agent_names.index(self.node_name)]
-
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, self.cmd_vel_topic, 10)
 
     def follow_the_leader(self):
         if (any([agent.position is None for agent in self.agents])):
@@ -59,57 +58,7 @@ class FollowTheLeader(Node):
         leader_position = self.agents[self.leader_index].position
         leader_rotation = self.agents[self.leader_index].rotation
 
-        rotated_position_offset = Rotation.from_euler(
-            'zyx', [leader_rotation, 0, 0]).as_matrix() @ np.array([self.position_offset[0], self.position_offset[1], 0])
-        target_position = (leader_position[0] + rotated_position_offset[0],
-                           leader_position[1] + rotated_position_offset[1])
-        target_rotation = leader_rotation + self.rotation_offset
-
-        our_position = self.this_agent.position
-        our_rotation = self.this_agent.rotation
-
-        print(f"Leader position: {leader_position}")
-        print(f"Leader rotation: {leader_rotation}")
-        print(f"Our position: {our_position}")
-        print(f"Our rotation: {our_rotation}")
-
-        linear_velocity = (
-            (target_position[0] - our_position[0]) * LINEAR_GAIN, (target_position[1] - our_position[1]) * LINEAR_GAIN)
-        angular_velocity = target_rotation - our_rotation
-
-        if angular_velocity > np.pi:
-            angular_velocity -= 2 * np.pi
-        elif angular_velocity < -np.pi:
-            angular_velocity += 2 * np.pi
-
-        angular_velocity *= ANGULAR_GAIN
-
-        # change velcoty from world to robot coordinates
-        inv_rotation_matrix = Rotation.from_euler(
-            'zyx', [our_rotation, 0, 0]).inv().as_matrix()
-        linear_velocity = inv_rotation_matrix @ np.array(
-            [linear_velocity[0], linear_velocity[1], 0])
-
-        if ROBOT_TYPE == RobotTypes.ROBOMASTER:
-            cmd_vel_msg = Twist()
-            cmd_vel_msg.linear.x = linear_velocity[0]
-            cmd_vel_msg.linear.y = -linear_velocity[1]
-            cmd_vel_msg.angular.z = -angular_velocity
-        elif ROBOT_TYPE == RobotTypes.SIM:
-            cmd_vel_msg = Twist()
-            cmd_vel_msg.linear.x = linear_velocity[0]
-            cmd_vel_msg.linear.y = linear_velocity[1]
-            cmd_vel_msg.angular.z = angular_velocity
-        elif ROBOT_TYPE == RobotTypes.SIM_GROUND_TRUTH:
-            cmd_vel_msg = Twist()
-            cmd_vel_msg.linear.x = linear_velocity[0]
-            cmd_vel_msg.linear.y = linear_velocity[1]
-            cmd_vel_msg.angular.z = angular_velocity
-
-        print(f"Linear velocity: {linear_velocity}")
-        print(f"Angular velocity: {angular_velocity}")
-
-        self.cmd_vel_pub.publish(cmd_vel_msg)
+        self.this_agent.move_to_position(leader_position, leader_rotation)
 
 
 def main(args=None):
