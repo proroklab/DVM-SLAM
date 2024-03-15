@@ -33,7 +33,7 @@ class Nmpc():
             self.horizon_length * 2
         self.goal = (0, 0)
 
-        # num_timesteps, num_obstacles, Tuple[float, float] array
+        # num_timesteps, num_obstacles, Tuple array
         self.obstacle_position_history = None
 
         # rectangle corners (x1, y1, x2, y2)
@@ -42,10 +42,10 @@ class Nmpc():
     def set_static_obstacles(self, static_obstacles):
         self.static_obstacles = static_obstacles
 
-    def set_goal(self, goal: Tuple[float, float]):
+    def set_goal(self, goal: Tuple):
         self.goal = np.array(goal)
 
-    def step(self, position, obstacle_positions: np.ndarray[Tuple[float, float]]) -> Tuple[float, float]:
+    def step(self, position, obstacle_positions: np.ndarray) -> Tuple:
         robot_state = np.array(position)
 
         obstacle_predictions = self.predict_obstacle_positions(
@@ -149,7 +149,7 @@ class Nmpc():
         distance = np.sqrt(dx**2 + dy**2)
         return distance
 
-    def predict_obstacle_positions(self, obstacle_positions: np.ndarray[Tuple[float, float]]):
+    def predict_obstacle_positions(self, obstacle_positions: np.ndarray):
         obstacle_predictions = []
         for i in range(len(obstacle_positions)):
             if self.obstacle_position_history is not None:
