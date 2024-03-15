@@ -155,7 +155,7 @@ class CollisionAvoidance(Node):
             [velocity[0], velocity[1], 0])
         # print(velocity)
 
-        self.this_agent.set_velocity(velocity[0], velocity[1])
+        self.this_agent.set_velocity(velocity, 0)
 
 
 def main(args=None):
