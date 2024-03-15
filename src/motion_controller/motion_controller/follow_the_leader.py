@@ -92,8 +92,8 @@ class FollowTheLeader(Node):
 
         if ROBOT_TYPE == RobotTypes.ROBOMASTER:
             cmd_vel_msg = Twist()
-            cmd_vel_msg.linear.x = -linear_velocity[0]
-            cmd_vel_msg.linear.y = linear_velocity[1]
+            cmd_vel_msg.linear.x = linear_velocity[0]
+            cmd_vel_msg.linear.y = -linear_velocity[1]
             cmd_vel_msg.angular.z = -angular_velocity
         elif ROBOT_TYPE == RobotTypes.SIM:
             cmd_vel_msg = Twist()
