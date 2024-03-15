@@ -59,6 +59,16 @@ class Agent():
                 direction_vector[1], direction_vector[0])
 
     def set_velocity(self, cmd_vel_pub, linear_velocity, angular_velocity):
+        # limit speeds
+        if np.linalg.norm(linear_velocity) != 0:
+            linear_velocity *= (self.max_linear_speed /
+                                np.linalg.norm(linear_velocity))
+        angular_velocity = np.clip(
+            angular_velocity, -self.max_angular_speed, self.max_angular_speed)
+
+        print(f"Linear velocity: {linear_velocity}")
+        print(f"Angular velocity: {angular_velocity}")
+
         if self.robot_type == RobotTypes.ROBOMASTER:
             cmd_vel_msg = Twist()
             cmd_vel_msg.linear.x = linear_velocity[0]
@@ -102,15 +112,5 @@ class Agent():
             'zyx', [our_rotation, 0, 0]).inv().as_matrix()
         linear_velocity = inv_rotation_matrix @ np.array(
             [linear_velocity[0], linear_velocity[1], 0])
-
-        # limit speeds
-        if np.linalg.norm(linear_velocity) != 0:
-            linear_velocity *= (self.max_linear_speed /
-                                np.linalg.norm(linear_velocity))
-        angular_velocity = np.clip(
-            angular_velocity, -self.max_angular_speed, self.max_angular_speed)
-
-        print(f"Linear velocity: {linear_velocity}")
-        print(f"Angular velocity: {angular_velocity}")
 
         self.set_velocity(cmd_vel_pub, linear_velocity, angular_velocity)
