@@ -15,10 +15,10 @@ class Agent():
 
         if self.robot_type == RobotTypes.SIM_GROUND_TRUTH:
             self.agent_pose_sub = node.create_subscription(
-                PoseStamped, f'{node_name}/ground_truth_pose', self.received_agent_pose, 1)
+                PoseStamped, f'{node_name}/ground_truth_pose', self.received_agent_pose, 10)
         else:
             self.agent_pose_sub = node.create_subscription(
-                PoseStamped, f'{node_name}/camera_pose', self.received_agent_pose, 1)
+                PoseStamped, f'{node_name}/camera_pose', self.received_agent_pose, 10)
 
         self.position: tuple[float, float] = (0, 0)
         self.rotation = 0
