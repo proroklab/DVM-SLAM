@@ -45,10 +45,10 @@ class FollowTheLeader(Node):
         self.rotation_offset = self.get_parameter('rotationOffset').value
 
         self.declare_parameter('linearGain', LINEAR_GAIN)
-        linearGain = self.get_parameter('rotationOffset').value
+        linearGain = self.get_parameter('linearGain').value
 
         self.declare_parameter('angularGain', ANGULAR_GAIN)
-        angularGain = self.get_parameter('rotationOffset').value
+        angularGain = self.get_parameter('angularGain').value
 
         self.agents = []
         for agent_name in self.agent_names:
