@@ -85,17 +85,12 @@ def main(args=None):
 
     follow_the_leader = FollowTheLeader(agent_names)
     last_step_time = 0
-    last_msg_send_time = 0
 
     try:
         while rclpy.ok():
             if time.time() - last_step_time > TIME_STEP:
                 last_step_time = time.time()
                 follow_the_leader.follow_the_leader()
-
-            if time.time() - last_msg_send_time > 0.05:
-                last_msg_send_time = time.time()
-                follow_the_leader.driver.send_msgs()
 
             rclpy.spin_once(follow_the_leader)
 
