@@ -13,9 +13,11 @@ import tf2_ros
 from .helpers.agent import Agent
 from .helpers.nmpc_collision_avoidance import Nmpc
 from .helpers.interactive_marker_wrapper import InteractiveMarkerWrapper
+from .helpers.driver import Driver
 
-TIME_STEP = 1/20
-AGENT_RADIUS = 0.25
+
+TIME_STEP = 1/10
+AGENT_RADIUS = 0.05
 LINEAR_GAIN = 5.0
 ANGULAR_GAIN = 5.0
 MAX_LINEAR_SPEED = 5.0
@@ -97,32 +99,37 @@ class CollisionAvoidance(Node):
     def __init__(self):
         super().__init__('collision_avoidance')
 
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-
-        self.nmpc = Nmpc(AGENT_RADIUS, MAX_LINEAR_SPEED,
-                         0., TIME_STEP, TIME_STEP*3, 4)
-
-        self.agent_names = ["robot1", "robot2"]
-
         self.declare_parameter('agentId', 1)
         self.node_name = f"robot{self.get_parameter('agentId').value}"
 
         self.declare_parameter('cmdVelTopic', f'{self.node_name}/cmd_vel')
         self.cmd_vel_topic = self.get_parameter('cmdVelTopic').value
 
+        self.declare_parameter('linearGain', LINEAR_GAIN)
+        linear_gain = self.get_parameter('linearGain').value
+
+        self.declare_parameter('angularGain', ANGULAR_GAIN)
+        angular_gain = self.get_parameter('angularGain').value
+
+        self.declare_parameter('agentRadius', AGENT_RADIUS)
+        agent_radius = self.get_parameter('agentRadius').value
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
+        self.nmpc = Nmpc(agent_radius, MAX_LINEAR_SPEED,
+                         0., TIME_STEP, TIME_STEP*3, 4)
+
+        self.agent_names = ["robot1", "robot2"]
+
         self.marker_server = InteractiveMarkerServer(
             self, f"{self.node_name}_marker_server")
 
         self.agent_index = self.agent_names.index(self.node_name)
 
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, self.cmd_vel_topic, 10)
-
         self.agents: list = []
         for agent_name in self.agent_names:
-            self.agents.append(Agent(self, agent_name, self.tf_buffer,
-                               ROBOT_TYPE, LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED))
+            self.agents.append(Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE))
 
         self.this_agent: Agent = self.agents[self.agent_index]
 
@@ -133,6 +140,9 @@ class CollisionAvoidance(Node):
 
         self.static_obstacles = [StaticObstacle(
             5+x, 5+x, 6+x, 6+x, self.marker_server, self.menu_handler, f"obstacle{x}", self) for x in range(2)]
+
+        self.driver = Driver(self, ROBOT_TYPE, self.cmd_vel_topic,
+                             linear_gain, angular_gain, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED)
 
     def avoid_collision(self):
         if (any([agent.position is None for agent in self.agents])):
@@ -158,7 +168,7 @@ class CollisionAvoidance(Node):
             [velocity[0], velocity[1], 0.0])
         # print(velocity)
 
-        self.this_agent.set_velocity(self.cmd_vel_pub, velocity, 0.0)
+        self.driver.set_velocity(velocity, 0.0)
 
 
 def main(args=None):
@@ -172,7 +182,9 @@ def main(args=None):
                 last_step_time = time.time()
                 collision_avoidance.avoid_collision()
 
-            rclpy.spin_once(collision_avoidance)
+            rclpy.spin_once(collision_avoidance, timeout_sec=0)
+
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         pass
