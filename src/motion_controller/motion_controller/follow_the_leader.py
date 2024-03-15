@@ -47,7 +47,7 @@ class FollowTheLeader(Node):
         self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
-                Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE, LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED))
+                Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE))
 
         self.this_agent = self.agents[self.agent_names.index(self.node_name)]
 
