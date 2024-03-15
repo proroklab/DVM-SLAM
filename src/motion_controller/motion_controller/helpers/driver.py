@@ -16,6 +16,11 @@ class Driver():
         self.cmd_vel_pub = node.create_publisher(
             Twist, cmd_vel_topic, 10)
 
+        self.cmd_vel_msg = Twist()
+
+    def send_msgs(self):
+        self.cmd_vel_pub.publish(self.cmd_vel_msg)
+
     def set_velocity(self, linear_velocity, angular_velocity):
         # limit speeds
         if np.linalg.norm(linear_velocity) > self.max_linear_speed:
@@ -43,7 +48,7 @@ class Driver():
             cmd_vel_msg.linear.y = linear_velocity[1]
             cmd_vel_msg.angular.z = angular_velocity
 
-        self.cmd_vel_pub.publish(cmd_vel_msg)
+        self.cmd_vel_msg = cmd_vel_msg
 
     def move_to_position(self, target_position, target_rotation, current_position, current_rotation):
         print(f"target position: {target_position}")
