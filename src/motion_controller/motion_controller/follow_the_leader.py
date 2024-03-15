@@ -10,7 +10,7 @@ from .helpers.agent import Agent
 from .helpers.robot_types import RobotTypes
 from .helpers.driver import Driver
 
-TIME_STEP = 1/20
+TIME_STEP = 1/10
 LINEAR_GAIN = 1.0
 ANGULAR_GAIN = 1.0
 MAX_LINEAR_SPEED = 1.0
@@ -93,6 +93,7 @@ def main(args=None):
                 follow_the_leader.follow_the_leader()
 
             rclpy.spin_once(follow_the_leader, timeout_sec=0)
+            time.sleep(0.001)
 
     except KeyboardInterrupt:
         pass
