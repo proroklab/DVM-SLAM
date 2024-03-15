@@ -37,10 +37,9 @@ class Agent():
 
         else:
             try:
-                # transform = self.tf_buffer.lookup_transform(
-                #     "world", msg.header.frame_id, rclpy.time.Time())
-                # msg = do_transform_pose_stamped(msg, transform)
-                pass
+                transform = self.tf_buffer.lookup_transform(
+                    "world", msg.header.frame_id, rclpy.time.Time())
+                msg = do_transform_pose_stamped(msg, transform)
             except Exception as e:
                 print(e)
                 pass
