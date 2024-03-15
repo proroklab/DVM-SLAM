@@ -61,6 +61,25 @@ class Agent():
             self.rotation = np.arctan2(
                 direction_vector[1], direction_vector[0])
 
+    def set_velocity(self, linear_velocity, angular_velocity):
+        if self.robot_type == RobotTypes.ROBOMASTER:
+            cmd_vel_msg = Twist()
+            cmd_vel_msg.linear.x = linear_velocity[0]
+            cmd_vel_msg.linear.y = -linear_velocity[1]
+            cmd_vel_msg.angular.z = -angular_velocity
+        elif self.robot_type == RobotTypes.SIM:
+            cmd_vel_msg = Twist()
+            cmd_vel_msg.linear.x = linear_velocity[0]
+            cmd_vel_msg.linear.y = linear_velocity[1]
+            cmd_vel_msg.angular.z = angular_velocity
+        elif self.robot_type == RobotTypes.SIM_GROUND_TRUTH:
+            cmd_vel_msg = Twist()
+            cmd_vel_msg.linear.x = linear_velocity[0]
+            cmd_vel_msg.linear.y = linear_velocity[1]
+            cmd_vel_msg.angular.z = angular_velocity
+
+        self.cmd_vel_pub.publish(cmd_vel_msg)
+
     def move_to_position(self, position, rotation):
         rotated_position_offset = Rotation.from_euler(
             'zyx', [rotation, 0, 0]).as_matrix() @ np.array([self.position_offset[0], self.position_offset[1], 0])
@@ -99,23 +118,7 @@ class Agent():
         angular_velocity = np.clip(
             angular_velocity, -self.max_angular_speed, self.max_angular_speed)
 
-        if self.robot_type == RobotTypes.ROBOMASTER:
-            cmd_vel_msg = Twist()
-            cmd_vel_msg.linear.x = linear_velocity[0]
-            cmd_vel_msg.linear.y = -linear_velocity[1]
-            cmd_vel_msg.angular.z = -angular_velocity
-        elif self.robot_type == RobotTypes.SIM:
-            cmd_vel_msg = Twist()
-            cmd_vel_msg.linear.x = linear_velocity[0]
-            cmd_vel_msg.linear.y = linear_velocity[1]
-            cmd_vel_msg.angular.z = angular_velocity
-        elif self.robot_type == RobotTypes.SIM_GROUND_TRUTH:
-            cmd_vel_msg = Twist()
-            cmd_vel_msg.linear.x = linear_velocity[0]
-            cmd_vel_msg.linear.y = linear_velocity[1]
-            cmd_vel_msg.angular.z = angular_velocity
-
         print(f"Linear velocity: {linear_velocity}")
         print(f"Angular velocity: {angular_velocity}")
 
-        self.cmd_vel_pub.publish(cmd_vel_msg)
+        self.set_velocity(linear_velocity, angular_velocity)

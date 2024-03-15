@@ -1,4 +1,5 @@
 import time
+from .helpers.robot_types import RobotTypes
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Point
@@ -15,7 +16,11 @@ from .helpers.interactive_marker_wrapper import InteractiveMarkerWrapper
 
 TIME_STEP = 1/20
 AGENT_RADIUS = 0.25
-AGENT_MAX_SPEED = 5.0
+LINEAR_GAIN = 5.0
+ANGULAR_GAIN = 5.0
+MAX_LINEAR_SPEED = 5.0
+MAX_ANGULAR_SPEED = 5.0
+ROBOT_TYPE = RobotTypes.ROBOMASTER
 
 
 class StaticObstacle:
@@ -95,7 +100,7 @@ class CollisionAvoidance(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        self.nmpc = Nmpc(AGENT_RADIUS, AGENT_MAX_SPEED,
+        self.nmpc = Nmpc(AGENT_RADIUS, MAX_LINEAR_SPEED,
                          0., TIME_STEP, TIME_STEP*3, 4)
 
         self.agent_names = ["robot1", "robot2"]
@@ -103,17 +108,19 @@ class CollisionAvoidance(Node):
         self.declare_parameter('agentId', 1)
         self.node_name = f"robot{self.get_parameter('agentId').value}"
 
+        self.declare_parameter('cmdVelTopic', f'{self.node_name}/cmd_vel')
+        self.cmd_vel_topic = self.get_parameter('cmdVelTopic').value
+
         self.marker_server = InteractiveMarkerServer(
             self, f"{self.node_name}_marker_server")
 
         self.agent_index = self.agent_names.index(self.node_name)
+        self.this_agent: Agent = self.agents[self.agent_index]
 
-        self.agents: list[Agent] = []
+        self.agents: list = []
         for agent_name in self.agent_names:
-            self.agents.append(Agent(self, agent_name, self.tf_buffer))
-
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, f'{self.node_name}/cmd_vel', 10)
+            self.agents.append(Agent(self, agent_name, self.cmd_vel_topic, self.tf_buffer,
+                               ROBOT_TYPE, LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED))
 
         self.menu_handler = MenuHandler()
 
@@ -138,20 +145,16 @@ class CollisionAvoidance(Node):
         self.nmpc.set_static_obstacles(static_obstacles)
 
         velocity = self.nmpc.step(
-            self.agents[self.agent_index].position, obstacles)
+            self.this_agent.position, obstacles)
 
-        rotation = self.agents[self.agent_index].rotation
+        rotation = self.this_agent.rotation
         inv_rotation_matrix = Rotation.from_euler(
             'zyx', [rotation, 0, 0]).inv().as_matrix()
         velocity = inv_rotation_matrix @ np.array(
             [velocity[0], velocity[1], 0])
         # print(velocity)
 
-        cmd_vel_msg = Twist()
-        cmd_vel_msg.linear.x = velocity[0]
-        cmd_vel_msg.linear.y = velocity[1]
-
-        self.cmd_vel_pub.publish(cmd_vel_msg)
+        self.this_agent.set_velocity(velocity[0], velocity[1])
 
 
 def main(args=None):
