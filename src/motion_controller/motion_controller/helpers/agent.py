@@ -9,7 +9,7 @@ from geometry_msgs.msg import Twist
 
 
 class Agent():
-    def __init__(self, node, node_name, cmd_vel_topic: str, tf_buffer: tf2_ros.Buffer, robot_type: RobotTypes, linear_gain, angular_gain, max_linear_speed, max_angular_speed):
+    def __init__(self, node, node_name, tf_buffer: tf2_ros.Buffer, robot_type: RobotTypes, linear_gain, angular_gain, max_linear_speed, max_angular_speed):
         self.node_name = node_name
         self.robot_type = robot_type
 
@@ -24,9 +24,6 @@ class Agent():
         else:
             self.agent_pose_sub = node.create_subscription(
                 PoseStamped, f'{node_name}/camera_pose', self.received_agent_pose, 1)
-
-        self.cmd_vel_pub = node.create_publisher(
-            Twist, cmd_vel_topic, 10)
 
         self.position: tuple[float, float] = (0, 0)
         self.rotation = 0
@@ -61,7 +58,7 @@ class Agent():
             self.rotation = np.arctan2(
                 direction_vector[1], direction_vector[0])
 
-    def set_velocity(self, linear_velocity, angular_velocity):
+    def set_velocity(self, cmd_vel_pub, linear_velocity, angular_velocity):
         if self.robot_type == RobotTypes.ROBOMASTER:
             cmd_vel_msg = Twist()
             cmd_vel_msg.linear.x = linear_velocity[0]
@@ -78,9 +75,9 @@ class Agent():
             cmd_vel_msg.linear.y = linear_velocity[1]
             cmd_vel_msg.angular.z = angular_velocity
 
-        self.cmd_vel_pub.publish(cmd_vel_msg)
+        cmd_vel_pub.publish(cmd_vel_msg)
 
-    def move_to_position(self, position, rotation):
+    def move_to_position(self, cmd_vel_pub, position, rotation):
         our_position = self.position
         our_rotation = self.rotation
 
@@ -116,4 +113,4 @@ class Agent():
         print(f"Linear velocity: {linear_velocity}")
         print(f"Angular velocity: {angular_velocity}")
 
-        self.set_velocity(linear_velocity, angular_velocity)
+        self.set_velocity(cmd_vel_pub, linear_velocity, angular_velocity)

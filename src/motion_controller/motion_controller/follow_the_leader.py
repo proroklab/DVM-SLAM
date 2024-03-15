@@ -44,6 +44,9 @@ class FollowTheLeader(Node):
         self.declare_parameter('rotationOffset', np.pi/2)
         self.rotation_offset = self.get_parameter('rotationOffset').value
 
+        self.cmd_vel_pub = self.create_publisher(
+            Twist, self.cmd_vel_topic, 10)
+
         self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
@@ -65,7 +68,8 @@ class FollowTheLeader(Node):
                            leader_position[1] + rotated_position_offset[1])
         target_rotation = leader_rotation + self.rotation_offset
 
-        self.this_agent.move_to_position(target_position, target_rotation)
+        self.this_agent.move_to_position(
+            self.cmd_vel_pub, target_position, target_rotation)
 
 
 def main(args=None):

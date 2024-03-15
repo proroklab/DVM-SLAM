@@ -116,9 +116,12 @@ class CollisionAvoidance(Node):
 
         self.agent_index = self.agent_names.index(self.node_name)
 
+        self.cmd_vel_pub = self.create_publisher(
+            Twist, self.cmd_vel_topic, 10)
+
         self.agents: list = []
         for agent_name in self.agent_names:
-            self.agents.append(Agent(self, agent_name, self.cmd_vel_topic, self.tf_buffer,
+            self.agents.append(Agent(self, agent_name, self.tf_buffer,
                                ROBOT_TYPE, LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED))
 
         self.this_agent: Agent = self.agents[self.agent_index]
@@ -155,7 +158,7 @@ class CollisionAvoidance(Node):
             [velocity[0], velocity[1], 0.0])
         # print(velocity)
 
-        self.this_agent.set_velocity(velocity, 0.0)
+        self.this_agent.set_velocity(self.cmd_vel_pub, velocity, 0.0)
 
 
 def main(args=None):
