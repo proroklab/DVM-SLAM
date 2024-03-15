@@ -11,8 +11,8 @@ from .helpers.robot_types import RobotTypes
 from .helpers.driver import Driver
 
 TIME_STEP = 1/20
-LINEAR_GAIN = 2.0
-ANGULAR_GAIN = 2.0
+LINEAR_GAIN = 1.0
+ANGULAR_GAIN = 1.0
 MAX_LINEAR_SPEED = 1.0
 MAX_ANGULAR_SPEED = 1.0
 ROBOT_TYPE = RobotTypes.ROBOMASTER
@@ -44,6 +44,12 @@ class FollowTheLeader(Node):
         self.declare_parameter('rotationOffset', np.pi/2)
         self.rotation_offset = self.get_parameter('rotationOffset').value
 
+        self.declare_parameter('linearGain', LINEAR_GAIN)
+        linearGain = self.get_parameter('rotationOffset').value
+
+        self.declare_parameter('angularGain', ANGULAR_GAIN)
+        angularGain = self.get_parameter('rotationOffset').value
+
         self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
@@ -52,7 +58,7 @@ class FollowTheLeader(Node):
         self.this_agent = self.agents[self.agent_names.index(self.node_name)]
 
         self.driver = Driver(self, ROBOT_TYPE, self.cmd_vel_topic,
-                             LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED)
+                             linearGain, angularGain, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED)
 
     def follow_the_leader(self):
         if (any([agent.position is None for agent in self.agents])):
