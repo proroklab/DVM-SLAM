@@ -1,3 +1,4 @@
+from enum import Enum
 import time
 from typing import Tuple
 import rclpy
@@ -8,10 +9,14 @@ import time
 from scipy.spatial.transform import Rotation
 import tf2_ros
 from .helpers.agent import Agent
+from .helpers.robot_types import RobotTypes
 
 TIME_STEP = 1/20
 LINEAR_GAIN = 1.0
-ANGULAR_GAIN = -1.0
+ANGULAR_GAIN = 1.0
+
+
+ROBOT_TYPE = RobotTypes.ROBOMASTER
 
 
 class FollowTheLeader(Node):
@@ -43,7 +48,7 @@ class FollowTheLeader(Node):
         self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
-                Agent(self, agent_name, self.tf_buffer, use_ground_truth=False))
+                Agent(self, agent_name, self.tf_buffer, robot_type=ROBOT_TYPE))
 
         self.this_agent = self.agents[self.agent_names.index(self.node_name)]
 
@@ -88,10 +93,21 @@ class FollowTheLeader(Node):
         linear_velocity = inv_rotation_matrix @ np.array(
             [linear_velocity[0], linear_velocity[1], 0])
 
-        cmd_vel_msg = Twist()
-        cmd_vel_msg.linear.x = linear_velocity[0]
-        cmd_vel_msg.linear.y = linear_velocity[1]
-        cmd_vel_msg.angular.z = angular_velocity
+        if ROBOT_TYPE == RobotTypes.ROBOMASTER:
+            cmd_vel_msg = Twist()
+            cmd_vel_msg.linear.x = -linear_velocity[0]
+            cmd_vel_msg.linear.y = linear_velocity[1]
+            cmd_vel_msg.angular.z = -angular_velocity
+        elif ROBOT_TYPE == RobotTypes.SIM:
+            cmd_vel_msg = Twist()
+            cmd_vel_msg.linear.x = linear_velocity[0]
+            cmd_vel_msg.linear.y = linear_velocity[1]
+            cmd_vel_msg.angular.z = angular_velocity
+        elif ROBOT_TYPE == RobotTypes.SIM_GROUND_TRUTH:
+            cmd_vel_msg = Twist()
+            cmd_vel_msg.linear.x = linear_velocity[0]
+            cmd_vel_msg.linear.y = linear_velocity[1]
+            cmd_vel_msg.angular.z = angular_velocity
 
         print(f"Linear velocity: {linear_velocity}")
         print(f"Angular velocity: {angular_velocity}")

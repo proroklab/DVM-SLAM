@@ -4,14 +4,15 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 import tf2_ros
 from tf2_geometry_msgs import do_transform_pose_stamped
+from .robot_types import RobotTypes
 
 
 class Agent():
-    def __init__(self, node, node_name, tf_buffer: tf2_ros.Buffer, use_ground_truth=False):
+    def __init__(self, node, node_name, tf_buffer: tf2_ros.Buffer, robot_type: RobotTypes):
         self.node_name = node_name
-        self.use_ground_truth = use_ground_truth
+        self.robot_type = robot_type
 
-        if self.use_ground_truth:
+        if self.robot_type == RobotTypes.SIM_GROUND_TRUTH:
             self.agent_pose_sub = node.create_subscription(
                 PoseStamped, f'{node_name}/ground_truth_pose', self.received_agent_pose, 1)
         else:
