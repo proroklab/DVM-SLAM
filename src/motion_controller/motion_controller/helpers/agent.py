@@ -25,7 +25,7 @@ class Agent():
             self.agent_pose_sub = node.create_subscription(
                 PoseStamped, f'{node_name}/camera_pose', self.received_agent_pose, 1)
 
-        self.cmd_vel_pub = self.create_publisher(
+        self.cmd_vel_pub = node.create_publisher(
             Twist, cmd_vel_topic, 10)
 
         self.position: tuple[float, float] = (0, 0)
