@@ -24,7 +24,7 @@ class Agent():
         self.tf_buffer = tf_buffer
 
     def received_agent_pose(self, msg: PoseStamped):
-        if self.use_ground_truth:
+        if self.robot_type == RobotTypes.SIM_GROUND_TRUTH:
             self.position = (msg.pose.position.x,
                              msg.pose.position.y)
 
