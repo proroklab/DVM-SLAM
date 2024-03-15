@@ -12,7 +12,7 @@ from scipy.optimize import minimize, Bounds
 
 class Nmpc():
 
-    def __init__(self, robot_radius, vmax, vmin, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), static_obstacles=[]):
+    def __init__(self, robot_radius, vmax, vmin, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), static_obstacles=[], Qc = 5., kappa = 4., static_kappa=40.):
         self.timestep = timestep
         self.robot_radius = robot_radius
         self.vmax = vmax
@@ -20,9 +20,9 @@ class Nmpc():
 
         # collision cost parameters
         # https://www.desmos.com/calculator/lu9hv6mq36
-        self.Qc = 5.
-        self.kappa = 4.
-        self.static_kappa = 40.
+        self.Qc = Qc
+        self.kappa = kappa
+        self.static_kappa = static_kappa
 
         # nmpc parameters
         self.horizon_length = horizon_length
