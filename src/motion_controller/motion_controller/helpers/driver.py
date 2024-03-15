@@ -18,7 +18,7 @@ class Driver():
 
     def set_velocity(self, linear_velocity, angular_velocity):
         # limit speeds
-        if np.linalg.norm(linear_velocity) != 0:
+        if np.linalg.norm(linear_velocity) > self.max_linear_speed:
             linear_velocity *= (self.max_linear_speed /
                                 np.linalg.norm(linear_velocity))
         angular_velocity = np.clip(
