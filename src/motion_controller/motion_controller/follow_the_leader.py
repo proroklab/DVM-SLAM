@@ -11,7 +11,7 @@ from .helpers.agent import Agent
 
 TIME_STEP = 1/20
 LINEAR_GAIN = 1.0
-ANGULAR_GAIN = 1.0
+ANGULAR_GAIN = -1.0
 
 
 class FollowTheLeader(Node):
