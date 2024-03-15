@@ -18,7 +18,7 @@ class Driver():
 
         self.cmd_vel_msg = Twist()
 
-        self.timer = node.create_timer(1/20, self.send_msgs)
+        self.timer = node.create_timer(1/10, self.send_msgs)
 
     def send_msgs(self):
         self.cmd_vel_pub.publish(self.cmd_vel_msg)

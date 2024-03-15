@@ -93,7 +93,7 @@ def main(args=None):
                 follow_the_leader.follow_the_leader()
 
             rclpy.spin_once(follow_the_leader, timeout_sec=0)
-            time.sleep(0.001)
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         pass
