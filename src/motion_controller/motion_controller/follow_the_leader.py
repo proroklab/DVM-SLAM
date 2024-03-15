@@ -15,23 +15,30 @@ ANGULAR_GAIN = 1.0
 
 
 class FollowTheLeader(Node):
-    def __init__(self, agent_names, leader_index: int, position_offset, rotation_offset: float):
+    def __init__(self, agent_names):
         super().__init__('follow_the_leader')
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.agent_names = agent_names
-        self.leader_index = leader_index
-
-        self.position_offset = position_offset
-        self.rotation_offset = rotation_offset
 
         self.declare_parameter('agentId', 1)
         self.node_name = f"robot{self.get_parameter('agentId').value}"
 
         self.declare_parameter('cmdVelTopic', f'{self.node_name}/cmd_vel')
         self.cmd_vel_topic = self.get_parameter('cmdVelTopic').value
+
+        self.declare_parameter('leaderIndex', 0)
+        self.leader_index = self.get_parameter('leaderIndex').value
+
+        self.declare_parameter('positionOffsetX', 0.0)
+        self.declare_parameter('positionOffsetY', 0.0)
+        self.position_offset = (self.get_parameter('positionOffsetX').value,
+                                self.get_parameter('positionOffsetY').value)
+
+        self.declare_parameter('rotationOffset', np.pi/2)
+        self.rotation_offset = self.get_parameter('rotationOffset').value
 
         self.agents = []
         for agent_name in self.agent_names:
@@ -96,12 +103,8 @@ def main(args=None):
     rclpy.init(args=args)
 
     agent_names = ["robot1", "robot2"]
-    leader_index = 0
-    position_offset = (0, 0)
-    rotation_offset = 0
 
-    follow_the_leader = FollowTheLeader(
-        agent_names, leader_index, position_offset, rotation_offset)
+    follow_the_leader = FollowTheLeader(agent_names)
     last_step_time = 0
 
     try:
