@@ -54,6 +54,7 @@ class Driver():
             cmd_vel_msg.angular.z = angular_velocity
 
         self.cmd_vel_msg = cmd_vel_msg
+        self.send_msgs()
 
     def move_to_position(self, target_position, target_rotation, current_position, current_rotation):
         print(f"target position: {target_position}")
