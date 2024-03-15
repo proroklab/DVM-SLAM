@@ -107,8 +107,9 @@ class Agent():
             [linear_velocity[0], linear_velocity[1], 0])
 
         # limit speeds
-        linear_velocity *= (self.max_linear_speed /
-                            np.linalg.norm(linear_velocity))
+        if np.linalg.norm(linear_velocity) != 0:
+            linear_velocity *= (self.max_linear_speed /
+                                np.linalg.norm(linear_velocity))
         angular_velocity = np.clip(
             angular_velocity, -self.max_angular_speed, self.max_angular_speed)
 
