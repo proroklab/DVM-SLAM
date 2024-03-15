@@ -1,4 +1,3 @@
-from enum import Enum
 import time
 from typing import Tuple
 import rclpy
@@ -14,8 +13,6 @@ from .helpers.robot_types import RobotTypes
 TIME_STEP = 1/20
 LINEAR_GAIN = 1.0
 ANGULAR_GAIN = 1.0
-
-
 ROBOT_TYPE = RobotTypes.ROBOMASTER
 
 

@@ -1,3 +1,5 @@
+from enum import Enum
+
 
 class RobotTypes(Enum):
     ROBOMASTER = 1
