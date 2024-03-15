@@ -58,7 +58,13 @@ class FollowTheLeader(Node):
         leader_position = self.agents[self.leader_index].position
         leader_rotation = self.agents[self.leader_index].rotation
 
-        self.this_agent.move_to_position(leader_position, leader_rotation)
+        rotated_position_offset = Rotation.from_euler(
+            'zyx', [leader_rotation, 0, 0]).as_matrix() @ np.array([self.position_offset[0], self.position_offset[1], 0])
+        target_position = (leader_position[0] + rotated_position_offset[0],
+                           leader_position[1] + rotated_position_offset[1])
+        target_rotation = leader_rotation + self.rotation_offset
+
+        self.this_agent.move_to_position(target_position, target_rotation)
 
 
 def main(args=None):

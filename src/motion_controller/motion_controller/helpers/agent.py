@@ -81,12 +81,6 @@ class Agent():
         self.cmd_vel_pub.publish(cmd_vel_msg)
 
     def move_to_position(self, position, rotation):
-        rotated_position_offset = Rotation.from_euler(
-            'zyx', [rotation, 0, 0]).as_matrix() @ np.array([self.position_offset[0], self.position_offset[1], 0])
-        target_position = (position[0] + rotated_position_offset[0],
-                           position[1] + rotated_position_offset[1])
-        target_rotation = rotation + self.rotation_offset
-
         our_position = self.position
         our_rotation = self.rotation
 
@@ -96,8 +90,8 @@ class Agent():
         print(f"Our rotation: {our_rotation}")
 
         linear_velocity = (
-            (target_position[0] - our_position[0]) * self.linear_gain, (target_position[1] - our_position[1]) * self.linear_gain)
-        angular_velocity = target_rotation - our_rotation
+            (position[0] - our_position[0]) * self.linear_gain, (position[1] - our_position[1]) * self.linear_gain)
+        angular_velocity = rotation - our_rotation
 
         if angular_velocity > np.pi:
             angular_velocity -= 2 * np.pi
