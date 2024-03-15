@@ -24,6 +24,9 @@ class Driver():
         self.cmd_vel_pub.publish(self.cmd_vel_msg)
 
     def set_velocity(self, linear_velocity, angular_velocity):
+        linear_velocity *= self.linear_gain
+        angular_velocity *= self.angular_gain
+
         # limit speeds
         if np.linalg.norm(linear_velocity) > self.max_linear_speed:
             linear_velocity *= (self.max_linear_speed /
@@ -59,15 +62,13 @@ class Driver():
         print(f"current rotation: {current_rotation}")
 
         linear_velocity = (
-            (target_position[0] - current_position[0]) * self.linear_gain, (target_position[1] - current_position[1]) * self.linear_gain)
+            (target_position[0] - current_position[0]), (target_position[1] - current_position[1]))
         angular_velocity = target_rotation - current_rotation
 
         if angular_velocity > np.pi:
             angular_velocity -= 2 * np.pi
         elif angular_velocity < -np.pi:
             angular_velocity += 2 * np.pi
-
-        angular_velocity *= self.angular_gain
 
         # change velcoty from world to robot coordinates
         inv_rotation_matrix = Rotation.from_euler(
