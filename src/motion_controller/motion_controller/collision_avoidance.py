@@ -152,7 +152,7 @@ class CollisionAvoidance(Node):
         inv_rotation_matrix = Rotation.from_euler(
             'zyx', [rotation, 0, 0]).inv().as_matrix()
         velocity = inv_rotation_matrix @ np.array(
-            [velocity[0], velocity[1], 0])
+            [velocity[0], velocity[1], 0.0])
         # print(velocity)
 
         self.this_agent.set_velocity(velocity, 0)
