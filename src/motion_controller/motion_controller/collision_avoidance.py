@@ -115,12 +115,13 @@ class CollisionAvoidance(Node):
             self, f"{self.node_name}_marker_server")
 
         self.agent_index = self.agent_names.index(self.node_name)
-        self.this_agent: Agent = self.agents[self.agent_index]
 
         self.agents: list = []
         for agent_name in self.agent_names:
             self.agents.append(Agent(self, agent_name, self.cmd_vel_topic, self.tf_buffer,
                                ROBOT_TYPE, LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED))
+
+        self.this_agent: Agent = self.agents[self.agent_index]
 
         self.menu_handler = MenuHandler()
 
