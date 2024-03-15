@@ -11,8 +11,8 @@ from .helpers.robot_types import RobotTypes
 from .helpers.driver import Driver
 
 TIME_STEP = 1/20
-LINEAR_GAIN = 5.0
-ANGULAR_GAIN = 5.0
+LINEAR_GAIN = 2.0
+ANGULAR_GAIN = 2.0
 MAX_LINEAR_SPEED = 1.0
 MAX_ANGULAR_SPEED = 1.0
 ROBOT_TYPE = RobotTypes.ROBOMASTER
