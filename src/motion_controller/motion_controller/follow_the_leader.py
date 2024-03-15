@@ -2,13 +2,13 @@ import time
 from typing import Tuple
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
 import numpy as np
 import time
 from scipy.spatial.transform import Rotation
 import tf2_ros
 from .helpers.agent import Agent
 from .helpers.robot_types import RobotTypes
+from .helpers.driver import Driver
 
 TIME_STEP = 1/20
 LINEAR_GAIN = 5.0
@@ -44,15 +44,15 @@ class FollowTheLeader(Node):
         self.declare_parameter('rotationOffset', np.pi/2)
         self.rotation_offset = self.get_parameter('rotationOffset').value
 
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, self.cmd_vel_topic, 10)
-
         self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
                 Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE, LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED))
 
         self.this_agent = self.agents[self.agent_names.index(self.node_name)]
+
+        self.driver = Driver(self, ROBOT_TYPE, self.cmd_vel_topic,
+                             LINEAR_GAIN, ANGULAR_GAIN, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED)
 
     def follow_the_leader(self):
         if (any([agent.position is None for agent in self.agents])):
@@ -68,8 +68,8 @@ class FollowTheLeader(Node):
                            leader_position[1] + rotated_position_offset[1])
         target_rotation = leader_rotation + self.rotation_offset
 
-        self.this_agent.move_to_position(
-            self.cmd_vel_pub, target_position, target_rotation)
+        self.driver.move_to_position(
+            target_position, target_rotation, self.this_agent.position, self.this_agent.rotation)
 
 
 def main(args=None):
