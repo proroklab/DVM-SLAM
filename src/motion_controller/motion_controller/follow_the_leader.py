@@ -53,6 +53,7 @@ class FollowTheLeader(Node):
 
     def follow_the_leader(self):
         if (any([agent.position is None for agent in self.agents])):
+            print("position missing")
             return
 
         leader_position = self.agents[self.leader_index].position
