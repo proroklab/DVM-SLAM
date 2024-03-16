@@ -22,7 +22,7 @@ LINEAR_GAIN = 5.0
 ANGULAR_GAIN = 5.0
 MAX_LINEAR_SPEED = 1.0
 MAX_ANGULAR_SPEED = 1.0
-ROBOT_TYPE = RobotTypes.ROBOMASTER
+ROBOT_TYPE = RobotTypes.SIM_GROUND_TRUTH
 QC = 5.
 KAPPA = 4.
 STATIC_KAPPA = 40.
@@ -130,7 +130,7 @@ class CollisionAvoidance(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.nmpc = Nmpc(agent_radius, MAX_LINEAR_SPEED,
-                         0., TIME_STEP, TIME_STEP*3, 4, Qc, kappa, static_kappa)
+                         TIME_STEP, TIME_STEP, 4, Qc, kappa, static_kappa)
 
         self.agent_names = ["robot1", "robot2"]
 
@@ -141,14 +141,15 @@ class CollisionAvoidance(Node):
 
         self.agents: list = []
         for agent_name in self.agent_names:
-            self.agents.append(Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE))
+            self.agents.append(
+                Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE))
 
         self.this_agent: Agent = self.agents[self.agent_index]
 
         self.menu_handler = MenuHandler()
 
         self.goal_marker = InteractiveMarkerWrapper(
-            f"{self.node_name}_goal_marker", (0, 0), self.marker_server, self.menu_handler)
+            f"{self.node_name}_goal_marker", (-7, -4), self.marker_server, self.menu_handler)
 
         self.static_obstacles = [StaticObstacle(
             5+x, 5+x, 5.5+x, 5.5+x, self.marker_server, self.menu_handler, f"obstacle{x}", self) for x in range(2)]

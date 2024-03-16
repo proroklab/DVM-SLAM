@@ -8,15 +8,15 @@ https://github.com/atb033/multi_agent_path_planning/blob/master/decentralized/nm
 from typing import Tuple
 import numpy as np
 from scipy.optimize import minimize, Bounds
+import time
 
 
 class Nmpc():
 
-    def __init__(self, robot_radius, vmax, vmin, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), static_obstacles=[], Qc = 5., kappa = 4., static_kappa=40.):
+    def __init__(self, robot_radius, vmax, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), static_obstacles=[], Qc=5., kappa=4., static_kappa=40.):
         self.timestep = timestep
         self.robot_radius = robot_radius
         self.vmax = vmax
-        self.vmin = vmin
 
         # collision cost parameters
         # https://www.desmos.com/calculator/lu9hv6mq36
@@ -35,6 +35,7 @@ class Nmpc():
 
         # num_timesteps, num_obstacles, Tuple array
         self.obstacle_position_history = None
+        self.obstacle_position_history_timesteps = None
 
         # rectangle corners (x1, y1, x2, y2)
         self.static_obstacles = static_obstacles
@@ -71,18 +72,20 @@ class Nmpc():
         bounds = Bounds(self.lower_bound, self.upper_bound)
 
         res = minimize(cost_fn, u0, method='SLSQP', bounds=bounds)
-        velocity = res.x[:2]
+        velocity = res.x.reshape(-1, 2).mean(axis=0)
+        # velocity = res.x[:2]
         return velocity, res.x
 
     def compute_xref(self, start, goal, number_of_steps, timestep):
         dir_vec = (goal - start)
         norm = np.linalg.norm(dir_vec)
-        if norm < 0.1:
+        if norm < self.robot_radius:
             new_goal = start
         else:
             dir_vec = dir_vec / norm
             new_goal = start + dir_vec * self.vmax * timestep * number_of_steps
-        return np.linspace(start, new_goal, number_of_steps).reshape((2*number_of_steps))
+
+        return np.linspace(start, new_goal, number_of_steps+1)[1:].reshape((2*number_of_steps))
 
     def total_cost(self, u, robot_state, obstacle_predictions, xref):
         x_robot = self.update_state(robot_state, u, self.nmpc_timestep)
@@ -153,8 +156,10 @@ class Nmpc():
         obstacle_predictions = []
         for i in range(len(obstacle_positions)):
             if self.obstacle_position_history is not None:
+                delta_time = time.time() - \
+                    self.obstacle_position_history_timesteps[-1]
                 obstacle_vel = (np.array(obstacle_positions[i]) - np.array(
-                    self.obstacle_position_history[-1][i])) / self.timestep
+                    self.obstacle_position_history[-1][i])) / delta_time
             else:
                 obstacle_vel = np.array([0, 0])
 
@@ -166,9 +171,12 @@ class Nmpc():
 
         if self.obstacle_position_history is None:
             self.obstacle_position_history = np.array([obstacle_positions])
+            self.obstacle_position_history_timesteps = np.array([time.time()])
         else:
             self.obstacle_position_history = np.append(
                 self.obstacle_position_history, [obstacle_positions], axis=0)
+            self.obstacle_position_history_timesteps = np.append(
+                self.obstacle_position_history_timesteps, [time.time()], axis=0)
 
         return obstacle_predictions
 
