@@ -22,10 +22,7 @@ LINEAR_GAIN = 5.0
 ANGULAR_GAIN = 5.0
 MAX_LINEAR_SPEED = 1.0
 MAX_ANGULAR_SPEED = 1.0
-ROBOT_TYPE = RobotTypes.SIM_GROUND_TRUTH
-QC = 5.
-KAPPA = 4.
-STATIC_KAPPA = 40.
+ROBOT_TYPE = RobotTypes.ROBOMASTER
 
 
 class StaticObstacle:
@@ -117,20 +114,11 @@ class CollisionAvoidance(Node):
         self.declare_parameter('agentRadius', AGENT_RADIUS)
         agent_radius = self.get_parameter('agentRadius').value
 
-        self.declare_parameter('Qc', QC)
-        Qc = self.get_parameter('Qc').value
-
-        self.declare_parameter('kappa', KAPPA)
-        kappa = self.get_parameter('kappa').value
-
-        self.declare_parameter('staticKappa', STATIC_KAPPA)
-        static_kappa = self.get_parameter('staticKappa').value
-
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.nmpc = Nmpc(agent_radius, MAX_LINEAR_SPEED,
-                         TIME_STEP, TIME_STEP, 4, Qc, kappa, static_kappa)
+                         TIME_STEP, TIME_STEP, 4)
 
         self.agent_names = ["robot1", "robot2"]
 
@@ -149,7 +137,7 @@ class CollisionAvoidance(Node):
         self.menu_handler = MenuHandler()
 
         self.goal_marker = InteractiveMarkerWrapper(
-            f"{self.node_name}_goal_marker", (-7, -4), self.marker_server, self.menu_handler)
+            f"{self.node_name}_goal_marker", (0, 0), self.marker_server, self.menu_handler)
 
         self.static_obstacles = [StaticObstacle(
             5+x, 5+x, 5.5+x, 5.5+x, self.marker_server, self.menu_handler, f"obstacle{x}", self) for x in range(2)]
@@ -181,7 +169,14 @@ class CollisionAvoidance(Node):
             [velocity[0], velocity[1], 0.0])
         # print(velocity)
 
-        self.driver.set_velocity(velocity, 0.0)
+        angular_velocity = np.pi/2 - self.this_agent.rotation
+        if angular_velocity > np.pi:
+            angular_velocity -= 2 * np.pi
+        elif angular_velocity < -np.pi:
+            angular_velocity += 2 * np.pi
+        angular_velocity *= ANGULAR_GAIN
+
+        self.driver.set_velocity(velocity, angular_velocity)
 
 
 def main(args=None):

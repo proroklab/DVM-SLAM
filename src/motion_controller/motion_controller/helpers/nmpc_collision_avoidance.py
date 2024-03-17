@@ -13,16 +13,17 @@ import time
 
 class Nmpc():
 
-    def __init__(self, robot_radius, vmax, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), static_obstacles=[], Qc=5., kappa=4., static_kappa=40.):
+    def __init__(self, robot_radius, vmax, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4)):
         self.timestep = timestep
-        self.robot_radius = robot_radius
         self.vmax = vmax
 
         # collision cost parameters
         # https://www.desmos.com/calculator/lu9hv6mq36
-        self.Qc = Qc
-        self.kappa = kappa
-        self.static_kappa = static_kappa
+        # Assumes a agent radius of 0.25, we adjust scale to set actual agent radius
+        self.Qc = 4.
+        self.kappa = 6.
+        self.static_kappa = 6.
+        self.scale = robot_radius/0.25
 
         # nmpc parameters
         self.horizon_length = horizon_length
@@ -38,7 +39,7 @@ class Nmpc():
         self.obstacle_position_history_timesteps = None
 
         # rectangle corners (x1, y1, x2, y2)
-        self.static_obstacles = static_obstacles
+        self.static_obstacles = []
 
     def set_static_obstacles(self, static_obstacles):
         self.static_obstacles = static_obstacles
@@ -72,15 +73,15 @@ class Nmpc():
         bounds = Bounds(self.lower_bound, self.upper_bound)
 
         res = minimize(cost_fn, u0, method='SLSQP', bounds=bounds)
-        velocity = res.x.reshape(-1, 2).mean(axis=0)
-        # velocity = res.x[:2]
+        # velocity = res.x.reshape(-1, 2).mean(axis=0)
+        velocity = res.x[:2]
         return velocity, res.x
 
     def compute_xref(self, start, goal, number_of_steps, timestep):
         dir_vec = (goal - start)
         norm = np.linalg.norm(dir_vec)
-        if norm < self.robot_radius:
-            new_goal = start
+        if norm < self.vmax * timestep * number_of_steps:
+            new_goal = goal
         else:
             dir_vec = dir_vec / norm
             new_goal = start + dir_vec * self.vmax * timestep * number_of_steps
@@ -109,8 +110,9 @@ class Nmpc():
                 rob = robot[2 * i: 2 * i + 2]
                 distance = self.distance_point_to_rectangle(
                     rob, static_obstacle)
-                cost = self.Qc / \
-                    (1 + np.exp(self.static_kappa * (distance - self.robot_radius)))
+                cost = self.scale * self.Qc / \
+                    (1 + np.exp(self.static_kappa *
+                     distance / (self.scale/2)))
                 total_cost += cost
         return total_cost
 
@@ -119,7 +121,8 @@ class Nmpc():
         Cost of collision between two robot_state
         """
         d = np.linalg.norm(x0 - x1)
-        cost = self.Qc / (1 + np.exp(self.kappa * (d - 2*self.robot_radius)))
+        cost = self.scale * self.Qc / \
+            (1 + np.exp(self.kappa * d / self.scale))
         return cost
 
     def distance_point_to_rectangle(self, point, rectangle):
