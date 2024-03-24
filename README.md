@@ -1,2 +1,1 @@
-work in progress
-Check back in July!
+work in progress - check back in July!
