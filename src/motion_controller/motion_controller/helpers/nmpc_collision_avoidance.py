@@ -13,17 +13,21 @@ import time
 
 class Nmpc():
 
-    def __init__(self, robot_radius, vmax, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4)):
+    def __init__(self, robot_radius, vmax, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), latency=0.1):
         self.timestep = timestep
         self.vmax = vmax
 
         # collision cost parameters
         # https://www.desmos.com/calculator/lu9hv6mq36
         # Assumes a agent radius of 0.25, we adjust scale to set actual agent radius
-        self.Qc = 4.
+        self.Qc = 8.
         self.kappa = 6.
         self.static_kappa = 6.
         self.scale = robot_radius/0.25
+        self.robot_radius = robot_radius
+        self.latency = latency
+
+        self.last_velocity_profile = None
 
         # nmpc parameters
         self.horizon_length = horizon_length
@@ -57,6 +61,7 @@ class Nmpc():
         # compute velocity using nmpc
         vel, velocity_profile = self.compute_velocity(
             robot_state, obstacle_predictions, xref)
+        self.last_velocity_profile = velocity_profile
         robot_state = self.update_state(robot_state, vel, self.timestep)
 
         return (vel[0], vel[1])
@@ -66,13 +71,45 @@ class Nmpc():
         Computes control velocity of the copter
         """
         # u0 = np.array([0] * 2 * self.horizon_length)
-        u0 = np.random.rand(2*self.horizon_length)
+        u0 = (2*np.random.rand(2*self.horizon_length) - 1) * self.vmax
+        # if self.last_velocity_profile is None:
+        #     u0 = np.array([0] * 2 * self.horizon_length)
+        # else:
+        #     u0 = np.append(self.last_velocity_profile[2:], [0, 0])
+
         def cost_fn(u): return self.total_cost(
             u, robot_state, obstacle_predictions, xref)
 
+        # velocity bounds
         bounds = Bounds(self.lower_bound, self.upper_bound)
 
-        res = minimize(cost_fn, u0, method='SLSQP', bounds=bounds)
+        # distance constraints
+        def distance_constraint(u, step):
+            x_robot = self.update_state(robot_state, u, self.nmpc_timestep)
+
+            constraints = []  # constraints are satisfied if they are positive
+            for j in range(len(obstacle_predictions)):
+                obstacle = obstacle_predictions[j]
+                rob = x_robot[2 * step: 2 * step + 2]
+                obs = obstacle[2 * step: 2 * step + 2]
+                distance = np.linalg.norm(rob - obs)
+                constraint = distance - self.robot_radius
+                constraints.append(constraint)
+            for static_obstacle in self.static_obstacles:
+                rob = x_robot[2 * step: 2 * step + 2]
+                distance = self.distance_point_to_rectangle(
+                    rob, static_obstacle)
+                constraint = distance - self.robot_radius/2
+                constraints.append(constraint)
+
+            return np.min(constraints)
+
+        constraints = [
+            {'type': 'ineq', 'fun': distance_constraint, 'args': [0]}
+        ]
+
+        res = minimize(cost_fn, u0, method='SLSQP',
+                       bounds=bounds)
         # velocity = res.x.reshape(-1, 2).mean(axis=0)
         velocity = res.x[:2]
         return velocity, res.x
@@ -166,7 +203,12 @@ class Nmpc():
             else:
                 obstacle_vel = np.array([0, 0])
 
-            obstacle_position = np.array(obstacle_positions[i])
+            obstacle_position = np.array(
+                obstacle_positions[i], dtype=np.float64)
+
+            # compensate for latency
+            obstacle_position += obstacle_vel * self.latency
+
             u = np.vstack([np.eye(2)] * self.horizon_length) @ obstacle_vel
             obstacle_prediction = self.update_state(
                 obstacle_position, u, self.nmpc_timestep)

@@ -51,11 +51,11 @@ class StaticObstacle:
         marker.header.frame_id = 'world'
         marker.type = Marker.LINE_STRIP
         marker.action = Marker.ADD
-        marker.scale.x = 0.1  # Line width
+        marker.scale.x = 0.01  # Line width
 
         marker.pose.position.x = 0.0
         marker.pose.position.y = 0.0
-        marker.pose.position.z = 0.0
+        marker.pose.position.z = -0.5
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0
@@ -114,11 +114,14 @@ class CollisionAvoidance(Node):
         self.declare_parameter('agentRadius', AGENT_RADIUS)
         agent_radius = self.get_parameter('agentRadius').value
 
+        self.declare_parameter('latency', 0.0)
+        latency = self.get_parameter('latency').value
+
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.nmpc = Nmpc(agent_radius, MAX_LINEAR_SPEED,
-                         TIME_STEP, TIME_STEP, 4)
+                         TIME_STEP, TIME_STEP, 5, latency)
 
         self.agent_names = ["robot1", "robot2"]
 
@@ -140,7 +143,7 @@ class CollisionAvoidance(Node):
             f"{self.node_name}_goal_marker", (0, 0), self.marker_server, self.menu_handler)
 
         self.static_obstacles = [StaticObstacle(
-            5+x, 5+x, 5.5+x, 5.5+x, self.marker_server, self.menu_handler, f"obstacle{x}", self) for x in range(2)]
+            2+x, 2+x, 2.5+x, 2.5+x, self.marker_server, self.menu_handler, f"obstacle{x}", self) for x in range(2)]
 
         self.driver = Driver(self, ROBOT_TYPE, self.cmd_vel_topic,
                              linear_gain, angular_gain, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED)
