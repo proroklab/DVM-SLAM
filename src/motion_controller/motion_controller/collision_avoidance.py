@@ -44,11 +44,11 @@ class StaticObstacle:
         marker.header.frame_id = 'world'
         marker.type = Marker.LINE_STRIP
         marker.action = Marker.ADD
-        marker.scale.x = 0.1  # Line width
+        marker.scale.x = 0.01  # Line width
 
         marker.pose.position.x = 0.0
         marker.pose.position.y = 0.0
-        marker.pose.position.z = 0.0
+        marker.pose.position.z = -0.5
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0

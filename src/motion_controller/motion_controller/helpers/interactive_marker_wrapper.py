@@ -18,8 +18,8 @@ class InteractiveMarkerWrapper():
         interactive_marker.name = self.name
         interactive_marker.pose.position.x = float(self.position[0])
         interactive_marker.pose.position.y = float(self.position[1])
-        interactive_marker.pose.position.z = 0.5
-        interactive_marker.scale = 0.5
+        interactive_marker.pose.position.z = -0.5
+        interactive_marker.scale = 0.2
 
         control = InteractiveMarkerControl()
         control.interaction_mode = InteractiveMarkerControl.MOVE_PLANE
