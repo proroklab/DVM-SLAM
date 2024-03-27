@@ -138,20 +138,23 @@ class CollisionAvoidance(Node):
         self.nmpc.set_static_obstacles(static_obstacles)
 
         velocity = self.nmpc.step(
-            self.agents[self.agent_index].position, obstacles)
+            self.this_agent.position, obstacles)
 
-        rotation = self.agents[self.agent_index].rotation
+        rotation = self.this_agent.rotation
         inv_rotation_matrix = Rotation.from_euler(
             'zyx', [rotation, 0, 0]).inv().as_matrix()
         velocity = inv_rotation_matrix @ np.array(
-            [velocity[0], velocity[1], 0])
+            [velocity[0], velocity[1], 0.0])
         # print(velocity)
 
-        cmd_vel_msg = Twist()
-        cmd_vel_msg.linear.x = velocity[0]
-        cmd_vel_msg.linear.y = velocity[1]
+        angular_velocity = np.pi/2 - self.this_agent.rotation
+        if angular_velocity > np.pi:
+            angular_velocity -= 2 * np.pi
+        elif angular_velocity < -np.pi:
+            angular_velocity += 2 * np.pi
+        angular_velocity *= ANGULAR_GAIN
 
-        self.cmd_vel_pub.publish(cmd_vel_msg)
+        self.driver.set_velocity(velocity, angular_velocity)
 
 
 def main(args=None):
