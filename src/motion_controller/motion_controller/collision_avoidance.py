@@ -65,7 +65,7 @@ class StaticObstacle:
         marker.color.b = 0.0
         marker.color.a = 1.0
 
-        # Define the points of the rectangle
+        # Define the points of the line
         p1 = Point()
         p1.x = float(self.corner1[0])
         p1.y = float(self.corner1[1])
@@ -73,24 +73,11 @@ class StaticObstacle:
 
         p2 = Point()
         p2.x = float(self.corner2[0])
-        p2.y = float(self.corner1[1])
+        p2.y = float(self.corner2[1])
         p2.z = 0.0
-
-        p3 = Point()
-        p3.x = float(self.corner2[0])
-        p3.y = float(self.corner2[1])
-        p3.z = 0.0
-
-        p4 = Point()
-        p4.x = float(self.corner1[0])
-        p4.y = float(self.corner2[1])
-        p4.z = 0.0
 
         marker.points.append(p1)
         marker.points.append(p2)
-        marker.points.append(p3)
-        marker.points.append(p4)
-        marker.points.append(p1)
 
         self.obstacle_rect_pub.publish(marker)
 

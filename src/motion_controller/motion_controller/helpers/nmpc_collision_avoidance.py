@@ -42,7 +42,7 @@ class Nmpc():
         self.obstacle_position_history = None
         self.obstacle_position_history_timesteps = None
 
-        # rectangle corners (x1, y1, x2, y2)
+        # line segments (x1, y1, x2, y2)
         self.static_obstacles = []
 
     def set_static_obstacles(self, static_obstacles):
@@ -97,7 +97,7 @@ class Nmpc():
                 constraints.append(constraint)
             for static_obstacle in self.static_obstacles:
                 rob = x_robot[2 * step: 2 * step + 2]
-                distance = self.distance_point_to_rectangle(
+                distance = self.distance_point_to_line_segment(
                     rob, static_obstacle)
                 constraint = distance - self.robot_radius/2
                 constraints.append(constraint)
@@ -145,7 +145,7 @@ class Nmpc():
                 total_cost += self.collision_cost(rob, obs)
             for static_obstacle in self.static_obstacles:
                 rob = robot[2 * i: 2 * i + 2]
-                distance = self.distance_point_to_rectangle(
+                distance = self.distance_point_to_line_segment(
                     rob, static_obstacle)
                 cost = self.scale * self.Qc / \
                     (1 + np.exp(self.static_kappa *
@@ -162,34 +162,31 @@ class Nmpc():
             (1 + np.exp(self.kappa * d / self.scale))
         return cost
 
-    def distance_point_to_rectangle(self, point, rectangle):
+    def distance_point_to_line_segment(self, point, line_segment_points):
         # Extracting coordinates
-        x, y = point
-        x1, y1, x2, y2 = rectangle
+        x1, y1, x2, y2 = line_segment_points
+        line_segment_start = np.array([x1, y1])
+        line_segment_end = np.array([x2, y2])
+        point = np.array(point)
 
-        # Finding rectangle boundaries
-        min_x = min(x1, x2)
-        max_x = max(x1, x2)
-        min_y = min(y1, y2)
-        max_y = max(y1, y2)
+        # Vector representing the line segment
+        v = line_segment_end - line_segment_start
 
-        # Finding distance to the closest edge
-        if x < min_x:
-            dx = min_x - x
-        elif x > max_x:
-            dx = x - max_x
-        else:
-            dx = 0
+        # Vector from line_segment_start to point
+        w = point - line_segment_start
 
-        if y < min_y:
-            dy = min_y - y
-        elif y > max_y:
-            dy = y - max_y
-        else:
-            dy = 0
+        # Dot product of v and w
+        dot_product = np.dot(w, v)
 
-        # Calculating distance
-        distance = np.sqrt(dx**2 + dy**2)
+        # Clamp dot product within the bounds of the line segment
+        dot_product = np.clip(dot_product, 0, np.dot(v, v))
+
+        # Closest point on the line segment to point
+        closest_point = line_segment_start + dot_product * v / np.dot(v, v)
+
+        # Calculate distance between point and closest_point
+        distance = np.linalg.norm(closest_point - point)
+
         return distance
 
     def predict_obstacle_positions(self, obstacle_positions: np.ndarray):
