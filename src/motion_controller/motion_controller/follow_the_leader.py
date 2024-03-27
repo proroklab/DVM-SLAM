@@ -115,7 +115,8 @@ def main(args=None):
                 last_step_time = time.time()
                 follow_the_leader.follow_the_leader()
 
-            rclpy.spin_once(follow_the_leader)
+            rclpy.spin_once(follow_the_leader, timeout_sec=0)
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         pass

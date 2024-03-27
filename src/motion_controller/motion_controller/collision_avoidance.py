@@ -176,7 +176,9 @@ def main(args=None):
                 last_step_time = time.time()
                 collision_avoidance.avoid_collision()
 
-            rclpy.spin_once(collision_avoidance)
+            rclpy.spin_once(collision_avoidance, timeout_sec=0)
+
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         pass
