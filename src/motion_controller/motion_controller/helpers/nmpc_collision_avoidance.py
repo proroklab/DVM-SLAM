@@ -70,7 +70,12 @@ class Nmpc():
         Computes control velocity of the copter
         """
         # u0 = np.array([0] * 2 * self.horizon_length)
-        u0 = np.random.rand(2*self.horizon_length)
+        u0 = (2*np.random.rand(2*self.horizon_length) - 1) * self.vmax
+        # if self.last_velocity_profile is None:
+        #     u0 = np.array([0] * 2 * self.horizon_length)
+        # else:
+        #     u0 = np.append(self.last_velocity_profile[2:], [0, 0])
+
         def cost_fn(u): return self.total_cost(
             u, robot_state, obstacle_predictions, xref)
 
