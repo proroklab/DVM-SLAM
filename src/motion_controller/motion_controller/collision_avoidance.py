@@ -92,6 +92,24 @@ class CollisionAvoidance(Node):
     def __init__(self):
         super().__init__('collision_avoidance')
 
+        self.declare_parameter('agentId', 1)
+        self.node_name = f"robot{self.get_parameter('agentId').value}"
+
+        self.declare_parameter('cmdVelTopic', f'{self.node_name}/cmd_vel')
+        self.cmd_vel_topic = self.get_parameter('cmdVelTopic').value
+
+        self.declare_parameter('linearGain', LINEAR_GAIN)
+        linear_gain = self.get_parameter('linearGain').value
+
+        self.declare_parameter('angularGain', ANGULAR_GAIN)
+        angular_gain = self.get_parameter('angularGain').value
+
+        self.declare_parameter('agentRadius', AGENT_RADIUS)
+        agent_radius = self.get_parameter('agentRadius').value
+
+        self.declare_parameter('latency', 0.0)
+        latency = self.get_parameter('latency').value
+
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 

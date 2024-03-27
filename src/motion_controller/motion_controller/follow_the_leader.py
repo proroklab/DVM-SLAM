@@ -22,16 +22,29 @@ class FollowTheLeader(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.agent_names = agent_names
-        self.leader_index = leader_index
-
-        self.position_offset = position_offset
-        self.rotation_offset = rotation_offset
 
         self.declare_parameter('agentId', 1)
         self.node_name = f"robot{self.get_parameter('agentId').value}"
 
         self.declare_parameter('cmdVelTopic', f'{self.node_name}/cmd_vel')
         self.cmd_vel_topic = self.get_parameter('cmdVelTopic').value
+
+        self.declare_parameter('leaderIndex', 0)
+        self.leader_index = self.get_parameter('leaderIndex').value
+
+        self.declare_parameter('positionOffsetX', 0.0)
+        self.declare_parameter('positionOffsetY', 0.0)
+        self.position_offset = (self.get_parameter('positionOffsetX').value,
+                                self.get_parameter('positionOffsetY').value)
+
+        self.declare_parameter('rotationOffset', np.pi/2)
+        self.rotation_offset = self.get_parameter('rotationOffset').value
+
+        self.declare_parameter('linearGain', LINEAR_GAIN)
+        linearGain = self.get_parameter('linearGain').value
+
+        self.declare_parameter('angularGain', ANGULAR_GAIN)
+        angularGain = self.get_parameter('angularGain').value
 
         self.agents = []
         for agent_name in self.agent_names:
