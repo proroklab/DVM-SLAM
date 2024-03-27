@@ -79,9 +79,37 @@ class Nmpc():
         def cost_fn(u): return self.total_cost(
             u, robot_state, obstacle_predictions, xref)
 
+        # velocity bounds
         bounds = Bounds(self.lower_bound, self.upper_bound)
 
-        res = minimize(cost_fn, u0, method='SLSQP', bounds=bounds)
+        # distance constraints
+        def distance_constraint(u, step):
+            x_robot = self.update_state(robot_state, u, self.nmpc_timestep)
+
+            constraints = []  # constraints are satisfied if they are positive
+            for j in range(len(obstacle_predictions)):
+                obstacle = obstacle_predictions[j]
+                rob = x_robot[2 * step: 2 * step + 2]
+                obs = obstacle[2 * step: 2 * step + 2]
+                distance = np.linalg.norm(rob - obs)
+                constraint = distance - self.robot_radius
+                constraints.append(constraint)
+            for static_obstacle in self.static_obstacles:
+                rob = x_robot[2 * step: 2 * step + 2]
+                distance = self.distance_point_to_line_segment(
+                    rob, static_obstacle)
+                constraint = distance - self.robot_radius/2
+                constraints.append(constraint)
+
+            return np.min(constraints)
+
+        constraints = [
+            {'type': 'ineq', 'fun': distance_constraint, 'args': [0]}
+        ]
+
+        res = minimize(cost_fn, u0, method='SLSQP',
+                       bounds=bounds)
+        # velocity = res.x.reshape(-1, 2).mean(axis=0)
         velocity = res.x[:2]
         return velocity, res.x
 
