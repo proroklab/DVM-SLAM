@@ -8,15 +8,14 @@ https://github.com/atb033/multi_agent_path_planning/blob/master/decentralized/nm
 from typing import Tuple
 import numpy as np
 from scipy.optimize import minimize, Bounds
+import time
 
 
 class Nmpc():
 
-    def __init__(self, robot_radius, vmax, vmin, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), static_obstacles=[]):
+    def __init__(self, robot_radius, vmax, timestep=0.1, nmpc_timestep=0.3,  horizon_length=int(4), latency=0.1):
         self.timestep = timestep
-        self.robot_radius = robot_radius
         self.vmax = vmax
-        self.vmin = vmin
 
         # collision cost parameters
         # https://www.desmos.com/calculator/lu9hv6mq36
@@ -49,10 +48,10 @@ class Nmpc():
     def set_static_obstacles(self, static_obstacles):
         self.static_obstacles = static_obstacles
 
-    def set_goal(self, goal: Tuple[float, float]):
+    def set_goal(self, goal: Tuple):
         self.goal = np.array(goal)
 
-    def step(self, position, obstacle_positions: np.ndarray[Tuple[float, float]]) -> Tuple[float, float]:
+    def step(self, position, obstacle_positions: np.ndarray) -> Tuple:
         robot_state = np.array(position)
 
         obstacle_predictions = self.predict_obstacle_positions(
@@ -62,6 +61,7 @@ class Nmpc():
         # compute velocity using nmpc
         vel, velocity_profile = self.compute_velocity(
             robot_state, obstacle_predictions, xref)
+        self.last_velocity_profile = velocity_profile
         robot_state = self.update_state(robot_state, vel, self.timestep)
 
         return (vel[0], vel[1])
@@ -145,7 +145,7 @@ class Nmpc():
                 total_cost += self.collision_cost(rob, obs)
             for static_obstacle in self.static_obstacles:
                 rob = robot[2 * i: 2 * i + 2]
-                distance = self.distance_point_to_rectangle(
+                distance = self.distance_point_to_line_segment(
                     rob, static_obstacle)
                 cost = self.scale * self.Qc / \
                     (1 + np.exp(self.static_kappa *

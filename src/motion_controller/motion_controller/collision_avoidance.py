@@ -1,4 +1,5 @@
 import time
+from .helpers.robot_types import RobotTypes
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Point
@@ -12,10 +13,16 @@ import tf2_ros
 from .helpers.agent import Agent
 from .helpers.nmpc_collision_avoidance import Nmpc
 from .helpers.interactive_marker_wrapper import InteractiveMarkerWrapper
+from .helpers.driver import Driver
 
-TIME_STEP = 1/20
-AGENT_RADIUS = 0.25
-AGENT_MAX_SPEED = 5.0
+
+TIME_STEP = 1/10
+AGENT_RADIUS = 0.05
+LINEAR_GAIN = 5.0
+ANGULAR_GAIN = 5.0
+MAX_LINEAR_SPEED = 1.0
+MAX_ANGULAR_SPEED = 1.0
+ROBOT_TYPE = RobotTypes.ROBOMASTER
 
 
 class StaticObstacle:
@@ -100,25 +107,22 @@ class CollisionAvoidance(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        self.nmpc = Nmpc(AGENT_RADIUS, AGENT_MAX_SPEED,
-                         0., TIME_STEP, TIME_STEP*3, 4)
+        self.nmpc = Nmpc(agent_radius, MAX_LINEAR_SPEED,
+                         TIME_STEP, TIME_STEP, 5, latency)
 
         self.agent_names = ["robot1", "robot2"]
-
-        self.declare_parameter('agentId', 1)
-        self.node_name = f"robot{self.get_parameter('agentId').value}"
 
         self.marker_server = InteractiveMarkerServer(
             self, f"{self.node_name}_marker_server")
 
         self.agent_index = self.agent_names.index(self.node_name)
 
-        self.agents: list[Agent] = []
+        self.agents: list = []
         for agent_name in self.agent_names:
-            self.agents.append(Agent(self, agent_name, self.tf_buffer))
+            self.agents.append(
+                Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE))
 
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, f'{self.node_name}/cmd_vel', 10)
+        self.this_agent: Agent = self.agents[self.agent_index]
 
         self.menu_handler = MenuHandler()
 

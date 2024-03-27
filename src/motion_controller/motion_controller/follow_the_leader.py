@@ -2,20 +2,24 @@ import time
 from typing import Tuple
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
 import numpy as np
 import time
 from scipy.spatial.transform import Rotation
 import tf2_ros
 from .helpers.agent import Agent
+from .helpers.robot_types import RobotTypes
+from .helpers.driver import Driver
 
-TIME_STEP = 1/20
+TIME_STEP = 1/10
 LINEAR_GAIN = 1.0
 ANGULAR_GAIN = 1.0
+MAX_LINEAR_SPEED = 1.0
+MAX_ANGULAR_SPEED = 1.0
+ROBOT_TYPE = RobotTypes.ROBOMASTER
 
 
 class FollowTheLeader(Node):
-    def __init__(self, agent_names, leader_index: int, position_offset, rotation_offset: float):
+    def __init__(self, agent_names):
         super().__init__('follow_the_leader')
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -49,15 +53,16 @@ class FollowTheLeader(Node):
         self.agents = []
         for agent_name in self.agent_names:
             self.agents.append(
-                Agent(self, agent_name, self.tf_buffer, use_ground_truth=False))
+                Agent(self, agent_name, self.tf_buffer, ROBOT_TYPE))
 
         self.this_agent = self.agents[self.agent_names.index(self.node_name)]
 
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, self.cmd_vel_topic, 10)
+        self.driver = Driver(self, ROBOT_TYPE, self.cmd_vel_topic,
+                             linearGain, angularGain, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED)
 
     def follow_the_leader(self):
         if (any([agent.position is None for agent in self.agents])):
+            print("position missing")
             return
 
         leader_position = self.agents[self.leader_index].position
@@ -69,44 +74,16 @@ class FollowTheLeader(Node):
                            leader_position[1] + rotated_position_offset[1])
         target_rotation = leader_rotation + self.rotation_offset
 
-        our_position = self.this_agent.position
-        our_rotation = self.this_agent.rotation
-
-        linear_velocity = (
-            (target_position[0] - our_position[0]) * LINEAR_GAIN, (target_position[1] - our_position[1]) * LINEAR_GAIN)
-        angular_velocity = target_rotation - our_rotation
-
-        if angular_velocity > np.pi:
-            angular_velocity -= 2 * np.pi
-        elif angular_velocity < -np.pi:
-            angular_velocity += 2 * np.pi
-
-        angular_velocity *= ANGULAR_GAIN
-
-        # change velcoty from world to robot coordinates
-        inv_rotation_matrix = Rotation.from_euler(
-            'zyx', [our_rotation, 0, 0]).inv().as_matrix()
-        linear_velocity = inv_rotation_matrix @ np.array(
-            [linear_velocity[0], linear_velocity[1], 0])
-
-        cmd_vel_msg = Twist()
-        cmd_vel_msg.linear.x = linear_velocity[0]
-        cmd_vel_msg.linear.y = linear_velocity[1]
-        cmd_vel_msg.angular.z = angular_velocity
-
-        self.cmd_vel_pub.publish(cmd_vel_msg)
+        self.driver.move_to_position(
+            target_position, target_rotation, self.this_agent.position, self.this_agent.rotation)
 
 
 def main(args=None):
     rclpy.init(args=args)
 
     agent_names = ["robot1", "robot2"]
-    leader_index = 0
-    position_offset = (0, 1)
-    rotation_offset = 0
 
-    follow_the_leader = FollowTheLeader(
-        agent_names, leader_index, position_offset, rotation_offset)
+    follow_the_leader = FollowTheLeader(agent_names)
     last_step_time = 0
 
     try:
