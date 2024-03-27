@@ -39,8 +39,9 @@ class Nmpc():
             self.horizon_length * 2
         self.goal = (0, 0)
 
-        # num_timesteps, num_obstacles, Tuple[float, float] array
+        # num_timesteps, num_obstacles, Tuple array
         self.obstacle_position_history = None
+        self.obstacle_position_history_timesteps = None
 
         # line segments (x1, y1, x2, y2)
         self.static_obstacles = []
@@ -188,16 +189,23 @@ class Nmpc():
 
         return distance
 
-    def predict_obstacle_positions(self, obstacle_positions: np.ndarray[Tuple[float, float]]):
+    def predict_obstacle_positions(self, obstacle_positions: np.ndarray):
         obstacle_predictions = []
         for i in range(len(obstacle_positions)):
             if self.obstacle_position_history is not None:
+                delta_time = time.time() - \
+                    self.obstacle_position_history_timesteps[-1]
                 obstacle_vel = (np.array(obstacle_positions[i]) - np.array(
-                    self.obstacle_position_history[-1][i])) / self.timestep
+                    self.obstacle_position_history[-1][i])) / delta_time
             else:
                 obstacle_vel = np.array([0, 0])
 
-            obstacle_position = np.array(obstacle_positions[i])
+            obstacle_position = np.array(
+                obstacle_positions[i], dtype=np.float64)
+
+            # compensate for latency
+            obstacle_position += obstacle_vel * self.latency
+
             u = np.vstack([np.eye(2)] * self.horizon_length) @ obstacle_vel
             obstacle_prediction = self.update_state(
                 obstacle_position, u, self.nmpc_timestep)
@@ -205,9 +213,12 @@ class Nmpc():
 
         if self.obstacle_position_history is None:
             self.obstacle_position_history = np.array([obstacle_positions])
+            self.obstacle_position_history_timesteps = np.array([time.time()])
         else:
             self.obstacle_position_history = np.append(
                 self.obstacle_position_history, [obstacle_positions], axis=0)
+            self.obstacle_position_history_timesteps = np.append(
+                self.obstacle_position_history_timesteps, [time.time()], axis=0)
 
         return obstacle_predictions
 
