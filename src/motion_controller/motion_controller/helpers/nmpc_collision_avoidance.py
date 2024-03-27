@@ -116,12 +116,13 @@ class Nmpc():
     def compute_xref(self, start, goal, number_of_steps, timestep):
         dir_vec = (goal - start)
         norm = np.linalg.norm(dir_vec)
-        if norm < 0.1:
-            new_goal = start
+        if norm < self.vmax * timestep * number_of_steps:
+            new_goal = goal
         else:
             dir_vec = dir_vec / norm
             new_goal = start + dir_vec * self.vmax * timestep * number_of_steps
-        return np.linspace(start, new_goal, number_of_steps).reshape((2*number_of_steps))
+
+        return np.linspace(start, new_goal, number_of_steps+1)[1:].reshape((2*number_of_steps))
 
     def total_cost(self, u, robot_state, obstacle_predictions, xref):
         x_robot = self.update_state(robot_state, u, self.nmpc_timestep)
