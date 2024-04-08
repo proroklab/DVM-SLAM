@@ -35,42 +35,44 @@ jobs:
   #         target-ros2-distro: iron
   #         skip-tests: true
   
-  build-docker:
-    runs-on: ubuntu-latest
-    env:      
-      DOCKER_IMAGE: joshuabird/part_ii_project
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
-      DOCKER_TARGET_PLATFORM: linux/arm64
-    steps:    
-    - name: Checkout the code       
-      uses: actions/checkout@v1     
+  # build-docker:
+  #   runs-on: ubuntu-latest
+  #   env:      
+  #     DOCKER_IMAGE: joshuabird/part_ii_project
+  #     DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  #     DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
+  #     DOCKER_TARGET_PLATFORM: linux/arm64
+  #     PROGRESS_NO_TRUNC: 1 
+  #   steps:    
+  #   - name: Checkout the code       
+  #     uses: actions/checkout@v1     
 
-    - name: Set up Docker Buildx      
-      uses: crazy-max/ghaction-docker-buildx@v1      
-      with:        
-        version: latest    
+  #   - name: Set up Docker Buildx      
+  #     uses: crazy-max/ghaction-docker-buildx@v1      
+  #     with:        
+  #       version: latest    
 
-    - name: Prepare      
-      if: success()      
-      id: prepare      
-      run: |        
-        echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
-        echo ::set-output name=docker_image::${DOCKER_IMAGE}    
+  #   - name: Prepare      
+  #     if: success()      
+  #     id: prepare      
+  #     run: |        
+  #       echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
+  #       echo ::set-output name=docker_image::${DOCKER_IMAGE}    
 
-    - name: Docker Login      
-      if: success()      
-      run: |        
-        echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
+  #   - name: Docker Login      
+  #     if: success()      
+  #     run: |        
+  #       echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
 
-    - name: Run Buildx (push image)      
-      if: success()      
-      run: |        
-        docker buildx build \
-          --platform ${{ steps.prepare.outputs.docker_platform }} \
-          --tag ${{ steps.prepare.outputs.docker_image }}:latest \
-          --file ./Dockerfile \
-          --output type=image,push=true .
+  #   - name: Run Buildx (push image)      
+  #     if: success()      
+  #     run: |        
+  #       docker buildx build \
+  #         --platform ${{ steps.prepare.outputs.docker_platform }} \
+  #         --tag ${{ steps.prepare.outputs.docker_image }}:latest \
+  #         --file ./Dockerfile \
+  #         --progress plain \
+  #         --output type=image,push=true .
 
   build-nvidia-jetson-docker:
     runs-on: ubuntu-latest
@@ -79,6 +81,7 @@ jobs:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
       DOCKER_TARGET_PLATFORM: linux/arm64
+      PROGRESS_NO_TRUNC: 1 
     steps:    
     - name: Checkout the code       
       uses: actions/checkout@v1     
@@ -107,4 +110,5 @@ jobs:
           --platform ${{ steps.prepare.outputs.docker_platform }} \
           --tag ${{ steps.prepare.outputs.docker_image }}:latest \
           --file ./nvidia_jetson.Dockerfile \
+          --progress plain \
           --output type=image,push=true .

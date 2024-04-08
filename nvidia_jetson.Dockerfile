@@ -4,10 +4,6 @@ FROM dustynv/ros:humble-ros-base-l4t-r35.3.1
 # Add system packages to be installed here
 RUN apt-get update && apt-get install -y git vim
 
-# Optional python packages (better to copy requirements
-COPY requirements.txt /tmp
-RUN pip3 install -r /tmp/requirements.txt
-
 #RUN mkdir -p /opt/robomaster/src
 #COPY src /opt/root_ws/src
 
