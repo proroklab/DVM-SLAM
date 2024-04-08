@@ -21,15 +21,13 @@ jobs:
           yes | ./scripts/install_prerequisites.sh required
           cmake -B build
           cmake --build build -j 4
-          cmake --install build
+          sudo cmake --install build
 
       - name: Install cv_bridge
-        run: |
-          apt install -y ros-iron-cv-bridge
+        run: sudo apt install -y ros-iron-cv-bridge
 
       - name: Install interactive_markers
-        run: |
-          apt install -y ros-iron-interactive-markers
+        run: sudo apt install -y ros-iron-interactive-markers
 
       - name: Build Project
         uses: ros-tooling/action-ros-ci@v0.3
