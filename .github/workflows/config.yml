@@ -1,0 +1,17 @@
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: iron
+      - uses: ros-tooling/action-ros-ci@v0.3
+        with:
+          package-name: orb_slam3_ros
+          target-ros2-distro: iron
