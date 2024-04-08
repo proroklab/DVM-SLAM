@@ -1,0 +1,36 @@
+name: Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ROS Tooling
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: iron
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Pangolin
+        run: |
+          mkdir thirdparty && cd thirdparty
+          git clone --recursive https://github.com/stevenlovegrove/Pangolin.git --depth 1
+          cd Pangolin
+          yes | ./scripts/install_prerequisites.sh required
+          cmake -B build
+          cmake --build build -j 4
+          sudo cmake --install build
+
+      - name: Install cv_bridge
+        run: sudo apt install -y ros-iron-cv-bridge
+
+      - name: Install interactive_markers
+        run: sudo apt install -y ros-iron-interactive-markers
+
+      - name: Build Project
+        uses: ros-tooling/action-ros-ci@v0.3
+        with:
+          target-ros2-distro: iron
+          skip-tests: true
