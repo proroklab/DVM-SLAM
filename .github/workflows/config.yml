@@ -1,17 +1,38 @@
-
-on:
-  # Runs on pushes targeting the default branch
-  push:
+name: Build
+on: [push]
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: ros-tooling/setup-ros@v0.7
+      - name: Install ROS Tooling
+        uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: iron
-      - uses: ros-tooling/action-ros-ci@v0.3
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Pangolin
+        run: |
+          mkdir thirdparty && cd thirdparty
+          git clone --recursive https://github.com/stevenlovegrove/Pangolin.git --depth 1
+          cd Pangolin
+          yes | ./scripts/install_prerequisites.sh required
+          cmake -B build
+          cmake --build build -j 4
+          cmake --install build
+
+      - name: Install cv_bridge
+        run: |
+          apt install -y ros-iron-cv-bridge
+
+      - name: Install interactive_markers
+        run: |
+          apt install -y ros-iron-interactive-markers
+
+      - name: Build Project
+        uses: ros-tooling/action-ros-ci@v0.3
         with:
           package-name: orb_slam3_ros
           target-ros2-distro: iron
