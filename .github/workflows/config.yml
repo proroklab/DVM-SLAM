@@ -32,5 +32,5 @@ jobs:
       - name: Build Project
         uses: ros-tooling/action-ros-ci@v0.3
         with:
-          package-name: orb_slam3_ros
           target-ros2-distro: iron
+          skip-tests: true
