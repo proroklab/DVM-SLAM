@@ -5,7 +5,7 @@
 #include <interfaces/msg/map_to_attempt_merge.hpp>
 #include <rclcpp/node.hpp>
 
-#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_services_default)
+#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(10), rmw_qos_profile_services_default)
 
 Peer::Peer(rclcpp::Node::SharedPtr rosNode, uint agentId)
   : agentId(agentId)

@@ -36,7 +36,7 @@
 #define MIN_KEY_FRAME_SHARE_SIZE 5
 #define MIN_BOW_SHARE_SIZE 5
 #define MIN_MAP_POINTS_FOR_SCALE_ADJUSTMENT 500
-#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_services_default)
+#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(10), rmw_qos_profile_services_default)
 
 using namespace std;
 
@@ -1064,7 +1064,7 @@ void OrbSlam3Wrapper::publish_topics(rclcpp::Time msg_time, Eigen::Vector3f Wbb)
     Eigen::Vector3f Wwb = Rwb * Wbb;
 
     // publish_tf_transform(Twb, origin_frame_id, imu_frame_id, msg_time);
-    publishRosVizTopics->publish_body_odom(Twb, Vwb, Wwb, msg_time);
+    // publishRosVizTopics->publish_body_odom(Twb, Vwb, Wwb, msg_time);
   }
   stopTimer("publish_topics");
 }

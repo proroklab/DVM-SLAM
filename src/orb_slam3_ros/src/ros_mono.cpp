@@ -8,7 +8,7 @@
 #include <rmw/types.h>
 #include <utility>
 
-#define BEST_EFFORT_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)
+#define BEST_EFFORT_QOS rclcpp::QoS(rclcpp::KeepLast(10), rmw_qos_profile_sensor_data)
 
 using namespace std;
 

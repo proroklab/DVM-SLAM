@@ -5,8 +5,8 @@
 #include <tf2/LinearMath/Vector3.h>
 #include <tf2_ros/transform_broadcaster.h>
 
-#define BEST_EFFORT_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)
-#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_services_default)
+#define BEST_EFFORT_QOS rclcpp::QoS(rclcpp::KeepLast(10), rmw_qos_profile_sensor_data)
+#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(10), rmw_qos_profile_services_default)
 
 PublishRosVizTopics::PublishRosVizTopics(shared_ptr<rclcpp::Node> node, string node_name,
   ORB_SLAM3::System::eSensor sensor_type, uint agentId, ReferenceFrameManager* referenceFrameManager)
