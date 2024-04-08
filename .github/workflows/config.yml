@@ -38,7 +38,7 @@ jobs:
   build-docker:
     runs-on: ubuntu-latest
     env:      
-      DOCKER_IMAGE: joshuabird/part_II_project
+      DOCKER_IMAGE: joshuabird/part_ii_project
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
       DOCKER_TARGET_PLATFORM: linux/arm64
@@ -75,7 +75,7 @@ jobs:
   build-nvidia-jetson-docker:
     runs-on: ubuntu-latest
     env:      
-      DOCKER_IMAGE: joshuabird/part_II_project_nvidia_jetson
+      DOCKER_IMAGE: joshuabird/part_ii_project_nvidia_jetson
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
       DOCKER_TARGET_PLATFORM: linux/arm64
