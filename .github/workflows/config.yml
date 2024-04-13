@@ -123,4 +123,5 @@ jobs:
           --tag ${{ steps.prepare.outputs.docker_image }}:latest \
           --file ./nvidia_jetson.Dockerfile \
           --progress plain \
+          --cache-to=type=inline,mode=max \
           --output type=image,push=true .
