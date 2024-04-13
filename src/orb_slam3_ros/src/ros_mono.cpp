@@ -24,7 +24,7 @@ public:
     this->declare_parameter("reliableImageTransport", true);
     bool reliableImageTransport = this->get_parameter("reliableImageTransport").as_bool();
 
-    this->declare_parameter("compressedImage", false);
+    this->declare_parameter("compressedImage", true);
     bool compressedImage = this->get_parameter("compressedImage").as_bool();
 
     image_subscriber_thread = std::thread([this, imageTopic, reliableImageTransport, compressedImage]() {
@@ -39,6 +39,7 @@ public:
           reliableImageTransport ? RELIABLE_QOS : BEST_EFFORT_QOS,
           std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
       }
+      rclcpp::spin(sub_node);
     });
 
     run();
