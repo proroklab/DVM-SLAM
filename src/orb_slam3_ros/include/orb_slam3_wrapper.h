@@ -46,6 +46,9 @@ protected:
   PublishRosVizTopics* publishRosVizTopics;
   ReferenceFrameManager* referenceFrameManager;
 
+  int mapAlignmentExponentialBackoffCounter = 0;
+  int mapAlignmentPreviousExponentialBackoffCounter = 1;
+
   // ROS broadcast publishers
   rclcpp::Publisher<interfaces::msg::SuccessfullyMerged>::SharedPtr successfullyMergedPub;
 

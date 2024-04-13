@@ -539,6 +539,9 @@ void OrbSlam3Wrapper::receiveNewKeyFrameBows(const interfaces::msg::NewKeyFrameB
     return;
   }
 
+  if (pSLAM->GetAllKeyFrames().size() < 12) // need at least 12 KFs to do a map merge
+    return;
+
   vector<boost::uuids::uuid> mergeCandidateKeyFrameUuids;
 
   for (interfaces::msg::KeyFrameBowVector newKeyFramesBowVector : newKeyFramesBowVectors) {
@@ -788,7 +791,22 @@ void OrbSlam3Wrapper::updateMapScale() {
     RCLCPP_INFO(this->get_logger(), "Applied transformation");
     cout << "translation: " << transformation.translation() << " rotation: " << transformation.rotationMatrix()
          << " & scale: " << scale;
+
+    float threshold = 0.01;
+    // Additive increase, multiplicative decrease
+    if (scale - 1 < threshold && scale - 1 > -threshold) {
+      mapAlignmentPreviousExponentialBackoffCounter++;
+    }
+    else {
+      mapAlignmentPreviousExponentialBackoffCounter = mapAlignmentPreviousExponentialBackoffCounter / 2;
+    }
+    mapAlignmentExponentialBackoffCounter = mapAlignmentPreviousExponentialBackoffCounter;
   };
+
+  if (mapAlignmentExponentialBackoffCounter > 0) {
+    mapAlignmentExponentialBackoffCounter--;
+    return;
+  }
 
   RCLCPP_INFO(this->get_logger(), "Attempting to update map scale...");
 
