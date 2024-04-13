@@ -2,83 +2,83 @@ name: Build
 on: [push]
 
 jobs:
-  # build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Install ROS Tooling
-  #       uses: ros-tooling/setup-ros@v0.7
-  #       with:
-  #         required-ros-distributions: iron
-
-  #     - name: Checkout code
-  #       uses: actions/checkout@v2
-
-  #     - name: Install Pangolin
-  #       run: |
-  #         mkdir thirdparty && cd thirdparty
-  #         git clone --recursive https://github.com/stevenlovegrove/Pangolin.git --depth 1
-  #         cd Pangolin
-  #         yes | ./scripts/install_prerequisites.sh required
-  #         cmake -B build
-  #         cmake --build build -j 4
-  #         sudo cmake --install build
-
-  #     - name: Install cv_bridge
-  #       run: sudo apt install -y ros-iron-cv-bridge
-
-  #     - name: Install interactive_markers
-  #       run: sudo apt install -y ros-iron-interactive-markers
-
-  #     - name: Build Project
-  #       uses: ros-tooling/action-ros-ci@v0.3
-  #       with:
-  #         target-ros2-distro: iron
-  #         skip-tests: true
-  
-  build-docker:
+  build:
     runs-on: ubuntu-latest
-    env:      
-      DOCKER_IMAGE: joshuabird/part_ii_project
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
-      DOCKER_TARGET_PLATFORM: linux/arm64
-      PROGRESS_NO_TRUNC: 1 
-    steps:    
-    - name: Checkout the code       
-      uses: actions/checkout@v1     
+    steps:
+      - name: Install ROS Tooling
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: iron
 
-    - name: Set up Docker Buildx      
-      uses: crazy-max/ghaction-docker-buildx@v1      
-      with:        
-        version: latest    
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Prepare      
-      if: success()      
-      id: prepare      
-      run: |        
-        echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
-        echo ::set-output name=docker_image::${DOCKER_IMAGE}    
+      - name: Install Pangolin
+        run: |
+          mkdir thirdparty && cd thirdparty
+          git clone --recursive https://github.com/stevenlovegrove/Pangolin.git --depth 1
+          cd Pangolin
+          yes | ./scripts/install_prerequisites.sh required
+          cmake -B build
+          cmake --build build -j 4
+          sudo cmake --install build
 
-    - name: Docker Login      
-      if: success()      
-      run: |        
-        echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
+      - name: Install cv_bridge
+        run: sudo apt install -y ros-iron-cv-bridge
 
-    - name: Pull latest image
-      if: success() 
-      continue-on-error: true
-      run: |
-        docker pull ${{ steps.prepare.outputs.docker_image }}:latest
+      - name: Install interactive_markers
+        run: sudo apt install -y ros-iron-interactive-markers
 
-    - name: Run Buildx (push image)      
-      if: success()      
-      run: |        
-        docker buildx build \
-          --platform ${{ steps.prepare.outputs.docker_platform }} \
-          --tag ${{ steps.prepare.outputs.docker_image }}:latest \
-          --file ./Dockerfile \
-          --progress plain \
-          --output type=image,push=true .
+      - name: Build Project
+        uses: ros-tooling/action-ros-ci@v0.3
+        with:
+          target-ros2-distro: iron
+          skip-tests: true
+  
+  # build-docker:
+  #   runs-on: ubuntu-latest
+  #   env:      
+  #     DOCKER_IMAGE: joshuabird/part_ii_project
+  #     DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  #     DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
+  #     DOCKER_TARGET_PLATFORM: linux/arm64
+  #     PROGRESS_NO_TRUNC: 1 
+  #   steps:    
+  #   - name: Checkout the code       
+  #     uses: actions/checkout@v1     
+
+  #   - name: Set up Docker Buildx      
+  #     uses: crazy-max/ghaction-docker-buildx@v1      
+  #     with:        
+  #       version: latest    
+
+  #   - name: Prepare      
+  #     if: success()      
+  #     id: prepare      
+  #     run: |        
+  #       echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
+  #       echo ::set-output name=docker_image::${DOCKER_IMAGE}    
+
+  #   - name: Docker Login      
+  #     if: success()      
+  #     run: |        
+  #       echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
+
+  #   - name: Pull latest image
+  #     if: success() 
+  #     continue-on-error: true
+  #     run: |
+  #       docker pull ${{ steps.prepare.outputs.docker_image }}:latest
+
+  #   - name: Run Buildx (push image)      
+  #     if: success()      
+  #     run: |        
+  #       docker buildx build \
+  #         --platform ${{ steps.prepare.outputs.docker_platform }} \
+  #         --tag ${{ steps.prepare.outputs.docker_image }}:latest \
+  #         --file ./Dockerfile \
+  #         --progress plain \
+  #         --output type=image,push=true .
 
   build-nvidia-jetson-docker:
     runs-on: ubuntu-latest
@@ -109,11 +109,11 @@ jobs:
       run: |        
         echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
 
-    - name: Pull latest image
-      if: success() 
-      continue-on-error: true
-      run: |
-        docker pull --platform ${{ steps.prepare.outputs.docker_platform }} ${{ steps.prepare.outputs.docker_image }}:latest
+    # - name: Pull latest image
+    #   if: success() 
+    #   continue-on-error: true
+    #   run: |
+    #     docker pull --platform ${{ steps.prepare.outputs.docker_platform }} ${{ steps.prepare.outputs.docker_image }}:latest
 
     - name: Run Buildx (push image)      
       if: success()      
