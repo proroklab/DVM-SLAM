@@ -7,6 +7,7 @@
 #include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <boost/uuid/uuid.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <interfaces/msg/sim3_transform_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -50,6 +51,8 @@ protected:
   uint agentId;
   shared_ptr<rclcpp::Node> node;
   ReferenceFrameManager* referenceFrameManager;
+
+  map<boost::uuids::uuid, Sophus::SE3f> last_sent_keyframe_poses;
 
   // ROS publishers
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub;

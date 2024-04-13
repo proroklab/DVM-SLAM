@@ -188,6 +188,15 @@ void PublishRosVizTopics::publish_keyframes(std::vector<ORB_SLAM3::KeyFrame*> ke
     if (keyFrame->isBad())
       continue;
 
+    // Skip if the keyframe has already been sent and hasn't moved
+    if (last_sent_keyframe_poses.find(keyFrame->uuid) != last_sent_keyframe_poses.end()
+      && last_sent_keyframe_poses[keyFrame->uuid].translation().isApprox(keyFrame->GetPoseInverse().translation())
+      && last_sent_keyframe_poses[keyFrame->uuid].unit_quaternion().isApprox(
+        keyFrame->GetPoseInverse().unit_quaternion()))
+      continue;
+
+    last_sent_keyframe_poses[keyFrame->uuid] = keyFrame->GetPoseInverse();
+
     visualization_msgs::msg::Marker keyFrameWireframe;
     keyFrameWireframe.header.frame_id = referenceFrameManager->slam_system_frame_id;
     keyFrameWireframe.ns = "keyFrameWireframes";
