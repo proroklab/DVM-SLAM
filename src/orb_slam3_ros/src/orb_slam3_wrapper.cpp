@@ -79,8 +79,10 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, ORB_SLAM3::System::eSensor se
   // Create services
   get_current_map_service = this->create_service<interfaces::srv::GetCurrentMap>(node_name + "/get_current_map",
     std::bind(&OrbSlam3Wrapper::handleGetCurrentMapRequest, this, std::placeholders::_1, std::placeholders::_2));
+  get_current_map_service->configure_introspection(this->get_clock(), RELIABLE_QOS, RCL_SERVICE_INTROSPECTION_CONTENTS);
   getMapPointsService = this->create_service<interfaces::srv::GetMapPoints>(node_name + "/get_map_points",
     std::bind(&OrbSlam3Wrapper::handleGetMapPointsRequest, this, std::placeholders::_1, std::placeholders::_2));
+  getMapPointsService->configure_introspection(this->get_clock(), RELIABLE_QOS, RCL_SERVICE_INTROSPECTION_CONTENTS);
 
   // Create subscriptions
   newKeyFrameBowsSub = this->create_subscription<interfaces::msg::NewKeyFrameBows>(node_name + "/new_key_frame_bows",
