@@ -66,9 +66,10 @@ jobs:
 
     - name: Pull latest image
       if: success() 
+      continue-on-error: true
       run: |
         docker pull ${{ steps.prepare.outputs.docker_image }}:latest
-        
+
     - name: Run Buildx (push image)      
       if: success()      
       run: |        
@@ -110,8 +111,9 @@ jobs:
 
     - name: Pull latest image
       if: success() 
+      continue-on-error: true
       run: |
-        docker pull ${{ steps.prepare.outputs.docker_image }}:latest
+        docker pull --platform ${{ steps.prepare.outputs.docker_platform }} ${{ steps.prepare.outputs.docker_image }}:latest
 
     - name: Run Buildx (push image)      
       if: success()      
