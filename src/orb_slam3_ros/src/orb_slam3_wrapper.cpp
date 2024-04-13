@@ -61,6 +61,9 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, ORB_SLAM3::System::eSensor se
   this->declare_parameter("useViewer", true);
   bool useViewer = this->get_parameter("useViewer").as_bool();
 
+  this->declare_parameter("publishVizTopics", true);
+  publishVizTopics = this->get_parameter("publishVizTopics").as_bool();
+
   node_name = "robot" + to_string(agentId);
   RCLCPP_INFO(this->get_logger(), node_name.c_str());
 
@@ -127,7 +130,8 @@ void OrbSlam3Wrapper::run() {
       updateIsLostFromBaseMap();
       sendNewKeyFrameBows();
       sendNewKeyFrames();
-      publish_topics(lastFrameTimestamp);
+      if (publishVizTopics)
+        publish_topics(lastFrameTimestamp);
 
       newFrameProcessed = false;
     }

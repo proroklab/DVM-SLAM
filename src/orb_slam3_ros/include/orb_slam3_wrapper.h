@@ -30,6 +30,7 @@ protected:
 
   string settings_file;
   string voc_file;
+  bool publishVizTopics;
 
   map<uint, Peer*> connectedPeers;
 
