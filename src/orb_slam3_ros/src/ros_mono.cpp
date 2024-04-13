@@ -9,6 +9,7 @@
 #include <utility>
 
 #define BEST_EFFORT_QOS rclcpp::QoS(rclcpp::KeepLast(10), rmw_qos_profile_sensor_data)
+#define RELIABLE_QOS rclcpp::QoS(rclcpp::KeepLast(10), rmw_qos_profile_services_default)
 
 using namespace std;
 
@@ -20,10 +21,14 @@ public:
     this->declare_parameter("imageTopic", "robot" + to_string(agentId) + "/camera/image_color");
     string imageTopic = this->get_parameter("imageTopic").as_string();
 
-    image_subscriber_thread = std::thread([this, imageTopic]() {
+    this->declare_parameter("reliableImageTransport", true);
+    bool reliableImageTransport = this->get_parameter("reliableImageTransport").as_bool();
+
+    image_subscriber_thread = std::thread([this, imageTopic, reliableImageTransport]() {
       auto sub_node = rclcpp::Node::make_shared("image_subscriber_thread_node");
-      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(
-        imageTopic, BEST_EFFORT_QOS, std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
+      image_subscriber = sub_node->create_subscription<sensor_msgs::msg::Image>(imageTopic,
+        reliableImageTransport ? RELIABLE_QOS : BEST_EFFORT_QOS,
+        std::bind(&OrbSlam3Mono::grab_image, this, std::placeholders::_1));
       rclcpp::spin(sub_node);
     });
 
