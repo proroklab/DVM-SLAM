@@ -33,8 +33,8 @@ Camera1.k4: 0.006475379139360301
 Camera.width: 1920
 Camera.height: 1080
 
-Camera.newWidth: 640
-Camera.newHeight: 360
+Camera.newWidth: 960
+Camera.newHeight: 540
 
 # Camera frames per second 
 Camera.fps: 20
