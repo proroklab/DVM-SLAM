@@ -24,7 +24,7 @@ public:
     this->declare_parameter("reliableImageTransport", true);
     bool reliableImageTransport = this->get_parameter("reliableImageTransport").as_bool();
 
-    this->declare_parameter("compressedImage", true);
+    this->declare_parameter("compressedImage", false);
     bool compressedImage = this->get_parameter("compressedImage").as_bool();
 
     image_subscriber_thread = std::thread([this, imageTopic, reliableImageTransport, compressedImage]() {
