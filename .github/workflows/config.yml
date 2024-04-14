@@ -102,15 +102,22 @@ jobs:
       if: success()      
       run: |        
         echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
+    
+    - name: Docker build and push
+      if: success()
+      run: |
+        docker pull ${{ steps.prepare.outputs.docker_image }}:latest
+        docker build -t ${{ steps.prepare.outputs.docker_image }}:latest -f nvidia_jetson.Dockerfile .
+        docker push ${{ steps.prepare.outputs.docker_image }}:latest
 
-    - name: Run Buildx (push image)      
-      if: success()      
-      run: |        
-        docker buildx build \
-          --platform ${{ steps.prepare.outputs.docker_platform }} \
-          --tag ${{ steps.prepare.outputs.docker_image }}:latest \
-          --file ./nvidia_jetson.Dockerfile \
-          --progress plain \
-          --cache-to=type=inline,mode=max \
-          --cache-from type=registry,ref=${{ steps.prepare.outputs.docker_image }}:latest \
-          --output type=image,push=true .
+    # - name: Run Buildx (push image)      
+    #   if: success()      
+    #   run: |        
+    #     docker buildx build \
+    #       --platform ${{ steps.prepare.outputs.docker_platform }} \
+    #       --tag ${{ steps.prepare.outputs.docker_image }}:latest \
+    #       --file ./nvidia_jetson.Dockerfile \
+    #       --progress plain \
+    #       --cache-to=type=inline,mode=max \
+    #       --cache-from type=registry,ref=${{ steps.prepare.outputs.docker_image }}:latest \
+    #       --output type=image,push=true .
