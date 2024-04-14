@@ -75,7 +75,7 @@ jobs:
           --output type=image,push=true .
 
   build-nvidia-jetson-docker:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     env:      
       DOCKER_IMAGE: joshuabird/part_ii_project_nvidia_jetson
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -84,13 +84,12 @@ jobs:
       PROGRESS_NO_TRUNC: 1 
     steps:    
     - name: Checkout the code       
-      uses: actions/checkout@v1    
-      
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: actions/checkout@v1     
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3 
+    - name: Set up Docker Buildx      
+      uses: crazy-max/ghaction-docker-buildx@v1      
+      with:        
+        version: latest    
 
     - name: Prepare      
       if: success()      
@@ -99,26 +98,19 @@ jobs:
         echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
         echo ::set-output name=docker_image::${DOCKER_IMAGE}    
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-    
-    - name: Build and push
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        tags: ${{ steps.prepare.outputs.docker_image }}:latest
+    - name: Docker Login      
+      if: success()      
+      run: |        
+        echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
 
-    # - name: Run Buildx (push image)      
-    #   if: success()      
-    #   run: |        
-    #     docker buildx build \
-    #       --platform ${{ steps.prepare.outputs.docker_platform }} \
-    #       --tag ${{ steps.prepare.outputs.docker_image }}:latest \
-    #       --file ./nvidia_jetson.Dockerfile \
-    #       --progress plain \
-    #       --cache-to=type=inline,mode=max \
-    #       --cache-from type=registry,ref=${{ steps.prepare.outputs.docker_image }}:latest \
-    #       --output type=image,push=true .
+    - name: Run Buildx (push image)      
+      if: success()      
+      run: |        
+        docker buildx build \
+          --platform ${{ steps.prepare.outputs.docker_platform }} \
+          --tag ${{ steps.prepare.outputs.docker_image }}:latest \
+          --file ./nvidia_jetson.Dockerfile \
+          --progress plain \
+          --cache-to=type=inline,mode=max \
+          --cache-from type=registry,ref=${{ steps.prepare.outputs.docker_image }}:latest \
+          --output type=image,push=true .

@@ -33,7 +33,7 @@ RUN sudo apt install -y ros-humble-interactive-markers
 # Build part II project
 RUN apt-get update && yes | apt-get install libboost-all-dev
 RUN cd /opt/root_ws \
-    && . /opt/ros/humble/install/setup.sh \
+    && source /opt/ros/humble/install/setup.sh \
     && git clone https://github.com/jyjblrd/part_II_project \
     && cd part_II_project \
     && git config --global --add safe.directory /opt/root_ws/part_II_project \
