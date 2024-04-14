@@ -44,8 +44,8 @@ RUN cd /opt/root_ws \
     && . /opt/ros/humble/install/setup.sh \
     && git clone https://github.com/jyjblrd/part_II_project \
     && cd part_II_project \
-    && git config --global --add safe.directory /opt/root_ws/part_II_project
-# && MAKEFLAGS="-j 4" colcon build
+    && git config --global --add safe.directory /opt/root_ws/part_II_project \
+    && MAKEFLAGS="-j 4" colcon build
 
 RUN tar -xvzf /opt/root_ws/part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/ORBvoc.txt.tar.gz -C /opt/root_ws/part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/
 
