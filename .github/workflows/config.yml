@@ -109,12 +109,6 @@ jobs:
       run: |        
         echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
 
-    - name: Pull latest image
-      if: success() 
-      continue-on-error: true
-      run: |
-        docker pull --platform ${{ steps.prepare.outputs.docker_platform }} ${{ steps.prepare.outputs.docker_image }}:latest
-
     - name: Run Buildx (push image)      
       if: success()      
       run: |        
@@ -124,4 +118,5 @@ jobs:
           --file ./nvidia_jetson.Dockerfile \
           --progress plain \
           --cache-to=type=inline,mode=max \
+          --cache-from type=registry,ref=${{ steps.prepare.outputs.docker_image }}:latest \
           --output type=image,push=true .
