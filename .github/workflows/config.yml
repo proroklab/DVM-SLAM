@@ -109,11 +109,11 @@ jobs:
       run: |        
         echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin          
 
-    # - name: Pull latest image
-    #   if: success() 
-    #   continue-on-error: true
-    #   run: |
-    #     docker pull --platform ${{ steps.prepare.outputs.docker_platform }} ${{ steps.prepare.outputs.docker_image }}:latest
+    - name: Pull latest image
+      if: success() 
+      continue-on-error: true
+      run: |
+        docker pull --platform ${{ steps.prepare.outputs.docker_platform }} ${{ steps.prepare.outputs.docker_image }}:latest
 
     - name: Run Buildx (push image)      
       if: success()      
