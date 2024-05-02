@@ -6,3 +6,4 @@ install/
 src/webots_sim/worlds/.*
 .cache/
 .ipynb_checkpoints/
+figures_output/
