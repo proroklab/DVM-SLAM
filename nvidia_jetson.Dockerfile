@@ -1,4 +1,6 @@
 FROM dustynv/ros:humble-ros-base-l4t-r35.3.1
+SHELL ["/bin/bash", "-c"]
+
 # FROM dustynv/ros:humble-pytorch-l4t-r35.3.1 # when using pytorch (image is larger though)
 
 # Add system packages to be installed here
@@ -9,7 +11,7 @@ RUN apt-get update && apt-get install -y git vim
 
 #WORKDIR /opt/root_ws
 
-#RUN . /opt/ros/humble/install/setup.sh && colcon build --symlink-install --packages-select robomaster_msgs freyja_msgs state_manager lqg_control robomaster_handler sensing_msgs control waypoint_manager
+#RUN source /opt/ros/humble/install/setup.sh && colcon build --symlink-install --packages-select robomaster_msgs freyja_msgs state_manager lqg_control robomaster_handler sensing_msgs control waypoint_manager
 
 #COPY cyclone_dds_profile.xml /opt/robomaster
 
@@ -25,14 +27,14 @@ RUN git clone --recursive https://github.com/stevenlovegrove/Pangolin.git --dept
     && cmake --install build
 
 # Install cv_bridge
-RUN . /opt/ros/humble/install/setup.sh \
+RUN source /opt/ros/humble/install/setup.sh \
     && cd /opt/root_ws/thirdparty \
     && git clone https://github.com/ros-perception/vision_opencv.git -b humble \
     && cd vision_opencv \
     && MAKEFLAGS="-j 4" colcon build --symlink-install
 
 # install interactive_markers
-RUN . /opt/ros/humble/install/setup.sh \
+RUN source /opt/ros/humble/install/setup.sh \
     && cd /opt/root_ws/thirdparty \
     && git clone https://github.com/ros-visualization/interactive_markers.git -b humble \
     && cd interactive_markers \
@@ -41,7 +43,7 @@ RUN . /opt/ros/humble/install/setup.sh \
 # Build part II project
 RUN apt-get update && yes | apt-get install libboost-all-dev
 RUN cd /opt/root_ws \
-    && . /opt/ros/humble/install/setup.sh \
+    && source /opt/ros/humble/install/setup.sh \
     && git clone https://github.com/jyjblrd/part_II_project \
     && cd part_II_project \
     && git config --global --add safe.directory /opt/root_ws/part_II_project \

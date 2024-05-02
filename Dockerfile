@@ -1,4 +1,6 @@
 FROM ros:humble
+SHELL ["/bin/bash", "-c"]
+
 # FROM dustynv/ros:humble-pytorch-l4t-r35.3.1 # when using pytorch (image is larger though)
 
 # Add system packages to be installed here
@@ -9,7 +11,7 @@ RUN apt-get update && apt-get install -y git vim
 
 #WORKDIR /opt/root_ws
 
-#RUN . /opt/ros/humble/install/setup.sh && colcon build --symlink-install --packages-select robomaster_msgs freyja_msgs state_manager lqg_control robomaster_handler sensing_msgs control waypoint_manager
+#RUN source /opt/ros/humble/install/setup.sh && colcon build --symlink-install --packages-select robomaster_msgs freyja_msgs state_manager lqg_control robomaster_handler sensing_msgs control waypoint_manager
 
 #COPY cyclone_dds_profile.xml /opt/robomaster
 
