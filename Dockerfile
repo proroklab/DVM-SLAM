@@ -32,6 +32,9 @@ RUN sudo apt install -y ros-humble-cv-bridge
 # install interactive_markers
 RUN sudo apt install -y ros-humble-interactive-markers
 
+# install image_transport
+RUN sudo apt install -y ros-humble-image-transport
+
 # Build part II project
 RUN apt-get update && yes | apt-get install libboost-all-dev
 RUN cd /opt/root_ws \
