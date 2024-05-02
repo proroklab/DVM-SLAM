@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(orb_slam3_ros)
+project(slam_system)
 
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release)

@@ -54,7 +54,7 @@ OrbSlam3Wrapper::OrbSlam3Wrapper(string node_name, ORB_SLAM3::System::eSensor se
   settings_file = this->get_parameter("config").as_string();
 
   this->declare_parameter("vocFile",
-    "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/ubuntuSharedFolder/part_II_project/src/orb_slam3_ros/"
+    "/home/joshuabird/Desktop/Parallels\ Shared\ Folders/ubuntuSharedFolder/part_II_project/src/slam_system/"
     "orb_slam3/Vocabulary/ORBvoc.txt");
   voc_file = this->get_parameter("vocFile").as_string();
 

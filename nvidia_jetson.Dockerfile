@@ -47,9 +47,9 @@ RUN cd /opt/root_ws \
     && git config --global --add safe.directory /opt/root_ws/part_II_project \
     && MAKEFLAGS="-j 4" colcon build
 
-RUN tar -xvzf /opt/root_ws/part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/ORBvoc.txt.tar.gz -C /opt/root_ws/part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/
+RUN tar -xvzf /opt/root_ws/part_II_project/src/slam_system/orb_slam3/Vocabulary/ORBvoc.txt.tar.gz -C /opt/root_ws/part_II_project/src/slam_system/orb_slam3/Vocabulary/
 
-# ros2 run orb_slam3_ros ros_mono --ros-args -p agentId:=1 -p config:=/opt/root_ws/part_II_project/src/orb_slam3_ros/configs/robomaster.yaml -p imageTopic:=/robomaster_0/camera_0/image_raw -p vocFile:=/opt/root_ws/part_II_project/src/orb_slam3_ros/orb_slam3/Vocabulary/ORBvoc.txt -p useViewer:=false
+# ros2 run slam_system ros_mono --ros-args -p agentId:=1 -p config:=/opt/root_ws/part_II_project/src/slam_system/configs/robomaster.yaml -p imageTopic:=/robomaster_0/camera_0/image_raw -p vocFile:=/opt/root_ws/part_II_project/src/slam_system/orb_slam3/Vocabulary/ORBvoc.txt -p useViewer:=false
 # ros2 run motion_controller follow_the_leader --ros-args -p agentId:=2 -p positionOffsetX:=0.0 -p positionOffsetY:=0.0 -p rotationOffset:=0.0 -p linearGain:=1.0 -p angularGain:=1.0 -p cmdVelTopic:=/robomaster_1/cmd_vel
 # ros2 run motion_controller collision_avoidance --ros-args -p agentId:=2 -p linearGain:=.5 -p angularGain:=0.1 -p agentRadius:=0.05 -p cmdVelTopic:=/robomaster_1/cmd_vel -p Qc:=4.0 -p kappa:=15.0 -p staticKappa:=60.0
 
