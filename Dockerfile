@@ -1,4 +1,5 @@
 FROM ros:humble
+SHELL ["/bin/bash", "-c"]
 
 # FROM dustynv/ros:humble-pytorch-l4t-r35.3.1 # when using pytorch (image is larger though)
 
@@ -10,7 +11,7 @@ RUN apt-get update && apt-get install -y git vim
 
 #WORKDIR /opt/root_ws
 
-#RUN . /opt/ros/humble/install/setup.sh && colcon build --symlink-install --packages-select robomaster_msgs freyja_msgs state_manager lqg_control robomaster_handler sensing_msgs control waypoint_manager
+#RUN source /opt/ros/humble/install/setup.sh && colcon build --symlink-install --packages-select robomaster_msgs freyja_msgs state_manager lqg_control robomaster_handler sensing_msgs control waypoint_manager
 
 #COPY cyclone_dds_profile.xml /opt/robomaster
 
@@ -31,10 +32,13 @@ RUN sudo apt install -y ros-humble-cv-bridge
 # install interactive_markers
 RUN sudo apt install -y ros-humble-interactive-markers
 
+# install image_transport
+RUN sudo apt install -y ros-humble-image-transport
+
 # Build part II project
 RUN apt-get update && yes | apt-get install libboost-all-dev
 RUN cd /opt/root_ws \
-    && . ros_entrypoint.sh \
+    && source /opt/ros/humble/setup.bash \
     && git clone https://github.com/jyjblrd/part_II_project \
     && cd part_II_project \
     && git config --global --add safe.directory /opt/root_ws/part_II_project \
