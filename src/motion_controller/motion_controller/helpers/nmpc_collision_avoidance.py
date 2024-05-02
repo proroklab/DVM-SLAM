@@ -18,12 +18,16 @@ class Nmpc():
         self.vmax = vmax
 
         # collision cost parameters
-        # https://www.desmos.com/calculator/lu9hv6mq36
-        # Assumes a agent radius of 0.25, we adjust scale to set actual agent radius
-        self.Qc = 8.
-        self.kappa = 6.
-        self.static_kappa = 6.
-        self.scale = robot_radius/0.25
+        self.Q_s = 8.
+        self.Q_d = 12.
+
+        x_min_s = np.log(
+            (np.sqrt(self.Q_s**2 - 4*self.Q_s) + self.Q_s) / 2 - 1)
+        x_min_d = np.log(
+            (np.sqrt(self.Q_d**2 - 4*self.Q_d) + self.Q_d) / 2 - 1)
+        self.scale_s = robot_radius/x_min_s
+        self.scale_d = robot_radius/x_min_d
+
         self.robot_radius = robot_radius
         self.latency = latency
 
@@ -147,9 +151,8 @@ class Nmpc():
                 rob = robot[2 * i: 2 * i + 2]
                 distance = self.distance_point_to_line_segment(
                     rob, static_obstacle)
-                cost = self.scale * self.Qc / \
-                    (1 + np.exp(self.static_kappa *
-                     distance / (self.scale/2)))
+                cost = self.scale_s * self.Q_s / \
+                    (1 + np.exp(distance / self.scale_s))
                 total_cost += cost
         return total_cost
 
@@ -158,8 +161,8 @@ class Nmpc():
         Cost of collision between two robot_state
         """
         d = np.linalg.norm(x0 - x1)
-        cost = self.scale * self.Qc / \
-            (1 + np.exp(self.kappa * d / self.scale))
+        cost = self.scale_d * self.Q_d / \
+            (1 + np.exp(d / self.scale_d))
         return cost
 
     def distance_point_to_line_segment(self, point, line_segment_points):
