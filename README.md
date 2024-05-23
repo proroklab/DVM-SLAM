@@ -1,5 +1,7 @@
 [Dissertation.pdf](https://jyjblrd.github.io/part_II_project_dissertation/Dissertation/dissertation.pdf)
 
+https://github.com/jyjblrd/distributed_visual_SLAM/assets/40762456/6db2d506-c0fd-4976-94fb-ae1da50cfd12
+
 In this project, I:
 1. Design and implement a novel distributed monocular visual SLAM system, capable of
 localization, relative pose estimation, and collaborative mapping, all while being tolerant
@@ -20,5 +22,4 @@ systems (section 3.5).
 tion and augmented reality visualizations – and set up a continuous integration and de-
 ployment pipeline to automatically deploy the latest builds to the devices (section 3.7.3).
 
-https://github.com/jyjblrd/distributed_visual_SLAM/assets/40762456/6db2d506-c0fd-4976-94fb-ae1da50cfd12
 
