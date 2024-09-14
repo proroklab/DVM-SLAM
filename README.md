@@ -2,6 +2,7 @@
 
 https://github.com/jyjblrd/distributed_visual_SLAM/assets/40762456/6db2d506-c0fd-4976-94fb-ae1da50cfd12
 
+
 In this project, I:
 1. Design and implement a novel distributed monocular visual SLAM system, capable of localization, relative pose estimation, and collaborative mapping, all while being tolerant to degraded network conditions and not reliant on any single leader agent (section 3.2).
 2. Evaluate the performance of my system on standard datasets, **demonstrating its superior performance over comparable state-of-the-art systems (section 4.3).**
