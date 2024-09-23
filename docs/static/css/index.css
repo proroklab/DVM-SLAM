@@ -83,6 +83,12 @@ body {
   /*color: #4286f4;*/
 }
 
+.subcaption {
+  font-size: 0.8em;
+  line-height: 1.4em;
+  text-align: justify;
+}
+
 .publication-video {
   position: relative;
   width: 100%;

@@ -47,6 +47,14 @@
   <script src="static/js/bulma-carousel.min.js"></script>
   <script src="static/js/bulma-slider.min.js"></script>
   <script src="static/js/index.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
 </head>
 
 <body>
@@ -82,14 +90,14 @@
               <div class="publication-links">
                 <!-- Arxiv PDF link -->
                 <!-- <span class="link-block">
-                  <a href="https://arxiv.org/pdf/<ARXIV PAPER ID>.pdf" target="_blank"
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                      <i class="fas fa-file-pdf"></i>
-                    </span>
-                    <span>Paper</span>
-                  </a>
-                </span> -->
+                        <a href="https://arxiv.org/pdf/<ARXIV PAPER ID>.pdf" target="_blank"
+                          class="external-link button is-normal is-rounded is-dark">
+                          <span class="icon">
+                            <i class="fas fa-file-pdf"></i>
+                          </span>
+                          <span>Paper</span>
+                        </a>
+                      </span> -->
 
                 <!-- Github link -->
                 <span class="link-block">
@@ -104,14 +112,14 @@
 
                 <!-- ArXiv abstract Link -->
                 <!-- <span class="link-block">
-                  <a href="https://arxiv.org/abs/<ARXIV PAPER ID>" target="_blank"
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                      <i class="ai ai-arxiv"></i>
-                    </span>
-                    <span>arXiv</span>
-                  </a>
-                </span> -->
+                        <a href="https://arxiv.org/abs/<ARXIV PAPER ID>" target="_blank"
+                          class="external-link button is-normal is-rounded is-dark">
+                          <span class="icon">
+                            <i class="ai ai-arxiv"></i>
+                          </span>
+                          <span>arXiv</span>
+                        </a>
+                      </span> -->
               </div>
             </div>
           </div>
@@ -170,59 +178,168 @@
   </section>
   <!-- End paper abstract -->
 
-
-  <!-- <section class="section hero">
+  <section class="section hero">
     <div class="container">
       <div class="row is-centered has-text-centered">
-        <h2 class="title is-3">System Overview</h2>
-        <div class="col-lg-5 my-3 me-3">
-          <img src="static/images/agent_diagram.png" class="shadow-md rounded">
+        <h1 class="title is-3">Supplementary Material</h1>
+      </div>
+      <div class="row is-centered has-text-centered">
+        <div class="content col-lg-6 offset-lg-3 pt-3">
+          <p>In this section we provide additional material to complement the paper.</p>
+        </div>
+      </div>
+  </section>
+
+  <section class=" hero">
+    <div class="container">
+      <div class="row is-centered has-text-centered">
+        <h3 class=" is-3 pb-2">Collision Avoidance Demo</h3>
+        <div class="col-lg-6">
+          <div class="publication-video">
+            <video class="shadow-md" poster="" id="tree" controls height="100%">
+              <!-- Your video here -->
+              <source src="static/videos/Collision_Avoidance.mp4" type="video/mp4">
+            </video>
+          </div>
         </div>
         <div class="col-lg-6">
           <div class="content has-text-justified">
-            <p>
-              Cooperative Simultaneous Localization and Mapping (C-SLAM) enables multiple agents to work together in
-              mapping unknown environments while simultaneously estimating their own positions. This approach enhances
-              robustness, scalability, and accuracy by sharing information between agents, reducing drift, and enabling
-              collective exploration of larger areas. In this paper, we present Decentralized Visual Monocular SLAM
-              (DVM-SLAM), the first open-source decentralized monocular C-SLAM system. By only utilizing low-cost and
-              light-weight monocular vision sensors, our system is well suited for small robots and micro aerial
-              vehicles (MAVs). DVM-SLAM's real-world applicability is validated on physical robots with a custom
-              collision avoidance framework, showcasing its potential in real-time multi-agent autonomous navigation
-              scenarios. We also demonstrate comparable accuracy to state-of-the-art centralized monocular C-SLAM
-              systems.
+            <p class="pt-2 ps-lg-4">
+              In this video, we deploy DVM-SLAM on the Cambridge RoboMaster platform with a custom collision avoidance
+              framework and test the system in an intersection environment, where the two robots would normally
+              collide.
+              The agents are able to localize each other even when their views do not overlap and they can not see
+              each
+              other,
+              demonstrating that a shared map is being built. Out of the four consecutive trials run in this
+              environment, there were zero collisions between the two agents, and the distance between agents never
+              went
+              below the collision threshold of 0.55 meters. The RMS ATE of the system was 7.4cm over the 50-meter-long
+              trajectory.
             </p>
+          </div>
+
+          <div class="row is-centered has-text-centered mt-4 pt-2">
+            <div class="col-lg-7 offset-lg-0 col-md-8 offset-md-2 col-12">
+              <image src=" static/images/mar25_1_distance_plot.png">
+              </image>
+            </div>
+            <div class="col-lg-5 col-12 has-text-justified">
+              Plot of distance between the two robots throughout all four collision avoidance trials. The dips between
+              trials are the robots' positions being reset.
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </section> -->
+  </section>
 
 
-  <!-- Image carousel -->
-  <!-- <section class="section hero is-light">
-    <div class="container no-padding">
+  <section class="section hero">
+    <div class="container">
       <div class="row is-centered has-text-centered">
-        <div class="col-4">
-          <video class="shadow-md" poster="" id="tree" autoplay controls muted loop height="100%">
-            <source src="static/videos/TUM-VI.mp4" type="video/mp4">
-          </video>
+        <h3 class=" is-3 pb-2">Distributed Pose Graph Optimization</h3>
+        <div class="col-lg-6">
+          <div class="publication-video">
+            <video class="shadow-md" poster="" id="tree" controls autoplay muted loop height="100%">
+              <!-- Your video here -->
+              <source src="static/videos/PGO.mp4" type="video/mp4">
+            </video>
+          </div>
         </div>
-        <div class="col-4">
-          Cooperative Simultaneous Localization and Mapping (C-SLAM) enables multiple agents to work together in
-          mapping unknown environments while simultaneously estimating their own positions. This approach enhances
-          robustness, scalability, and accuracy by sharing information between agents, reducing drift, and enabling
-          collective explorati
+        <div class="col-lg-5 ps-lg-4">
+          <div class="content has-text-justified">
+            <p class="pt-2">
+              DVM-SLAM performs incremental, asynchronous, and distributed pose graph optimization through a
+              keyframe
+              sharing method. This refines the map as the agents explore the environment, reducing drift and improving
+              accuracy.
+            </p>
+          </div>
         </div>
-        <div class="col-4">
-          Cooperative Simultaneous Localization and Mapping (C-SLAM) enables multiple agents to work together in
-          mapping unknown environments while simultaneously estimating their own positions. This approach enhances
-          robustness, scalability, and accuracy by sharing information between agents, reducing drift, and enabling
-          collective explorati
+      </div>
+      <div class="row is-centered has-text-centered mt-4">
+        <div class="col-md-2 offset-md-1 col-5 offset-1">
+          <image src="static/images/external_key_frame_insertion_1.png"
+            style="aspect-ratio: 1 / 1;  object-fit: contain; ">
+            <p class="subcaption">
+              (a) External keyframe $k_{ext}$ with $M_{ext}=\{m_3, m_4, m_5\}$. Note the references to existing
+              keyframes
+              and map points.
+            </p>
+        </div>
+        <div class="col-md-2 col-5">
+          <image src="static/images/external_key_frame_insertion_2.png"
+            style="aspect-ratio: 1 / 1;  object-fit: contain; ">
+            <p class="subcaption">
+              (b) Existing local map.
+            </p>
+        </div>
+        <div class="col-md-2 offset-md-0 col-4">
+          <image src="static/images/external_key_frame_insertion_3.png"
+            style="aspect-ratio: 1 / 1;  object-fit: contain; ">
+            <p class="subcaption">
+              (c) <b>Step 1:</b> Move $k_{ext}$ and $M_{ext}$ to the local map and relink references. Relinked
+              connections are drawn in purple.
+            </p>
+        </div>
+        <div class="col-md-2 col-4">
+          <image src="static/images/external_key_frame_insertion_4.png"
+            style="aspect-ratio: 1 / 1;  object-fit: contain; ">
+            <p class="subcaption">
+              (d) <b>Step 2:</b> Merge duplicate map points. $m_5$ and $m_0$ have a similar feature descriptor and
+              location,
+              therefore they are merged.
+            </p>
+        </div>
+        <div class="col-md-2 col-4">
+          <image src="static/images/external_key_frame_insertion_5.png"
+            style="aspect-ratio: 1 / 1;  object-fit: contain; ">
+            <p class="subcaption">
+              (e) <b>Step 3:</b> Local pose graph optimization around $k_{ext}$ to refine the map using the new
+              information.
+              Original keyframe and map point locations are shown in purple.
+            </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-10 offset-md-1 has-text-justified">
+          <p>
+            Visual overview of inserting external keyframes and map points into the local map. External keyframe (a)
+            and
+            initial local map (b) are combined to create our final local map (e). This is performed incrementally by
+            each agent as additional external data is received, and enables to agents to collaboratively contribute to
+            and benefit from a shared, continuously improving map without the need for centralized coordination.
+          </p>
         </div>
       </div>
     </div>
-  </section> -->
+  </section>
+
+  <!-- Image carousel -->
+  <!-- <section class="section hero is-light">
+          <div class="container no-padding">
+            <div class="row is-centered has-text-centered">
+              <div class="col-4">
+                <video class="shadow-md" poster="" id="tree" autoplay controls muted loop height="100%">
+                  <source src="static/videos/TUM-VI.mp4" type="video/mp4">
+                </video>
+              </div>
+              <div class="col-4">
+                Cooperative Simultaneous Localization and Mapping (C-SLAM) enables multiple agents to work together in
+                mapping unknown environments while simultaneously estimating their own positions. This approach enhances
+                robustness, scalability, and accuracy by sharing information between agents, reducing drift, and enabling
+                collective explorati
+              </div>
+              <div class="col-4">
+                Cooperative Simultaneous Localization and Mapping (C-SLAM) enables multiple agents to work together in
+                mapping unknown environments while simultaneously estimating their own positions. This approach enhances
+                robustness, scalability, and accuracy by sharing information between agents, reducing drift, and enabling
+                collective explorati
+              </div>
+            </div>
+          </div>
+        </section> -->
   <!-- End image carousel -->
 
 
@@ -234,7 +351,7 @@
       <div class="row is-centered has-text-centered">
         <div class="col-lg-7 mx-auto">
           <!-- Paper video. -->
-          <h2 class="title is-3">Video Presentation</h2>
+          <h2 class="title is-3">Full Video Presentation</h2>
 
           <div class="publication-video">
             <video class="shadow-md" poster="" id="tree" controls height="100%">
@@ -251,29 +368,29 @@
 
   <!-- Video carousel -->
   <!-- <section class="hero is-small">
-    <div class="hero-body">
-      <div class="container">
-        <h2 class="title is-3">Another Carousel</h2>
-        <div id="results-carousel" class="carousel results-carousel">
-          <div class="item item-video1">
-            <video poster="" id="video1" autoplay controls muted loop height="100%">
-              <source src="static/videos/carousel1.mp4" type="video/mp4">
-            </video>
+          <div class="hero-body">
+            <div class="container">
+              <h2 class="title is-3">Another Carousel</h2>
+              <div id="results-carousel" class="carousel results-carousel">
+                <div class="item item-video1">
+                  <video poster="" id="video1" autoplay controls muted loop height="100%">
+                    <source src="static/videos/carousel1.mp4" type="video/mp4">
+                  </video>
+                </div>
+                <div class="item item-video2">
+                  <video poster="" id="video2" autoplay controls muted loop height="100%">
+                    <source src="static/videos/carousel2.mp4" type="video/mp4">
+                  </video>
+                </div>
+                <div class="item item-video3">
+                  <video poster="" id="video3" autoplay controls muted loop height="100%">\
+                    <source src="static/videos/carousel3.mp4" type="video/mp4">
+                  </video>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="item item-video2">
-            <video poster="" id="video2" autoplay controls muted loop height="100%">
-              <source src="static/videos/carousel2.mp4" type="video/mp4">
-            </video>
-          </div>
-          <div class="item item-video3">
-            <video poster="" id="video3" autoplay controls muted loop height="100%">\
-              <source src="static/videos/carousel3.mp4" type="video/mp4">
-            </video>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section> -->
+        </section> -->
   <!-- End video carousel -->
 
 
@@ -283,33 +400,33 @@
 
   <!-- Paper poster -->
   <!-- <section class="hero is-small is-light">
-    <div class="hero-body">
-      <div class="container">
-        <h2 class="title">Poster</h2>
+          <div class="hero-body">
+            <div class="container">
+              <h2 class="title">Poster</h2>
 
-        <iframe src="static/pdfs/sample.pdf" width="100%" height="550">
-        </iframe>
+              <iframe src="static/pdfs/sample.pdf" width="100%" height="550">
+              </iframe>
 
-      </div>
-    </div>
-  </section> -->
+            </div>
+          </div>
+        </section> -->
   <!--End paper poster -->
 
 
   <!--BibTex citation -->
   <!-- <section class="section" id="BibTeX">
-    <div class="container is-max-desktop content">
-      <h2 class="title">BibTeX</h2>
-      <pre><code>BibTex Code Here</code></pre>
-    </div>
-  </section> -->
+          <div class="container is-max-desktop content">
+            <h2 class="title">BibTeX</h2>
+            <pre><code>BibTex Code Here</code></pre>
+          </div>
+        </section> -->
   <!--End BibTex citation -->
 
 
   <footer class="footer">
     <div class="container">
       <div class="columns is-centered">
-        <div class="column is-8">
+        <div class="column is-12 has-text-centered">
           <div class="content">
 
             <p>
